@@ -377,7 +377,52 @@
             <label>Restore Database</label>
             <p style="font-size:0.75rem; color:var(--danger); margin-bottom: 12px; font-weight:600;">Warning: This will overwrite current data.</p>
             <input type="file" id="restore-file" class="input" accept=".json" onchange="restoreDatabase(event)">
-            <button class="btn" style="margin-top: 12px;" onclick="showScreen('screen-menu')">Return to Menu</button>
+
+            <!-- ══════════ GITHUB GIST CLOUD SYNC ══════════ -->
+            <hr style="border:none; border-top:1px solid var(--border); margin: 24px 0;">
+            
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                <svg style="width:22px;height:22px;fill:var(--text-main);flex-shrink:0;" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+                <h3 style="margin:0; font-size:1rem;">GitHub Cloud Sync</h3>
+                <span id="gist-status-dot" style="margin-left:auto; font-size:0.75rem; font-weight:700; padding:3px 10px; border-radius:20px; background:rgba(100,116,139,0.1); color:var(--text-muted);">Not Connected</span>
+            </div>
+            <p style="font-size:0.75rem; margin-bottom:12px;">Save your data to a <b>free private GitHub Gist</b> — accessible from any device. Requires a GitHub account.</p>
+
+            <div id="gist-setup-section">
+                <label>GitHub Personal Access Token</label>
+                <div style="position:relative; margin-bottom:12px;">
+                    <input type="password" id="gist-token-input" class="input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="margin-bottom:0; padding-right:44px; font-family:monospace; font-size:0.85rem;">
+                    <button onclick="toggleGistTokenVisibility()" id="gist-token-eye" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:var(--bg-base);border:1px solid var(--border);border-radius:6px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted);font-size:16px;" title="Show/Hide Token">👁</button>
+                </div>
+                <p style="font-size:0.7rem; color:var(--text-muted); margin-bottom:16px; line-height:1.6;">
+                    <b>How to get token:</b> GitHub → Settings → Developer Settings → Personal Access Tokens → Tokens (classic) → Generate new token → Select <b>"gist"</b> scope only → Copy & paste here.
+                </p>
+                <button class="btn primary" onclick="connectGist()" style="margin-bottom:8px;">
+                    <svg style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                    Connect & Save Token
+                </button>
+            </div>
+
+            <div id="gist-connected-section" style="display:none;">
+                <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); border-radius:10px; padding:14px; margin-bottom:16px; font-size:0.8rem;">
+                    <div style="font-weight:700; color:var(--success); margin-bottom:4px;">✅ Connected to GitHub Gist</div>
+                    <div style="color:var(--text-muted);" id="gist-info-text">Gist ID: loading...</div>
+                </div>
+                <div class="grid-2" style="gap:8px; margin-bottom:8px;">
+                    <button class="btn primary" onclick="syncToGist()" style="margin:0;">
+                        <svg style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+                        Upload to Cloud
+                    </button>
+                    <button class="btn" onclick="restoreFromGist()" style="margin:0;">
+                        <svg style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><polyline points="8 8 12 12 16 8"/><line x1="12" y1="12" x2="12" y2="3"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+                        Restore from Cloud
+                    </button>
+                </div>
+                <button class="btn danger" onclick="disconnectGist()" style="margin-bottom:0; padding:8px;">Disconnect GitHub</button>
+            </div>
+            <!-- ══════════════════════════════════════════════ -->
+
+            <button class="btn" style="margin-top: 16px;" onclick="showScreen('screen-menu')">Return to Menu</button>
         </div>
     </div>
 
@@ -1370,6 +1415,163 @@ window.addEventListener('DOMContentLoaded', () => {
     
     // Auto-load custom codes into dropdown on start
     setTimeout(updateModalDropdown, 300);
+
+    // ══════════════════════════════════════════════════
+    // GITHUB GIST CLOUD SYNC MODULE
+    // ══════════════════════════════════════════════════
+
+    function initGistUI() {
+        const token = localStorage.getItem('gist_token');
+        const gistId = localStorage.getItem('gist_id');
+        const setupSection = document.getElementById('gist-setup-section');
+        const connectedSection = document.getElementById('gist-connected-section');
+        const statusDot = document.getElementById('gist-status-dot');
+
+        if (token) {
+            setupSection.style.display = 'none';
+            connectedSection.style.display = 'block';
+            statusDot.innerText = '🟢 Connected';
+            statusDot.style.background = 'rgba(16,185,129,0.1)';
+            statusDot.style.color = 'var(--success)';
+            const gistInfoText = document.getElementById('gist-info-text');
+            if (gistId) {
+                gistInfoText.innerHTML = `Gist ID: <a href="https://gist.github.com/${gistId}" target="_blank" style="color:var(--accent); text-decoration:none; font-family:monospace;">${gistId.substring(0,20)}...</a>`;
+            } else {
+                gistInfoText.innerText = 'No backup uploaded yet. Press Upload to create one.';
+            }
+        } else {
+            setupSection.style.display = 'block';
+            connectedSection.style.display = 'none';
+            statusDot.innerText = 'Not Connected';
+            statusDot.style.background = 'rgba(100,116,139,0.1)';
+            statusDot.style.color = 'var(--text-muted)';
+        }
+    }
+
+    // Init on backup screen open
+    const _origShowScreen = showScreen;
+    showScreen = function(id) {
+        _origShowScreen(id);
+        if (id === 'screen-backup') setTimeout(initGistUI, 50);
+    };
+
+    function toggleGistTokenVisibility() {
+        const input = document.getElementById('gist-token-input');
+        const btn = document.getElementById('gist-token-eye');
+        if (input.type === 'password') { input.type = 'text'; btn.innerText = '🙈'; }
+        else { input.type = 'password'; btn.innerText = '👁'; }
+    }
+
+    async function connectGist() {
+        const token = document.getElementById('gist-token-input').value.trim();
+        if (!token || !token.startsWith('ghp_')) {
+            return showAppAlert("Invalid token. GitHub tokens start with 'ghp_'. Please check and try again.");
+        }
+        showLoader(true);
+        try {
+            // Verify token is valid
+            const res = await fetch('https://api.github.com/user', {
+                headers: { 'Authorization': `token ${token}` }
+            });
+            if (!res.ok) throw new Error("Token invalid or expired. Please generate a new one.");
+            const user = await res.json();
+            localStorage.setItem('gist_token', token);
+            document.getElementById('gist-token-input').value = '';
+            showLoader(false);
+            initGistUI();
+            showAppAlert(`✅ Connected as @${user.login}!\n\nYour token is saved. Now press "Upload to Cloud" to create your first backup.`);
+        } catch(e) {
+            showLoader(false);
+            showAppAlert("Connection Failed: " + e.message);
+        }
+    }
+
+    async function syncToGist() {
+        const token = localStorage.getItem('gist_token');
+        if (!token) return showAppAlert("Not connected. Please connect GitHub first.");
+        showLoader(true);
+        try {
+            // Collect all data (same as local backup)
+            let backupObj = {};
+            const keys = await localforage.keys();
+            for (let k of keys) { backupObj[k] = await localforage.getItem(k); }
+            backupObj['_secConfig'] = localStorage.getItem('auditor_sec') || "{}";
+            const content = JSON.stringify(backupObj);
+
+            const gistId = localStorage.getItem('gist_id');
+            const url = gistId ? `https://api.github.com/gists/${gistId}` : 'https://api.github.com/gists';
+            const method = gistId ? 'PATCH' : 'POST';
+            const dateStr = new Date().toLocaleString();
+
+            const res = await fetch(url, {
+                method,
+                headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    description: `Warranty Auditor Backup — ${dateStr}`,
+                    public: false,
+                    files: { 'auditor_backup.json': { content } }
+                })
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.message || 'GitHub API error');
+            }
+            const json = await res.json();
+            localStorage.setItem('gist_id', json.id);
+            localStorage.setItem('gist_last_sync', dateStr);
+            showLoader(false);
+            initGistUI();
+            showAppAlert(`☁️ Upload Successful!\n\nYour data is now saved to GitHub.\nDate: ${dateStr}`);
+        } catch(e) {
+            showLoader(false);
+            showAppAlert("Upload Failed: " + e.message + "\n\nIf your token expired, please disconnect and reconnect with a new token.");
+        }
+    }
+
+    async function restoreFromGist() {
+        const token = localStorage.getItem('gist_token');
+        const gistId = localStorage.getItem('gist_id');
+        if (!token) return showAppAlert("Not connected. Please connect GitHub first.");
+        if (!gistId) return showAppAlert("No cloud backup found. Please upload first.");
+
+        showAppConfirm("⚠️ Restore from GitHub Cloud?\n\nThis will OVERWRITE all current local data with your cloud backup.", async () => {
+            showLoader(true);
+            try {
+                const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+                    headers: { 'Authorization': `token ${token}` }
+                });
+                if (!res.ok) throw new Error('Could not fetch backup from GitHub.');
+                const json = await res.json();
+                const content = json.files['auditor_backup.json']?.content;
+                if (!content) throw new Error("Backup file not found in Gist.");
+
+                const data = JSON.parse(content);
+                await localforage.clear();
+                for (let key in data) {
+                    if (key === '_secConfig') { localStorage.setItem('auditor_sec', data[key]); }
+                    else { await localforage.setItem(key, data[key]); }
+                }
+                showLoader(false);
+                showAppAlert("✅ Cloud Restore Successful!\n\nApp will reload now.");
+                setTimeout(() => window.location.reload(), 2000);
+            } catch(e) {
+                showLoader(false);
+                showAppAlert("Restore Failed: " + e.message);
+            }
+        });
+    }
+
+    function disconnectGist() {
+        showAppConfirm("Disconnect GitHub?\n\nYour cloud backup will remain safe on GitHub. Only the connection on this device will be removed.", () => {
+            localStorage.removeItem('gist_token');
+            localStorage.removeItem('gist_id');
+            localStorage.removeItem('gist_last_sync');
+            initGistUI();
+            showAppAlert("Disconnected from GitHub.");
+        });
+    }
+
+    // ══════════════════════════════════════════════════
 
     // --- CHART SYSTEM ---
     let dashChartInstance = null;
