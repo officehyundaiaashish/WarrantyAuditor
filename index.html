@@ -118,9 +118,9 @@
 
         /* Tables */
         .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); -webkit-overflow-scrolling: touch; width: 100%; box-shadow: var(--shadow); }
-        table { width: max-content; min-width: 100%; border-collapse: collapse; text-align: left; font-size: 0.8rem; }
-        th, td { padding: 14px 16px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-        th { background-color: var(--bg-base); font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px; }
+        table { width: max-content; min-width: 100%; border-collapse: collapse; text-align: left; font-size: 0.75rem; }
+        th, td { padding: 7px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+        th { background-color: var(--bg-base); font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.5px; }
         tr { transition: background-color 0.15s; }
         tr:hover td { background-color: var(--bg-base); cursor: pointer; }
         th:first-child, td:first-child { position: sticky; left: 0; z-index: 2; border-right: 1px solid var(--border); font-weight: 600; }
@@ -128,8 +128,8 @@
 
         /* Mobile Compact Table for Custom Codes */
         @media (max-width: 600px) {
-            #screen-settings .table-wrap table { font-size: 0.75rem; }
-            #screen-settings th, #screen-settings td { padding: 10px 8px; }
+            #screen-settings .table-wrap table { font-size: 0.7rem; }
+            #screen-settings th, #screen-settings td { padding: 6px 8px; }
             #screen-settings th:nth-child(2), #screen-settings td:nth-child(2) { white-space: normal; word-break: break-word; min-width: 120px; }
             #screen-settings .btn.danger { padding: 4px 8px; font-size: 0.7rem; }
             #screen-settings td:last-child { text-align: center; }
@@ -1516,12 +1516,25 @@ window.addEventListener('DOMContentLoaded', () => {
         const card=document.getElementById('last-sync-card'),disp=document.getElementById('last-sync-display'),age=document.getElementById('last-sync-age');
         if(!card||!disp)return;
         const ls=localStorage.getItem('gist_last_sync');
-        if(ls){card.style.display='block';disp.innerText=ls;const d=new Date(ls);if(!isNaN(d)){const diff=Math.floor((Date.now()-d)/1000);age.innerText=diff<60?diff+'s ago':diff<3600?Math.floor(diff/60)+'m ago':diff<86400?Math.floor(diff/3600)+'h ago':Math.floor(diff/86400)+'d ago';}}
+        if(ls){card.style.display='block';disp.innerText=ls;
+            // Use ISO timestamp for accurate age calculation; fallback to locale string parse
+            const isoTs=localStorage.getItem('gist_last_sync_iso');
+            const d=isoTs?new Date(isoTs):new Date(ls);
+            if(!isNaN(d)){const diff=Math.floor((Date.now()-d)/1000);age.innerText=diff<60?diff+'s ago':diff<3600?Math.floor(diff/60)+'m ago':diff<86400?Math.floor(diff/3600)+'h ago':Math.floor(diff/86400)+'d ago';}}
         else{card.style.display='none';}
     }
 
     async function silentAutoSync(trigger){
-        if(!isAutoSyncOn()||!localStorage.getItem('gist_token_enc')||!_gistPassCache)return;
+        if(!isAutoSyncOn()||!localStorage.getItem('gist_token_enc'))return;
+        // If no cached passphrase, try to get it (only for manual/finalize triggers, not background timers)
+        if(!_gistPassCache){
+            if(trigger==='10min'||trigger==='hidden')return; // silent bg triggers: skip silently
+            // For finalize/crash-recovery: prompt passphrase
+            const enc=localStorage.getItem('gist_token_enc');
+            if(!enc)return;
+            const tok=await getDecryptedToken();
+            if(!tok)return; // user cancelled or wrong pass
+        }
         if(_syncing){_syncPending=true;return;}
         _syncing=true;showSyncDot(true);
         try{
@@ -1531,7 +1544,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const gid=localStorage.getItem('gist_id'),ds=new Date().toLocaleString();
             const res=await fetch(gid?'https://api.github.com/gists/'+gid:'https://api.github.com/gists',{method:gid?'PATCH':'POST',headers:{'Authorization':'token '+tok,'Content-Type':'application/json'},body:JSON.stringify({description:'WA Auto-Backup['+trigger+'] '+ds,public:false,files:{'auditor_backup.json':{content:JSON.stringify(bk)}}})});
             bumpRate();
-            if(res.ok){const j=await res.json();localStorage.setItem('gist_id',j.id);localStorage.setItem('gist_last_sync',ds);localStorage.removeItem('gist_dirty_flag');const sel=document.getElementById('autosync-status-text');if(sel&&isAutoSyncOn())sel.innerText='Last sync: '+ds;updateLastSyncCard();}
+            if(res.ok){const j=await res.json();localStorage.setItem('gist_id',j.id);localStorage.setItem('gist_last_sync',ds);localStorage.setItem('gist_last_sync_iso',new Date().toISOString());localStorage.removeItem('gist_dirty_flag');const sel=document.getElementById('autosync-status-text');if(sel&&isAutoSyncOn())sel.innerText='Last sync: '+ds;updateLastSyncCard();}
             else if(res.status===403||res.status===429){localStorage.setItem('gist_autosync','false');stopSyncTimer();updateSyncUI();showToast('Auto-Sync disabled — GitHub rate limit hit ('+res.status+'). Turned OFF automatically.','danger',10000);}
         }catch(e){console.warn('silent sync fail:',e.message);}
         finally{_syncing=false;showSyncDot(false);if(_syncPending){_syncPending=false;setTimeout(()=>silentAutoSync('queued'),3000);}}
@@ -1589,7 +1602,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const res=await fetch(gid?'https://api.github.com/gists/'+gid:'https://api.github.com/gists',{method:gid?'PATCH':'POST',headers:{'Authorization':'token '+tok,'Content-Type':'application/json'},body:JSON.stringify({description:'Warranty Auditor Backup '+ds,public:false,files:{'auditor_backup.json':{content:JSON.stringify(bk)}}})});
             bumpRate();
             if(!res.ok){const e=await res.json();throw new Error(e.message||'API error');}
-            const j=await res.json();localStorage.setItem('gist_id',j.id);localStorage.setItem('gist_last_sync',ds);localStorage.removeItem('gist_dirty_flag');
+            const j=await res.json();localStorage.setItem('gist_id',j.id);localStorage.setItem('gist_last_sync',ds);localStorage.setItem('gist_last_sync_iso',new Date().toISOString());localStorage.removeItem('gist_dirty_flag');
             if(alert){showLoader(false);initGistUI();showAppAlert('Upload Successful! '+ds);}else initGistUI();
         }catch(e){if(alert){showLoader(false);showAppAlert("Upload Failed: "+e.message);}}
     }
@@ -1645,7 +1658,67 @@ window.addEventListener('DOMContentLoaded', () => {
     },800);
 
 
-    // --- CHART SYSTEM ---
+    // --- PC KEYBOARD SHORTCUTS (Workspace / Auditing only) ---
+    document.addEventListener('keydown', function(e) {
+        const workspaceActive = document.getElementById('screen-workspace').classList.contains('active');
+        const modalOpen = document.getElementById('audit-modal').classList.contains('active');
+        const dialogOpen = document.getElementById('app-dialog').classList.contains('active');
+
+        if (dialogOpen) return; // Let dialog handle its own input
+
+        // When audit modal is open: Enter = Save Remark
+        if (modalOpen) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                // Don't save if dropdown is open
+                if (document.querySelector('.custom-select-wrapper.open')) {
+                    document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
+                    return;
+                }
+                saveClaimAudit();
+            }
+            if (e.key === 'Escape') { e.preventDefault(); closeModal(); }
+            return;
+        }
+
+        if (!workspaceActive) return;
+
+        const searchInput = document.getElementById('search-claim');
+        const isTypingInSearch = document.activeElement === searchInput;
+
+        // If already focused on search, let it type naturally — no interference at all
+        if (isTypingInSearch) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const firstRow = document.querySelector('#claims-tbody tr');
+                if (firstRow) { searchInput.blur(); firstRow.click(); }
+            }
+            return;
+        }
+
+        // Enter key: open first visible claim in table
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const firstRow = document.querySelector('#claims-tbody tr');
+            if (firstRow) firstRow.click();
+            return;
+        }
+
+        // Number/letter keys: auto-focus search and append character
+        if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+            e.preventDefault();
+            searchInput.focus();
+            searchInput.value += e.key;
+            handleSearch();
+        }
+
+        // Backspace: focus search
+        if (e.key === 'Backspace') {
+            e.preventDefault();
+            searchInput.focus();
+        }
+    });
+
     let dashChartInstance = null;
 
     function toggleDashChart() {
