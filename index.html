@@ -846,6 +846,8 @@ window.addEventListener('DOMContentLoaded', () => {
     // --- STATE & GLOBAL UTILS ---
     localforage.config({ name: 'AutoPuncherDB', storeName: 'audits' });
     let dbIndex = {}; let currentSessionKey = null; let currentData = []; let currentFilteredData = []; let currentAuditData = {}; let colMap = {};
+    let _isNewSession = false; // true = brand new audit, false = resumed draft
+    let _sessionSnapshot = null; // deep copy of audit_data at the moment session was opened
     let currentPage = 1; const pageSize = 50; let activeClaimRowIndex = null; 
 
     // Read Only Dashboard State
@@ -1056,7 +1058,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     if (type.includes("CAMPAIGN") && amt < 300 && !desc.includes("POWER WINDOW") && !desc.includes("FUEL PUMP")) return false;
                     return true;
                 });
-                currentSessionKey = `audit_${fromDate.value}_${toDate.value}_${Date.now()}`; currentAuditData = {}; workspaceCurrentFilter = 'all'; currentFilteredData = [...currentData]; currentPage = 1;
+                currentSessionKey = `audit_${fromDate.value}_${toDate.value}_${Date.now()}`; currentAuditData = {}; workspaceCurrentFilter = 'all'; currentFilteredData = [...currentData]; currentPage = 1; _isNewSession = true; _sessionSnapshot = null;
                 await saveSessionToDB({ month: periodString, year: '', last_saved: new Date().toLocaleString(), finalized: false, col_map: colMap, audit_data: currentAuditData, raw_data: currentData });
                 document.getElementById('workspace-title').innerText = periodString; showScreen('screen-workspace'); updateStats(); renderTablePage();
             } catch(err) { showAppAlert(err.message); } finally { showLoader(false); }
@@ -1067,19 +1069,29 @@ window.addEventListener('DOMContentLoaded', () => {
     function requestExitWorkspace() { showAppConfirm("Return to menu?\nYour progress is safely auto-saved as a Draft.", () => { showScreen('screen-menu'); }); }
 
     async function discardWorkspace() {
-        showAppConfirm("Discard current progress?\n\nAre you sure? All unsaved changes will be lost and the last saved state will be restored.", async () => {
+        const msg = _isNewSession
+            ? "Discard this new audit?\n\nAre you sure? This session will be deleted completely."
+            : "Discard changes from this session?\n\nAre you sure? All edits made since you opened this draft will be reverted to the state it was in before you resumed it.";
+
+        showAppConfirm(msg, async () => {
             showLoader(true);
-            const session = await localforage.getItem(currentSessionKey);
-            if (session) {
-                currentAuditData = session.audit_data || {};
-                currentFilteredData = [...currentData];
-                workspaceCurrentFilter = 'all';
-                currentPage = 1;
-                document.getElementById('search-claim').value = '';
+            if (_isNewSession) {
+                // Brand new — delete entirely
+                await localforage.removeItem(currentSessionKey);
+                delete dbIndex[currentSessionKey];
+                await localforage.setItem('db_index', dbIndex);
+                currentData = []; currentAuditData = {}; currentSessionKey = null;
+            } else {
+                // Resumed draft — restore the snapshot taken at load time, write it back to DB
+                const session = await localforage.getItem(currentSessionKey);
+                if (session && _sessionSnapshot !== null) {
+                    session.audit_data = _sessionSnapshot;
+                    session.last_saved = new Date().toLocaleString();
+                    await localforage.setItem(currentSessionKey, session);
+                }
             }
             showLoader(false);
-            updateStats();
-            renderTablePage();
+            showScreen('screen-menu');
         });
     }
     function handleSearch() { applyWorkspaceFilters(); }
@@ -1289,7 +1301,8 @@ window.addEventListener('DOMContentLoaded', () => {
     async function loadSession(key) {
         showLoader(true); const session = await localforage.getItem(key); if(!session) { showLoader(false); return showAppAlert("Error loading session."); }
         currentSessionKey = key; currentData = session.raw_data; workspaceCurrentFilter = 'all'; currentFilteredData = [...currentData]; 
-        currentAuditData = session.audit_data; colMap = session.col_map; currentPage = 1;
+        currentAuditData = session.audit_data; colMap = session.col_map; currentPage = 1; _isNewSession = false;
+        _sessionSnapshot = JSON.parse(JSON.stringify(session.audit_data || {})); // snapshot before any edits
         document.getElementById('workspace-title').innerText = session.month; document.getElementById('search-claim').value = '';
         updateStats(); renderTablePage(); showLoader(false); showScreen('screen-workspace');
     }
