@@ -215,7 +215,7 @@
             </div>
             <div class="menu-card" onclick="openReportingMenu()">
                 <svg class="menu-icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-                <span>Reports</span>
+                <span>Reports Export</span>
             </div>
             <div class="menu-card" onclick="showScreen('screen-backup')">
                 <svg class="menu-icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -223,7 +223,7 @@
             </div>
             <div class="menu-card" onclick="showScreen('screen-security')">
                 <svg class="menu-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                <span>Security</span>
+                <span>Security Settings</span>
             </div>
             <div class="menu-card" onclick="openSettingsScreen()">
                 <svg class="menu-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
@@ -244,7 +244,7 @@
 
     <div id="screen-dashboard" class="screen">
         <div class="flex-between" style="margin-bottom: 12px;">
-            <h3 style="margin:0;">Read-Only Dashboard</h3>
+            <h3 style="margin:0;">Dashboard</h3>
             <button class="btn" style="width:auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')">Menu</button>
         </div>
         
@@ -385,8 +385,8 @@
         <div class="card" style="max-width: 440px; margin: 0 auto; width: 100%;">
             <h3>Setup Audit</h3>
             <div class="grid-2">
-                <div><label>From Date</label><input type="date" id="audit-from" class="input"></div>
-                <div><label>To Date</label><input type="date" id="audit-to" class="input"></div>
+                <div><label>From Date</label><input type="date" id="audit-from" class="input" style="cursor:pointer;" /></div>
+                <div><label>To Date</label><input type="date" id="audit-to" class="input" style="cursor:pointer;" /></div>
             </div>
             <label>Source Excel File</label>
             <input type="file" id="audit-file" class="input" accept=".xlsx, .xls">
@@ -455,7 +455,7 @@
 
     <div id="screen-reports" class="screen">
         <div class="card" style="max-width: 440px; margin: 0 auto; width: 100%;">
-            <h3>Reporting & Export Engine</h3>
+            <h3>Reports Export</h3>
             <p>Generate highly structured, styled documentation including Amount Summaries.</p>
             
             <label>Select Audit Scope</label>
@@ -477,8 +477,8 @@
             </div>
 
             <div class="grid-2" style="margin-top: 24px;">
-                <button class="btn primary" style="margin:0;" onclick="executeExport('excel')">📥 Export Excel</button>
-                <button class="btn danger" style="margin:0; border-color: var(--danger); color: var(--danger);" onclick="executeExport('pdf')">📄 Export PDF</button>
+                <button class="btn primary" style="margin:0;" onclick="executeExport('excel')"><svg style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:inline-block;vertical-align:middle;margin-right:6px;" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2.5M8 17h5M13 13l2 4 2-4"/></svg><span style="vertical-align:middle;">Export Excel</span></button>
+                <button class="btn" style="margin:0; background-color:#ef4444; color:#ffffff; border-color:#ef4444;" onmouseover="this.style.backgroundColor='#dc2626';this.style.borderColor='#dc2626';" onmouseout="this.style.backgroundColor='#ef4444';this.style.borderColor='#ef4444';" onclick="executeExport('pdf')"><svg style="width:16px;height:16px;stroke:#ffffff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:inline-block;vertical-align:middle;margin-right:6px;" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><rect x="8" y="13" width="4" height="4" rx="1"/><line x1="16" y1="13" x2="16" y2="17"/><line x1="14" y1="15" x2="18" y2="15"/></svg><span style="vertical-align:middle;">Export PDF</span></button>
             </div>
             <button class="btn" style="margin-top: 16px;" onclick="showScreen('screen-menu')">Back to Menu</button>
         </div>
@@ -536,8 +536,8 @@
     }
 
     // --- AMOUNT HELPERS ---
-    function parseAmt(val) { const v = parseFloat(String(val).replace(/[^\d.-]/g, '')); return isNaN(v) ? 0 : v; }
-    function fmtAmt(val) { return '₹' + val.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
+    function parseAmt(val) { const cleaned = String(val).replace(/[^\d.-]/g, ''); const v = parseFloat(cleaned); return isNaN(v) ? 0 : v; }
+    function fmtAmt(val) { const num = parseAmt(val); return '₹' + num.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
 
     // --- KEYBOARD TOGGLE HELPER ---
     function toggleKeyboardMode(inputId, btn) {
@@ -717,7 +717,7 @@
         enforceAppLock();
     } else { 
         document.getElementById('screen-menu').classList.add('active'); 
-        loadDashboardNotifications(); 
+        setTimeout(loadDashboardNotifications, 200); 
     }
     updateSecurityUI();
 }
@@ -775,7 +775,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     async function saveSessionToDB(sessionData) { dbIndex[currentSessionKey] = { month: sessionData.month, year: sessionData.year, finalized: sessionData.finalized || false, last_saved: sessionData.last_saved }; await localforage.setItem('db_index', dbIndex); await localforage.setItem(currentSessionKey, sessionData); }      
     function showLoader(show) { document.getElementById('loader').style.display = show ? 'flex' : 'none'; }
-    function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); if(id === 'screen-menu') loadDashboardNotifications(); }
+    function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); if(id === 'screen-menu') setTimeout(loadDashboardNotifications, 100); if(id === 'screen-new-audit') { const today = new Date(); const y = today.getFullYear(); const m = today.getMonth(); const firstDay = new Date(y, m, 1).toISOString().split('T')[0]; const lastDay = new Date(y, m + 1, 0).toISOString().split('T')[0]; const fromEl = document.getElementById('audit-from'); const toEl = document.getElementById('audit-to'); if(!fromEl.value) fromEl.value = firstDay; if(!toEl.value) toEl.value = lastDay; } }
 
     function detectColumns(headers) {
         const map = {}; const lowerHeaders = headers.map(h => h.toString().toLowerCase().replace(/[\s_]/g, ''));
@@ -949,8 +949,9 @@ window.addEventListener('DOMContentLoaded', () => {
         showLoader(true); 
         
         // Month Year formatting
-        const formatMonthYear = d => { const opts = {month:'short', year:'numeric'}; return new Date(d).toLocaleDateString('en-GB', opts); };
-        const periodString = formatMonthYear(fromDate.value) + ' to ' + formatMonthYear(toDate.value); 
+        const formatMonthYear = d => { const dt = new Date(d); return dt.toLocaleDateString('en-GB', {month:'short'}) + ' ' + dt.getFullYear(); };
+        const fromStr = formatMonthYear(fromDate.value); const toStr = formatMonthYear(toDate.value);
+        const periodString = fromStr === toStr ? fromStr : fromStr + ' – ' + toStr;
         
         const reader = new FileReader();
         reader.onload = async function(e) {
@@ -1271,24 +1272,36 @@ window.addEventListener('DOMContentLoaded', () => {
                 const ws = XLSX.utils.aoa_to_sheet(aoa); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Audit Report"); XLSX.writeFile(wb, fileName + ".xlsx");
             } 
             else if (format === 'pdf') {
-                const { jsPDF } = window.jspdf; const doc = new jsPDF('l', 'mm', 'a4');
-                doc.setFontSize(14); doc.text(`Warranty Audit Report - ${scope === 'master' ? 'Master' : fileName}`, 14, 15);
-                doc.setFontSize(10); doc.text(`Generated: ${new Date().toLocaleString()} | Filter: ${filter} | Auditor: Aashish Giri H`, 14, 22);
-                doc.setTextColor(0,0,0);
-                doc.setFontSize(12); doc.text('Amount Summary:', 14, 30);
-                doc.setFontSize(10);
-                const totalClaims = tAud + tPen;
-                doc.text(`Total Claims Amount: ${fmtAmt(totalClaims)}`, 14, 38);
-                doc.text(`Audited Amount: ${fmtAmt(tAud)}`, 14, 44);
-                doc.text(`Unclear Amount: ${fmtAmt(tUnc)}`, 14, 50);
-                doc.text(`Pending Amount: ${fmtAmt(tPen)}`, 14, 56);
+                const btn = document.querySelector('button[onclick="executeExport(\'pdf\')"]');
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = 'Exporting...';
+                btn.disabled = true;
 
-                let startY = 66; let headers = combinedClear.length > 0 ? Object.keys(combinedClear[0]) : Object.keys(combinedUnclear[0]);
-                const pdfOptions = { styles: { fontSize: 6, cellPadding: 2, overflow: 'linebreak' }, columnStyles: { text: { cellWidth: 'wrap' } }, margin: { left: 14, right: 14 } };
+                try {
+                    const { jsPDF } = window.jspdf; const doc = new jsPDF('l', 'mm', 'a4');
+                    doc.setFontSize(14); doc.text(`Warranty Audit Report - ${scope === 'master' ? 'Master' : fileName}`, 14, 15);
+                    doc.setFontSize(10); doc.text(`Generated: ${new Date().toLocaleString()} | Filter: ${filter} | Auditor: Aashish Giri H`, 14, 22);
+                    doc.setTextColor(0,0,0);
+                    doc.setFontSize(12); doc.text('Amount Summary:', 14, 30);
+                    doc.setFontSize(10);
+                    const totalClaims = tAud + tPen;
+                    doc.text(`Total Claims Amount: ${fmtAmt(totalClaims)}`, 14, 38);
+                    doc.text(`Audited Amount: ${fmtAmt(tAud)}`, 14, 44);
+                    doc.text(`Unclear Amount: ${fmtAmt(tUnc)}`, 14, 50);
+                    doc.text(`Pending Amount: ${fmtAmt(tPen)}`, 14, 56);
 
-                if(combinedClear.length > 0) { doc.setFontSize(12); doc.setTextColor(0, 150, 0); doc.text("CLEAR CLAIMS", 14, startY); doc.autoTable({ startY: startY + 5, head: [headers], body: combinedClear.map(r => Object.values(r)), styles: pdfOptions.styles, headStyles: { fillColor: [34, 139, 34] }, margin: pdfOptions.margin }); startY = doc.lastAutoTable.finalY + 15; }
-                if(combinedUnclear.length > 0) { doc.setFontSize(12); doc.setTextColor(200, 0, 0); doc.text("UNCLEAR / PENDING CLAIMS", 14, startY); doc.autoTable({ startY: startY + 5, head: [headers], body: combinedUnclear.map(r => Object.values(r)), styles: pdfOptions.styles, headStyles: { fillColor: [204, 0, 0] }, margin: pdfOptions.margin }); }
-                doc.save(fileName + ".pdf");
+                    let startY = 66; let headers = combinedClear.length > 0 ? Object.keys(combinedClear[0]) : Object.keys(combinedUnclear[0]);
+                    const pdfOptions = { styles: { fontSize: 6, cellPadding: 2, overflow: 'linebreak' }, columnStyles: { text: { cellWidth: 'wrap' } }, margin: { left: 14, right: 14 } };
+
+                    if(combinedClear.length > 0) { doc.setFontSize(12); doc.setTextColor(0, 150, 0); doc.text("CLEAR CLAIMS", 14, startY); doc.autoTable({ startY: startY + 5, head: [headers], body: combinedClear.map(r => Object.values(r)), styles: pdfOptions.styles, headStyles: { fillColor: [34, 139, 34] }, margin: pdfOptions.margin }); startY = doc.lastAutoTable.finalY + 15; }
+                    if(combinedUnclear.length > 0) { doc.setFontSize(12); doc.setTextColor(200, 0, 0); doc.text("UNCLEAR / PENDING CLAIMS", 14, startY); doc.autoTable({ startY: startY + 5, head: [headers], body: combinedUnclear.map(r => Object.values(r)), styles: pdfOptions.styles, headStyles: { fillColor: [204, 0, 0] }, margin: pdfOptions.margin }); }
+                    doc.save(fileName + ".pdf");
+                } catch (e) {
+                    showAppAlert("Failed: " + e.message);
+                } finally {
+                    btn.innerHTML = originalHTML;
+                    btn.disabled = false;
+                }
             }
         } catch (e) { showAppAlert("Failed: " + e.message); } finally { showLoader(false); }
     }
