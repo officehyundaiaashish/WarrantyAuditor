@@ -1439,10 +1439,42 @@ window.addEventListener('DOMContentLoaded', () => {
         showAppAlert("Custom Code Added Successfully!");
     }
 
-    function deleteCustomCode(key) {
-        delete DISCREPANCY_TYPES[key];
-        localStorage.setItem('auditor_custom_codes', JSON.stringify(DISCREPANCY_TYPES));
-        renderSettingsCodes();
+    async function deleteCustomCode(key) {
+        // Check how many saved audit claims use this code's text
+        const codeText = DISCREPANCY_TYPES[key];
+        let usedIn = 0;
+        try {
+            const allKeys = await localforage.keys();
+            for (const k of allKeys) {
+                if (!k.startsWith('audit_')) continue;
+                const session = await localforage.getItem(k);
+                if (!session || !session.audit_data) continue;
+                for (const claimNo in session.audit_data) {
+                    const entry = session.audit_data[claimNo];
+                    if (entry && entry.findings && entry.findings[0] && entry.findings[0].includes(codeText)) {
+                        usedIn++;
+                    }
+                }
+            }
+        } catch(e) {}
+
+        const doDelete = () => {
+            verifyPasswordFlow(() => {
+                delete DISCREPANCY_TYPES[key];
+                localStorage.setItem('auditor_custom_codes', JSON.stringify(DISCREPANCY_TYPES));
+                renderSettingsCodes();
+                showAppAlert('Custom code deleted. Existing claim finding texts are preserved in saved audits.');
+            });
+        };
+
+        if (usedIn > 0) {
+            showAppConfirm(
+                `⚠️ Warning: Code "${key}" is used in ${usedIn} audited claim(s).\n\nDeleting it won't erase those findings from saved audits, but re-opening and re-saving those claims will default them to Clean.\n\nProceed?`,
+                doDelete
+            );
+        } else {
+            showAppConfirm(`Delete custom code "${key}: ${codeText}"?`, doDelete);
+        }
     }
 
     function updateModalDropdown() {
