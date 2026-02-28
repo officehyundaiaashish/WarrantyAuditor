@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Warranty Self Auditor</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
+    <style>
+        :root {
+            --bg-base: #f9fafb; --surface: #ffffff; --text-main: #111827; --text-muted: #6b7280;
+            --border: #e5e7eb; --primary: #000000; --primary-hover: #374151; --primary-text: #ffffff;
+            --danger: #ef4444; --success: #10b981; --warning: #f59e0b;
+            --radius: 6px; --shadow: 0 1px 3px rgba(0,0,0,0.1); --modal-overlay: rgba(0, 0, 0, 0.5);
+        }
+
+        [data-theme="dark"] {
+            --bg-base: #0a0a0a; --surface: #171717; --text-main: #f3f4f6; --text-muted: #9ca3af;
+            --border: #262626; --primary: #ffffff; --primary-hover: #e5e7eb; --primary-text: #000000;
+            --modal-overlay: rgba(0, 0, 0, 0.8);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--bg-base); color: var(--text-main); min-height: 100vh; padding: 12px; font-size: 14px; }
+        
+        .card { background-color: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; margin-bottom: 16px; }
+        h1, h2, h3 { font-weight: 600; margin-bottom: 6px; }
+        p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px; }
+        label { display: block; font-size: 0.8rem; font-weight: 500; margin-bottom: 4px; color: var(--text-main); }
+
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; background-color: var(--surface); color: var(--text-main);
+            border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px; font-size: 0.85rem; font-weight: 500;
+            cursor: pointer; width: 100%; margin-bottom: 8px; transition: 0.1s;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn.primary { background-color: var(--primary); color: var(--primary-text); border-color: var(--primary); }
+        .btn.danger { color: var(--danger); border-color: var(--border); }
+
+        .input, .select {
+            width: 100%; background-color: var(--surface); color: var(--text-main); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 8px; font-size: 0.85rem; margin-bottom: 12px;
+        }
+        .input:focus, .select:focus { outline: none; border-color: var(--text-muted); }
+
+        .screen { display: none; } .screen.active { display: block; animation: fadeIn 0.15s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .top-bar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr; gap: 8px; } @media (min-width: 500px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+
+        /* TRUE MOBILE COMPACT TABLE - NO SHRINKING */
+        .table-wrap {
+            overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius);
+            background: var(--surface); -webkit-overflow-scrolling: touch; width: 100%;
+        }
+        table { width: max-content; min-width: 100%; border-collapse: collapse; text-align: left; font-size: 0.75rem; table-layout: auto; }
+        th, td { padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+        th { background-color: var(--bg-base); font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
+        tr:hover td { background-color: var(--bg-base); cursor: pointer; }
+        
+        /* Sticky First Column */
+        th:first-child, td:first-child { position: sticky; left: 0; z-index: 2; border-right: 1px solid var(--border); font-weight: 600; }
+        th:first-child { background-color: var(--bg-base); }
+        td:first-child { background-color: var(--surface); }
+
+        .status-clear { color: var(--success); font-weight: 600; }
+        .status-unclear { color: var(--warning); font-weight: 600; }
+        .status-pending { color: var(--text-muted); }
+
+        .modal-backdrop {
+            position: fixed; inset: 0; background-color: var(--modal-overlay); display: flex; align-items: center;
+            justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: 0.15s;
+        }
+        .modal-backdrop.active { opacity: 1; pointer-events: auto; }
+        .modal-dialog { width: 100%; max-width: 420px; max-height: 95vh; display: flex; flex-direction: column; margin: 10px; background: var(--surface); border-radius: var(--radius); overflow: hidden; }
+        .modal-header { padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--bg-base); }
+        .modal-body { padding: 16px; overflow-y: auto; flex: 1; }
+        
+        .all-details-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--bg-base); padding: 12px;
+            border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 16px;
+        }
+        .detail-item span { display: block; }
+        .detail-lbl { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; }
+        .detail-val { font-size: 0.8rem; font-weight: 500; word-break: break-word; white-space: normal; }
+
+        .pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+        .pagination .btn { width: auto; margin: 0; padding: 6px 10px; }
+
+        #loader { position: fixed; inset: 0; background: var(--surface); z-index: 2000; display: none; align-items: center; justify-content: center; font-weight: 600; font-size: 1rem; color: var(--primary); }
+        .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 500; background: var(--bg-base); border: 1px solid var(--border); }
+    </style>
+</head>
+<body>
+
+    <div id="loader">Processing...</div>
+
+    <div class="top-bar">
+        <div>
+            <h2 style="margin:0; font-size: 1.2rem;">Warranty Auditor</h2>
+            <p style="margin:0; font-size: 0.75rem;">Offline Minimal Interface</p>
+        </div>
+        <button class="btn" style="width: auto; margin:0; padding: 4px 8px; font-size:0.75rem;" onclick="toggleTheme()">🌓 Theme</button>
+    </div>
+
+    <div id="screen-menu" class="screen active">
+        <div class="card" style="max-width: 400px; margin: 0 auto;">
+            <button class="btn primary" onclick="showScreen('screen-new-audit')">New Audit Session</button>
+            <button class="btn" onclick="openArchive(false)">Drafts (In Progress)</button>
+            <button class="btn" onclick="openArchive(true)">Previous Audits</button>
+            <hr style="border:none; border-top:1px solid var(--border); margin: 16px 0;">
+            <button class="btn" onclick="openReportingMenu()">Reporting & Export</button>
+            <hr style="border:none; border-top:1px solid var(--border); margin: 16px 0;">
+            <button class="btn" onclick="showScreen('screen-security')">🔒 Security Settings</button>
+        </div>
+    </div>
+
+    <div id="screen-security" class="screen">
+        <div class="card" style="max-width: 400px; margin: 0 auto;">
+            <h3>Security Settings</h3>
+            <p>Protect finalized Previous Audits.</p>
+            
+            <div id="sec-status" style="margin-bottom: 12px; font-weight: 500;">Status: <span style="color:var(--danger)">OFF</span></div>
+            
+            <button class="btn primary" id="btn-toggle-sec" onclick="toggleSecurity()">Enable Protection</button>
+            <button class="btn" id="btn-change-pass" onclick="changePassword()" style="display:none;">Change Password</button>
+            <button class="btn" onclick="showScreen('screen-menu')">Back</button>
+        </div>
+    </div>
+
+    <div id="screen-new-audit" class="screen">
+        <div class="card" style="max-width: 400px; margin: 0 auto;">
+            <h3>Setup Audit</h3>
+            <div class="grid-2">
+                <div>
+                    <label>Month</label>
+                    <select id="audit-month" class="select">
+                        <option value="January">Jan</option><option value="February">Feb</option><option value="March">Mar</option><option value="April">Apr</option>
+                        <option value="May">May</option><option value="June">Jun</option><option value="July">Jul</option><option value="August">Aug</option>
+                        <option value="September">Sep</option><option value="October">Oct</option><option value="November">Nov</option><option value="December">Dec</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Year</label>
+                    <input type="number" id="audit-year" class="input" value="2026">
+                </div>
+            </div>
+            <label>Source Excel File</label>
+            <input type="file" id="audit-file" class="input" accept=".xlsx, .xls">
+            <div class="grid-2">
+                <button class="btn primary" style="margin:0;" onclick="startNewAudit()">Load Data</button>
+                <button class="btn" style="margin:0;" onclick="showScreen('screen-menu')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-workspace" class="screen">
+        <div class="flex-between" style="margin-bottom: 8px;">
+            <h3 id="workspace-title" style="margin:0;">Workspace</h3>
+            <div style="display: flex; gap: 4px;">
+                <button class="btn primary" style="width: auto; margin:0; padding: 4px 8px; font-size:0.75rem;" onclick="triggerExportFlow()">Export</button>
+                <button class="btn" style="width: auto; margin:0; padding: 4px 8px; font-size:0.75rem;" onclick="showScreen('screen-menu')">Menu</button>
+            </div>
+        </div>
+
+        <div id="workspace-stats" style="display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap;"></div>
+        <input type="text" id="search-claim" class="input" placeholder="Search Claim..." oninput="handleSearch()" style="margin-bottom:8px;">
+
+        <div class="table-wrap">
+            <table id="claims-table">
+                <thead>
+                    <tr>
+                        <th>Claim No</th>
+                        <th>Status</th>
+                        <th>R/O No</th>
+                        <th>Type</th>
+                        <th>Causal Part</th>
+                        <th>Amount</th>
+                        <th>Findings</th>
+                    </tr>
+                </thead>
+                <tbody id="claims-tbody"></tbody>
+            </table>
+        </div>
+
+        <div class="pagination">
+            <button class="btn" onclick="changePage(-1)" id="btn-prev">Prev</button>
+            <span id="page-indicator" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">Page 1</span>
+            <button class="btn" onclick="changePage(1)" id="btn-next">Next</button>
+        </div>
+    </div>
+
+    <div id="screen-archive" class="screen">
+        <h3 id="archive-title">Archive</h3>
+        <div class="table-wrap" style="margin-bottom: 12px;">
+            <table>
+                <thead><tr><th>Period</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody id="archive-tbody"></tbody>
+            </table>
+        </div>
+        <button class="btn" style="max-width: 150px;" onclick="showScreen('screen-menu')">Back</button>
+    </div>
+
+    <div id="screen-reports" class="screen">
+        <div class="card" style="max-width: 400px; margin: 0 auto;">
+            <h3>Reporting Engine</h3>
+            <label>Scope</label>
+            <select id="report-scope" class="select"><option value="master">Master Report (All Months)</option></select>
+            <label>Filter Output</label>
+            <select id="report-filter" class="select">
+                <option value="ALL">All Claims</option>
+                <option value="CLEAR">Clear Claims Only</option>
+                <option value="UNCLEAR">Unclear Claims Only</option>
+            </select>
+            <div class="grid-2">
+                <button class="btn primary" style="margin:0;" onclick="executeExport()">Generate Excel</button>
+                <button class="btn" style="margin:0;" onclick="showScreen('screen-menu')">Back</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="audit-modal" class="modal-backdrop">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 id="modal-claim-no" style="margin:0; font-size: 1.1rem;">Claim No</h3>
+            </div>
+            <div class="modal-body">
+                <div id="modal-all-details" class="all-details-grid"></div>
+
+                <label>Discrepancy Status</label>
+                <select id="modal-discrepancy" class="select">
+                    <option value="0">Part is Clean (None Found)</option>
+                    <option value="1">Part is clean (Sent HMIL Suspense)</option>
+                    <option value="3">Part is Missing</option>
+                    <option value="4">Part Batch Code Mismatch</option>
+                    <option value="5">Part Not Tagged</option>
+                    <option value="6">Part Packing Missing</option>
+                    <option value="7">Related Part Missing to Causal or Affected Part Missing</option>
+                    <option value="8">Part is Not Defective</option>
+                </select>
+
+                <div id="modal-extra-inputs" style="display: none;">
+                    <label id="modal-extra-label">Additional Details</label>
+                    <input type="text" id="modal-extra-text" class="input" placeholder="...">
+                </div>
+
+                <div class="grid-2" style="margin-top: 8px;">
+                    <button class="btn primary" style="margin:0;" onclick="saveClaimAudit()">Save Claim</button>
+                    <button class="btn" style="margin:0;" onclick="closeModal()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- THEME ---
+    function toggleTheme() {
+        const body = document.body;
+        if(body.getAttribute('data-theme') === 'dark') body.removeAttribute('data-theme');
+        else body.setAttribute('data-theme', 'dark');
+    }
+
+    // --- SECURITY MODULE ---
+    let secConfig = JSON.parse(localStorage.getItem('auditor_sec')) || { enabled: false, hash: '' };
+
+    async function sha256(message) {
+        const msgBuffer = new TextEncoder().encode(message);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function updateSecurityUI() {
+        const statusSpan = document.getElementById('sec-status');
+        const btnToggle = document.getElementById('btn-toggle-sec');
+        const btnChange = document.getElementById('btn-change-pass');
+        
+        if (secConfig.enabled) {
+            statusSpan.innerHTML = '<span style="color:var(--success)">ON</span>';
+            btnToggle.innerText = "Disable Protection";
+            btnToggle.classList.remove('primary'); btnToggle.classList.add('danger');
+            btnChange.style.display = 'block';
+        } else {
+            statusSpan.innerHTML = '<span style="color:var(--danger)">OFF</span>';
+            btnToggle.innerText = "Enable Protection";
+            btnToggle.classList.add('primary'); btnToggle.classList.remove('danger');
+            btnChange.style.display = 'none';
+        }
+    }
+
+    async function promptPassword() {
+        if (!secConfig.enabled) return true;
+        let attempt = prompt("🔒 Enter Password to access Previous Audit:");
+        if (!attempt) return false;
+        let hashed = await sha256(attempt);
+        if (hashed === secConfig.hash) return true;
+        alert("Incorrect Password."); return false;
+    }
+
+    async function toggleSecurity() {
+        if (secConfig.enabled) {
+            if (await promptPassword()) {
+                secConfig.enabled = false; secConfig.hash = '';
+                localStorage.setItem('auditor_sec', JSON.stringify(secConfig));
+                updateSecurityUI();
+            }
+        } else {
+            let p1 = prompt("Enter NEW Password:"); if (!p1) return;
+            let p2 = prompt("Confirm NEW Password:");
+            if (p1 !== p2) return alert("Passwords do not match.");
+            secConfig.hash = await sha256(p1); secConfig.enabled = true;
+            localStorage.setItem('auditor_sec', JSON.stringify(secConfig));
+            updateSecurityUI();
+        }
+    }
+
+    async function changePassword() {
+        if (!await promptPassword()) return;
+        let p1 = prompt("Enter NEW Password:"); if (!p1) return;
+        let p2 = prompt("Confirm NEW Password:");
+        if (p1 !== p2) return alert("Passwords do not match.");
+        secConfig.hash = await sha256(p1);
+        localStorage.setItem('auditor_sec', JSON.stringify(secConfig));
+        alert("Password changed successfully.");
+    }
+    updateSecurityUI(); // Init UI
+
+    // --- STATE ---
+    localforage.config({ name: 'AutoPuncherDB', storeName: 'audits' });
+    let dbIndex = {}; 
+    let currentSessionKey = null;
+    let currentData = []; let currentFilteredData = []; let currentAuditData = {}; let colMap = {};
+    let currentPage = 1; const pageSize = 50; let activeClaimRowIndex = null; 
+
+    const DISCREPANCY_TYPES = {
+        "0": "None Found", "1": "Part is clean (Sent HMIL Suspense)", "3": "Part is Missing",
+        "4": "Part Batch Code Mismatch", "5": "Part Not Tagged", "6": "Part Packing Missing",
+        "7": "Related Part Missing to Causal or Affected Part Missing", "8": "Part is Not Defective"
+    };
+
+    localforage.getItem('db_index').then(val => { if(val) dbIndex = val; });
+
+    async function saveSessionToDB(sessionData) {
+        dbIndex[currentSessionKey] = {
+            month: sessionData.month, year: sessionData.year,
+            finalized: sessionData.finalized || false, last_saved: sessionData.last_saved
+        };
+        await localforage.setItem('db_index', dbIndex);
+        await localforage.setItem(currentSessionKey, sessionData); 
+    }
+
+    function showLoader(show) { document.getElementById('loader').style.display = show ? 'flex' : 'none'; }
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        if(id === 'screen-security') updateSecurityUI();
+    }
+
+    // --- DATA HANDLING ---
+    function detectColumns(headers) {
+        const map = {};
+        const lowerHeaders = headers.map(h => h.toString().toLowerCase().replace(/[\s_]/g, ''));
+        const fuzzy = {
+            "claim_no": ["claimno","claimnumber","clmno"], "claim_date": ["claimdate","clmdate"],
+            "claim_type": ["claimtype","clmtype"], "ro_no": ["rono","r/ono","repairorderno"],
+            "status": ["status","claimstatus"], "causal_part": ["causalpart","partno","partnumber"],
+            "part_desc": ["partdesc","partdescription","partname"], "amount": ["totalamt","totalamount","claimamount","amount"],
+            "pdctn_date": ["pdctndate","productiondate"]
+        };
+        for (const [key, terms] of Object.entries(fuzzy)) {
+            const idx = lowerHeaders.findIndex(h => terms.some(t => h.includes(t)));
+            if (idx !== -1) map[key] = headers[idx];
+        }
+        return map;
+    }
+
+    function startNewAudit() {
+        const fileInput = document.getElementById('audit-file');
+        const month = document.getElementById('audit-month').value; const year = document.getElementById('audit-year').value;
+        if (!fileInput.files.length) return alert("Select an Excel file.");
+        showLoader(true);
+
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'});
+                let jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {defval: ""});
+                if(jsonData.length === 0) throw new Error("File empty.");
+
+                colMap = detectColumns(Object.keys(jsonData[0]));
+                if(!colMap.claim_no) throw new Error("Could not detect Claim No column.");
+
+                currentData = jsonData.filter(row => {
+                    const type = String(row[colMap.claim_type] || "").toUpperCase();
+                    const amt = parseFloat(row[colMap.amount]) || 0;
+                    const desc = String(row[colMap.part_desc] || "").toUpperCase();
+                    if (type.includes("FREE SERVICE") || type.includes("FSC")) return false;
+                    if (type.includes("CAMPAIGN") && amt < 300) {
+                        if (!desc.includes("POWER WINDOW") && !desc.includes("FUEL PUMP")) return false;
+                    }
+                    return true;
+                });
+
+                currentSessionKey = `audit_${month}_${year}_${Date.now()}`;
+                currentAuditData = {}; currentFilteredData = [...currentData]; currentPage = 1;
+
+                await saveSessionToDB({
+                    month, year, last_saved: new Date().toLocaleString(), finalized: false,
+                    col_map: colMap, audit_data: currentAuditData, raw_data: currentData 
+                });
+
+                document.getElementById('workspace-title').innerText = `${month} ${year}`;
+                showScreen('screen-workspace'); updateStats(); renderTablePage();
+            } catch(err) { alert(err.message); } finally { showLoader(false); }
+        };
+        setTimeout(() => reader.readAsArrayBuffer(fileInput.files[0]), 50);
+    }
+
+    // --- WORKSPACE ---
+    function handleSearch() {
+        const q = document.getElementById('search-claim').value.toUpperCase();
+        currentFilteredData = q ? currentData.filter(row => String(row[colMap.claim_no]).toUpperCase().includes(q)) : [...currentData];
+        currentPage = 1; renderTablePage();
+    }
+
+    function changePage(dir) {
+        const maxPage = Math.ceil(currentFilteredData.length / pageSize) || 1;
+        currentPage = Math.max(1, Math.min(currentPage + dir, maxPage)); renderTablePage();
+    }
+
+    function updateStats() {
+        let audited = 0; let clear = 0;
+        currentData.forEach(row => {
+            const entry = currentAuditData[row[colMap.claim_no]];
+            if(entry && entry.audited) { audited++; if((entry.findings || []).includes("None Found")) clear++; }
+        });
+        document.getElementById('workspace-stats').innerHTML = `
+            <span class="badge">T: ${currentData.length}</span><span class="badge status-clear">C: ${clear}</span>
+            <span class="badge status-unclear">U: ${audited - clear}</span><span class="badge">P: ${currentData.length - audited}</span>
+        `;
+    }
+
+    function renderTablePage() {
+        const tbody = document.getElementById('claims-tbody'); tbody.innerHTML = '';
+        const start = (currentPage - 1) * pageSize; const pageData = currentFilteredData.slice(start, start + pageSize);
+        const frag = document.createDocumentFragment();
+
+        pageData.forEach((row, i) => {
+            const claimNo = row[colMap.claim_no]; const entry = currentAuditData[claimNo] || {};
+            const isClear = entry.audited && (entry.findings||[]).includes("None Found");
+
+            let statusHtml = '<span class="status-pending">Pen</span>';
+            if (isClear) statusHtml = '<span class="status-clear">Cln</span>';
+            else if (entry.audited) statusHtml = `<span class="status-unclear">Unc</span>`;
+
+            const tr = document.createElement('tr'); tr.onclick = () => openAuditModal(start + i);
+            tr.innerHTML = `
+                <td>${claimNo}</td><td>${statusHtml}</td><td>${row[colMap.ro_no] || '-'}</td>
+                <td>${row[colMap.claim_type] || '-'}</td><td>${row[colMap.causal_part] || '-'}</td>
+                <td>${row[colMap.amount] || '-'}</td><td style="color:var(--text-muted);">${(entry.findings||[]).join('; ')}</td>
+            `;
+            frag.appendChild(tr);
+        });
+        tbody.appendChild(frag);
+
+        const maxPage = Math.ceil(currentFilteredData.length / pageSize) || 1;
+        document.getElementById('page-indicator').innerText = `${currentPage} / ${maxPage}`;
+        document.getElementById('btn-prev').disabled = currentPage === 1;
+        document.getElementById('btn-next').disabled = currentPage === maxPage;
+    }
+
+    // --- MODAL (Mapped "Shorted" List Only) ---
+    document.getElementById('modal-discrepancy').addEventListener('change', (e) => {
+        const val = e.target.value; const extraBox = document.getElementById('modal-extra-inputs');
+        const label = document.getElementById('modal-extra-label'); const input = document.getElementById('modal-extra-text');
+        if(val === '1') { extraBox.style.display = 'block'; label.innerText = "POD Number (Optional)"; input.placeholder = "Enter POD..."; }
+        else if(val === '7') { extraBox.style.display = 'block'; label.innerText = "Missing Part Name (Required)"; input.placeholder = "Enter Part..."; }
+        else { extraBox.style.display = 'none'; input.value = ''; }
+    });
+
+    function closeModal() { document.getElementById('audit-modal').classList.remove('active'); }
+
+    function openAuditModal(filteredIndex) {
+        activeClaimRowIndex = filteredIndex; const row = currentFilteredData[filteredIndex];
+        const claimNo = row[colMap.claim_no]; document.getElementById('modal-claim-no').innerText = claimNo;
+        
+        // Populate ONLY the strictly mapped columns defined in original python code
+        const displayKeys = ["ro_no", "claim_type", "causal_part", "part_desc", "status", "amount"];
+        let detailsHtml = '';
+        displayKeys.forEach(k => {
+            if(colMap[k]) {
+                let val = row[colMap[k]] || "-";
+                let lbl = colMap[k].replace(/_/g, " ");
+                detailsHtml += `<div class="detail-item"><span class="detail-lbl">${lbl}</span><span class="detail-val">${val}</span></div>`;
+            }
+        });
+        document.getElementById('modal-all-details').innerHTML = detailsHtml;
+
+        const entry = currentAuditData[claimNo];
+        document.getElementById('modal-extra-inputs').style.display = 'none'; document.getElementById('modal-extra-text').value = '';
+        
+        if(entry && entry.audited) {
+            const f = entry.findings[0]; const select = document.getElementById('modal-discrepancy'); select.value = "0"; 
+            for(let key in DISCREPANCY_TYPES) {
+                if(f.includes(DISCREPANCY_TYPES[key])) {
+                    select.value = key;
+                    if(key === '1') { document.getElementById('modal-extra-inputs').style.display = 'block'; document.getElementById('modal-extra-label').innerText = "POD Number (Optional)"; document.getElementById('modal-extra-text').value = entry.pod_number || ''; }
+                    if(key === '7') { document.getElementById('modal-extra-inputs').style.display = 'block'; document.getElementById('modal-extra-label').innerText = "Missing Part Name (Required)"; document.getElementById('modal-extra-text').value = entry.missing_part_name || ''; }
+                    break;
+                }
+            }
+        } else { document.getElementById('modal-discrepancy').value = "0"; }
+        document.getElementById('audit-modal').classList.add('active');
+    }
+
+    async function saveClaimAudit() {
+        const claimNo = currentFilteredData[activeClaimRowIndex][colMap.claim_no];
+        const discCode = document.getElementById('modal-discrepancy').value;
+        const extraText = document.getElementById('modal-extra-text').value.trim();
+
+        let finding = DISCREPANCY_TYPES[discCode];
+        let entry = { audited: true, timestamp: new Date().toISOString() };
+
+        if(discCode === '1') { entry.pod_number = extraText; finding += extraText ? ` [POD: ${extraText}]` : ""; } 
+        else if (discCode === '7') { if(!extraText) return alert("Part Name is required for Code 7."); entry.missing_part_name = extraText; finding += ` (${extraText})`; }
+
+        entry.findings = [finding]; currentAuditData[claimNo] = entry;
+
+        closeModal(); updateStats();
+        localforage.getItem(currentSessionKey).then(session => {
+            if(session) { session.audit_data = currentAuditData; session.last_saved = new Date().toLocaleString(); saveSessionToDB(session); }
+        });
+        const nextInput = document.getElementById('search-claim');
+        if(nextInput.value) { nextInput.value = ''; handleSearch(); nextInput.focus(); } else { renderTablePage(); } 
+    }
+
+    // --- ARCHIVE ---
+    async function openArchive(showFinalized) {
+        showLoader(true);
+        const tbody = document.getElementById('archive-tbody'); tbody.innerHTML = '';
+        document.getElementById('archive-title').innerText = showFinalized ? "Previous Audits" : "Drafts";
+        
+        let found = false;
+        for (const [key, meta] of Object.entries(dbIndex)) {
+            if (meta.finalized === showFinalized) {
+                found = true; const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight:500;">${meta.month} ${meta.year}<br><span style="font-size:0.7rem; color:var(--text-muted); font-weight:normal;">${meta.last_saved}</span></td>
+                    <td><span class="badge ${meta.finalized ? 'status-clear' : 'status-unclear'}">${meta.finalized ? 'Fin' : 'Drf'}</span></td>
+                    <td><div style="display:flex; gap:4px;"><button class="btn primary" style="padding:4px; width:auto; margin:0;" onclick="resumeSession('${key}', ${meta.finalized})">Go</button><button class="btn danger" style="padding:4px; width:auto; margin:0;" onclick="deleteSession('${key}')">Del</button></div></td>
+                `;
+                tbody.appendChild(tr);
+            }
+        }
+        if(!found) tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">No records found.</td></tr>`;
+        showLoader(false); showScreen('screen-archive');
+    }
+
+    async function resumeSession(key, isFinalized) {
+        if (isFinalized && !await promptPassword()) return; // SECURITY CHECK
+
+        showLoader(true); const session = await localforage.getItem(key);
+        if(!session) return alert("Error loading session.");
+        
+        currentSessionKey = key; currentData = session.raw_data; currentFilteredData = [...currentData]; 
+        currentAuditData = session.audit_data; colMap = session.col_map; currentPage = 1;
+        document.getElementById('workspace-title').innerText = `${session.month} ${session.year}`; document.getElementById('search-claim').value = '';
+        updateStats(); renderTablePage(); showLoader(false); showScreen('screen-workspace');
+    }
+
+    async function deleteSession(key) {
+        const meta = dbIndex[key];
+        if (meta && meta.finalized && !await promptPassword()) return; // SECURITY CHECK
+
+        if(confirm("Permanently delete this data?")) {
+            delete dbIndex[key]; await localforage.setItem('db_index', dbIndex); await localforage.removeItem(key);
+            openArchive(document.getElementById('archive-title').innerText.includes('Previous'));
+        }
+    }
+
+    // --- REPORTING & EXPORT ENGINE (MATCHES PYTHON ORIGINAL LAYOUT) ---
+    function openReportingMenu() {
+        const select = document.getElementById('report-scope');
+        select.innerHTML = '<option value="master">Master Report (All Months)</option>';
+        for (const [key, meta] of Object.entries(dbIndex)) {
+            const opt = document.createElement('option'); opt.value = key; opt.text = `${meta.month} ${meta.year} ${meta.finalized ? '(Fin)' : '(Drf)'}`; select.appendChild(opt);
+        }
+        showScreen('screen-reports');
+    }
+
+    function formatRowForExport(row, auditEntry, colMapping) {
+        let expRow = {};
+        for(let key in colMapping) expRow[colMapping[key]] = row[colMapping[key]];
+        expRow["Audit Status"] = auditEntry.audited ? "✔ Audited" : "○ Pending";
+        expRow["Discrepancy Found"] = (auditEntry.findings && auditEntry.findings[0] !== "None Found") ? "Yes" : "No";
+        expRow["Discrepancy Details"] = auditEntry.findings ? auditEntry.findings.join("; ") : "";
+        expRow["Audit Time"] = auditEntry.timestamp || "";
+        expRow["Remarks"] = auditEntry.remarks || "";
+        expRow["POD Number"] = auditEntry.pod_number || "";
+        expRow["Courier Provider"] = auditEntry.courier_provider || "";
+        expRow["Missing Part Name"] = auditEntry.missing_part_name || "";
+        expRow["Auditor"] = "Aashish Giri H";
+        return expRow;
+    }
+
+    // Split logic matching the original Python script
+    function generateSheetAoA(sessionData) {
+        let clearRows = []; let unclearRows = [];
+        sessionData.raw_data.forEach(row => {
+            const entry = sessionData.audit_data[row[sessionData.col_map.claim_no]] || {};
+            const isClear = entry.audited && (entry.findings||[]).includes("None Found");
+            let fRow = formatRowForExport(row, entry, sessionData.col_map);
+            if(isClear) clearRows.push(fRow); else unclearRows.push(fRow);
+        });
+
+        let aoa = [];
+        let headers = [];
+        if(clearRows.length > 0) headers = Object.keys(clearRows[0]);
+        else if(unclearRows.length > 0) headers = Object.keys(unclearRows[0]);
+
+        if (clearRows.length > 0) {
+            aoa.push([`✔ CLEAR CLAIMS - ${sessionData.month} ${sessionData.year}`]);
+            aoa.push(headers);
+            clearRows.forEach(r => aoa.push(Object.values(r)));
+        }
+        if (unclearRows.length > 0) {
+            if(clearRows.length > 0) aoa.push([]); // Gap
+            aoa.push([`⚠ UNCLEAR / PENDING CLAIMS - ${sessionData.month} ${sessionData.year}`]);
+            aoa.push(headers);
+            unclearRows.forEach(r => aoa.push(Object.values(r)));
+        }
+        return aoa;
+    }
+
+    async function executeExport() {
+        const scope = document.getElementById('report-scope').value;
+        const filter = document.getElementById('report-filter').value;
+        if(filter !== 'ALL') return alert("Custom filtering is not supported with Split Clear/Unclear layout. Please leave as 'All Claims'.");
+        showLoader(true);
+
+        try {
+            let fullAoA = [];
+            if (scope === 'master') {
+                for (const key of Object.keys(dbIndex)) {
+                    const session = await localforage.getItem(key);
+                    if (session && session.raw_data) {
+                        let sessionAoA = generateSheetAoA(session);
+                        if(fullAoA.length > 0) { fullAoA.push([]); fullAoA.push([]); } // gaps between months
+                        fullAoA = fullAoA.concat(sessionAoA);
+                    }
+                }
+            } else {
+                const session = await localforage.getItem(scope);
+                if (session && session.raw_data) fullAoA = generateSheetAoA(session);
+            }
+
+            if (fullAoA.length === 0) return alert("No data to export.");
+
+            const ws = XLSX.utils.aoa_to_sheet(fullAoA);
+            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Audit Report");
+            XLSX.writeFile(wb, scope === 'master' ? `Master_Audit_${Date.now()}.xlsx` : `Audit_${scope}.xlsx`);
+        } catch (e) { alert("Failed: " + e.message); } finally { showLoader(false); }
+    }
+
+    async function triggerExportFlow() {
+        if(!currentData || currentData.length === 0) return;
+        
+        let audited = 0; let clear = 0;
+        currentData.forEach(row => {
+            const entry = currentAuditData[row[colMap.claim_no]];
+            if(entry && entry.audited) { audited++; if((entry.findings || []).includes("None Found")) clear++; }
+        });
+
+        const pending = currentData.length - audited;
+        const unclear = audited - clear;
+
+        if (pending > 0 || unclear > 0) {
+            if(!confirm(`You have ${unclear} Unclear and ${pending} Pending claims.\n\nProceed with export anyway?`)) return;
+        } else {
+            if(!confirm("All claims are clear. Do you want to Finalize this audit?")) return;
+        }
+
+        showLoader(true);
+        const session = await localforage.getItem(currentSessionKey);
+        
+        // Use same Array-of-Arrays formatting for immediate export
+        let aoa = generateSheetAoA(session);
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Audit Report");
+        XLSX.writeFile(wb, `Audit_${session.month}_${session.year}.xlsx`);
+
+        session.finalized = true; await saveSessionToDB(session);
+        showLoader(false); showScreen('screen-menu');
+    }
+</script>
+</body>
+</html>
