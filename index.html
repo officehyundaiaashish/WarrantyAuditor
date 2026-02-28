@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
         /* --- THEME VARIABLES & COLOR SCHEMES --- */
@@ -74,12 +75,10 @@
         
         /* Highlight for selected option */
         .custom-option:hover { background-color: var(--bg-base); color: var(--accent); }
-        .custom-option.selected { 
-            background-color: rgba(59, 130, 246, 0.1) !important; 
-            color: var(--accent) !important; 
-            font-weight: 800 !important; 
-            border-left: 4px solid var(--accent); 
-        }
+        .custom-option.selected { background-color: rgba(59, 130, 246, 0.1) !important; color: var(--accent) !important; font-weight: 800 !important; border-left: 4px solid var(--accent); }
+
+        /* TV Dropdown Clip Fix: Smart Relative Positioning pushes the modal taller instead of cutting off */
+        #wrap-modal-disc.open .custom-options { position: relative !important; margin-bottom: 16px; box-shadow: none !important; border-color: var(--accent); max-height: unset; z-index: 10; }
 
         /* Screen Transitions */
         .screen { display: none; flex: 1; } 
@@ -129,8 +128,8 @@
 
         .status-clear { color: var(--success); font-weight: 700; } .status-unclear { color: var(--warning); font-weight: 700; } .status-pending { color: var(--text-muted); font-weight: 600;}
         
-        /* Abbreviations Hint */
-        .legend-hint { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; align-items: center; padding: 12px; background: var(--bg-base); border-radius: 8px; margin-top: 16px; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); border: 1px solid var(--border); }
+        /* Abbreviations Hint - Top Global Position */
+        .legend-hint { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; align-items: center; padding: 12px; background: var(--bg-base); border-radius: 8px; margin-bottom: 16px; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); border: 1px solid var(--border); }
         .legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
 
         /* Modals */
@@ -162,7 +161,7 @@
                 
                 <div id="dialog-input-wrapper" style="position:relative; display:none; margin-bottom: 16px;">
                     <input type="password" id="dialog-input" inputmode="numeric" class="input" style="text-align:center; letter-spacing: 4px; font-size: 1.2rem; margin:0; padding-right: 44px;" placeholder="••••••••">
-                    <button id="kb-toggle" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:var(--bg-base); border:1px solid var(--border); border-radius:6px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-muted); transition:0.2s;" title="Toggle Keyboard">🔢</button>
+                    <button id="kb-toggle" onclick="toggleKeyboardMode('dialog-input', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:var(--bg-base); border:1px solid var(--border); border-radius:6px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-muted); transition:0.2s;" title="Toggle Keyboard">🔢</button>
                 </div>
 
                 <div style="display:flex; gap:12px; justify-content:center; margin-top: 12px;">
@@ -211,11 +210,15 @@
             </div>
             <div class="menu-card" onclick="showScreen('screen-backup')">
                 <svg class="menu-icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                <span>Backup Data</span>
+                <span>Backup & Restore</span>
             </div>
             <div class="menu-card" onclick="showScreen('screen-security')">
                 <svg class="menu-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                 <span>Security</span>
+            </div>
+            <div class="menu-card" onclick="openSettingsScreen()">
+                <svg class="menu-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                <span>Custom Codes</span>
             </div>
         </div>
 
@@ -231,11 +234,17 @@
     </div>
 
     <div id="screen-dashboard" class="screen">
-        <div class="flex-between" style="margin-bottom: 20px;">
+        <div class="flex-between" style="margin-bottom: 12px;">
             <h3 style="margin:0;">Read-Only Dashboard</h3>
             <button class="btn" style="width:auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')">Menu</button>
         </div>
         
+        <div class="legend-hint">
+            <span><span class="legend-dot" style="background:var(--success)"></span> <b>Cln</b> = Clean (No Discrepancy)</span>
+            <span><span class="legend-dot" style="background:var(--warning)"></span> <b>Unc</b> = Unclear (Discrepancy Found)</span>
+            <span><span class="legend-dot" style="background:var(--text-muted)"></span> <b>Pen</b> = Pending (Not Audited)</span>
+        </div>
+
         <label>Select Audit Period</label>
         <div class="custom-select-wrapper" id="wrap-dash-scope">
             <input type="hidden" id="dash-scope" value="">
@@ -244,7 +253,7 @@
         </div>
 
         <div id="dash-content-area" style="display:none; animation: slideFadeUp 0.3s ease;">
-            <div class="grid-2" style="margin-bottom: 20px;">
+            <div class="grid-2" style="margin-bottom: 8px;">
                 <div class="stat-card active-filter" id="dash-card-all" style="border-top: 4px solid var(--accent);" onclick="setDashFilter('all')">
                     <div class="stat-value" id="dash-total">0</div><div class="stat-label">Total Claims</div>
                 </div>
@@ -259,19 +268,26 @@
                 </div>
             </div>
 
-            <input type="text" id="dash-search" class="input" placeholder="🔍 Enter complete Claim Number to check status..." oninput="handleDashSearch()">
+            <div id="dash-amount-stats" style="margin-bottom:20px;"></div>
+            <button class="btn" id="btn-toggle-chart" onclick="toggleDashChart()" style="margin-bottom:16px; display:inline-flex; align-items:center; gap:8px;">
+    <svg style="width:18px; height:18px; stroke:currentColor; stroke-width:2; fill:none; stroke-linecap:round; stroke-linejoin:round;" viewBox="0 0 24 24"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg> 
+    Show Chart
+</button>
+        <div id="dash-chart-container" style="display:none; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:20px;">
+            <canvas id="auditChart" height="220"></canvas>
+        </div>
+
+            <div style="position:relative; margin-bottom:16px; width: 100%;">
+                <svg style="position:absolute; left:12px; top:50%; transform:translateY(-50%); width:20px; height:20px; stroke:var(--text-muted); stroke-width:2; fill:none; z-index:5;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" id="dash-search" inputmode="numeric" class="input" placeholder="Enter Claim Number..." oninput="handleDashSearch()" style="padding-left:40px; padding-right:44px; margin-bottom:0;">
+                <button onclick="toggleKeyboardMode('dash-search', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:var(--bg-base); border:1px solid var(--border); border-radius:6px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-muted); transition:0.2s;" title="Toggle Keyboard">🔢</button>
+            </div>
 
             <div class="table-wrap">
                 <table id="dash-table">
                     <thead><tr><th>Claim No</th><th>Status</th><th>R/O No</th><th>Type</th><th>Causal Part</th><th>Amount</th><th>Findings</th></tr></thead>
                     <tbody id="dash-tbody"></tbody>
                 </table>
-            </div>
-            
-            <div class="legend-hint">
-                <span><span class="legend-dot" style="background:var(--success)"></span> <b>Cln</b> = Clean (No Discrepancy)</span>
-                <span><span class="legend-dot" style="background:var(--warning)"></span> <b>Unc</b> = Unclear (Discrepancy Found)</span>
-                <span><span class="legend-dot" style="background:var(--text-muted)"></span> <b>Pen</b> = Pending (Not Audited)</span>
             </div>
             
             <div class="pagination">
@@ -282,6 +298,26 @@
         </div>
     </div>
 
+    <div id="screen-settings" class="screen">
+        <div class="flex-between" style="margin-bottom: 16px;">
+            <h3 style="margin:0;">Custom Discrepancy Codes</h3>
+            <button class="btn" style="width:auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')">Menu</button>
+        </div>
+        <div class="card">
+            <p>Add your own codes for the audit dropdown. (e.g. Code: 9, Desc: Labour Mismatch)</p>
+            <div class="grid-2">
+                <input type="text" id="new-code-id" class="input" placeholder="Enter Code Number">
+                <input type="text" id="new-code-desc" class="input" placeholder="Enter Description">
+            </div>
+            <button class="btn primary" onclick="addCustomCode()">+ Add Code</button>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Code</th><th>Description</th><th>Action</th></tr></thead>
+                <tbody id="settings-codes-tbody"></tbody>
+            </table>
+        </div>
+    </div>
     <div id="screen-security" class="screen">
         <div class="card" style="max-width: 440px; margin: 0 auto; width: 100%;">
             <h3>Security Settings</h3>
@@ -293,7 +329,7 @@
                     <span id="app-sec-status" style="font-weight:800; font-size:0.85rem;">OFF</span>
                 </div>
                 <button class="btn" id="btn-toggle-app-sec" onclick="toggleSecurity('app')">Enable App Lock</button>
-                <p style="font-size:0.75rem; margin:10px 0 0 0; color:var(--text-muted);">Requires password/PIN immediately upon opening the website.</p>
+                <p style="font-size:0.75rem; margin:10px 0 0 0; color:var(--text-muted);">Requires Master Password upon opening the website.</p>
             </div>
 
             <div style="background: var(--bg-base); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 24px;">
@@ -302,7 +338,7 @@
                     <span id="arc-sec-status" style="font-weight:800; font-size:0.85rem;">OFF</span>
                 </div>
                 <button class="btn" id="btn-toggle-arc-sec" onclick="toggleSecurity('archive')">Enable Archive Lock</button>
-                <p style="font-size:0.75rem; margin:10px 0 0 0; color:var(--text-muted);">Requires password to open or delete Finalized Previous Audits.</p>
+                <p style="font-size:0.75rem; margin:10px 0 0 0; color:var(--text-muted);">Requires Master Password to open or delete Finalized Audits.</p>
             </div>
 
             <button class="btn" onclick="showScreen('screen-menu')">Return to Menu</button>
@@ -342,7 +378,7 @@
     </div>
 
     <div id="screen-workspace" class="screen">
-        <div class="flex-between" style="margin-bottom: 16px;">
+        <div class="flex-between" style="margin-bottom: 12px;">
             <h3 id="workspace-title" style="margin:0; font-size:1.15rem;">Workspace</h3>
             <div style="display: flex; gap: 8px;">
                 <button class="btn primary" style="width: auto; margin:0; padding: 8px 16px; font-size:0.8rem;" onclick="finalizeAuditFlow()">Finalize</button>
@@ -350,21 +386,25 @@
             </div>
         </div>
 
+        <div class="legend-hint">
+            <span><span class="legend-dot" style="background:var(--success)"></span> <b>Cln</b> = Clean</span>
+            <span><span class="legend-dot" style="background:var(--warning)"></span> <b>Unc</b> = Unclear</span>
+            <span><span class="legend-dot" style="background:var(--text-muted)"></span> <b>Pen</b> = Pending</span>
+        </div>
+
         <div id="workspace-stats" style="margin-bottom: 16px;"></div>
         
-        <input type="text" id="search-claim" class="input" placeholder="🔍 Search Claim No..." oninput="handleSearch()" style="margin-bottom:16px;">
+        <div style="position:relative; margin-bottom:16px; width: 100%;">
+            <svg style="position:absolute; left:12px; top:50%; transform:translateY(-50%); width:20px; height:20px; stroke:var(--text-muted); stroke-width:2; fill:none; z-index:5;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="search-claim" inputmode="numeric" class="input" placeholder="Search Claim No..." oninput="handleSearch()" style="padding-left:40px; padding-right:44px; margin-bottom:0;">
+            <button onclick="toggleKeyboardMode('search-claim', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:var(--bg-base); border:1px solid var(--border); border-radius:6px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-muted); transition:0.2s;" title="Toggle Keyboard">🔢</button>
+        </div>
 
         <div class="table-wrap">
             <table id="claims-table">
                 <thead><tr><th>Claim No</th><th>Status</th><th>R/O No</th><th>Type</th><th>Causal Part</th><th>Amount</th><th>Findings</th></tr></thead>
                 <tbody id="claims-tbody"></tbody>
             </table>
-        </div>
-
-        <div class="legend-hint">
-            <span><span class="legend-dot" style="background:var(--success)"></span> <b>Cln</b> = Clean</span>
-            <span><span class="legend-dot" style="background:var(--warning)"></span> <b>Unc</b> = Unclear</span>
-            <span><span class="legend-dot" style="background:var(--text-muted)"></span> <b>Pen</b> = Pending</span>
         </div>
 
         <div class="pagination">
@@ -375,20 +415,28 @@
     </div>
 
     <div id="screen-archive" class="screen">
-        <h3 id="archive-title" style="margin-bottom: 16px;">Archive</h3>
+        <div class="flex-between" style="margin-bottom: 12px;">
+            <h3 id="archive-title" style="margin:0;">Archive</h3>
+            <button class="btn" style="width: auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')">Menu</button>
+        </div>
+
+        <div class="legend-hint">
+            <span><span class="legend-dot" style="background:var(--success)"></span> <b>Fin</b> = Finalized Audit</span>
+            <span><span class="legend-dot" style="background:var(--warning)"></span> <b>Drf</b> = Ongoing Draft</span>
+        </div>
+
         <div class="table-wrap" style="margin-bottom: 20px;">
             <table>
                 <thead><tr><th>Period</th><th>Status</th><th>Actions</th></tr></thead>
                 <tbody id="archive-tbody"></tbody>
             </table>
         </div>
-        <button class="btn" style="max-width: 200px;" onclick="showScreen('screen-menu')">Back to Menu</button>
     </div>
 
     <div id="screen-reports" class="screen">
         <div class="card" style="max-width: 440px; margin: 0 auto; width: 100%;">
             <h3>Reporting & Export Engine</h3>
-            <p>Generate highly structured, styled documentation.</p>
+            <p>Generate highly structured, styled documentation including Amount Summaries.</p>
             
             <label>Select Audit Scope</label>
             <div class="custom-select-wrapper" id="wrap-report-scope">
@@ -467,6 +515,18 @@
         applyTheme(savedTheme); localStorage.setItem('auditor_theme', savedTheme);
     }
 
+    // --- AMOUNT HELPERS ---
+    function parseAmt(val) { const v = parseFloat(String(val).replace(/[^\d.-]/g, '')); return isNaN(v) ? 0 : v; }
+    function fmtAmt(val) { return '₹' + val.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
+
+    // --- KEYBOARD TOGGLE HELPER ---
+    function toggleKeyboardMode(inputId, btn) {
+        const input = document.getElementById(inputId);
+        if(input.inputMode === 'numeric') { input.inputMode = 'text'; btn.innerText = '🔠'; btn.style.background = 'var(--surface)'; } 
+        else { input.inputMode = 'numeric'; btn.innerText = '🔢'; btn.style.background = 'var(--bg-base)'; }
+        input.focus();
+    }
+
     // --- CUSTOM DROPDOWN ENGINE ---
     document.addEventListener('click', (e) => {
         const trigger = e.target.closest('.custom-select-trigger');
@@ -502,7 +562,6 @@
         document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
     });
 
-    // --- YE FUNCTION HI ISSUE THA, AB YAHAN DIRECT UI KO UPDATE KAREGA BEFIKAR ---
     function setCustomSelectValue(wrapperId, val) {
         const wrapper = document.getElementById(wrapperId);
         if (!wrapper) return;
@@ -563,16 +622,15 @@
         setTimeout(() => input.focus(), 150);
     }
 
-    document.getElementById('kb-toggle').addEventListener('click', (e) => {
-        e.preventDefault(); const input = document.getElementById('dialog-input'); const btn = e.target;
-        if(input.inputMode === 'numeric') { input.inputMode = 'text'; btn.innerText = '🔠'; btn.style.background = 'var(--surface)'; } 
-        else { input.inputMode = 'numeric'; btn.innerText = '🔢'; btn.style.background = 'var(--bg-base)'; }
-        input.focus();
-    });
-
-    // --- SECURITY MODULE ---
-    let secConfig = JSON.parse(localStorage.getItem('auditor_sec')) || { protectArchive: false, archiveHash: '', appLock: false, appHash: '' };
-    if (secConfig.enabled !== undefined) { secConfig.protectArchive = secConfig.enabled; secConfig.archiveHash = secConfig.hash; delete secConfig.enabled; delete secConfig.hash; localStorage.setItem('auditor_sec', JSON.stringify(secConfig)); }
+    // --- UNIFIED SECURITY MODULE ---
+    let secConfig = JSON.parse(localStorage.getItem('auditor_sec')) || { protectArchive: false, appLock: false, masterHash: '' };
+    
+    // Auto-migrate old disjointed passwords to Unified Master Password
+    if (secConfig.appHash || secConfig.archiveHash) {
+        secConfig.masterHash = secConfig.appHash || secConfig.archiveHash;
+        delete secConfig.appHash; delete secConfig.archiveHash;
+        localStorage.setItem('auditor_sec', JSON.stringify(secConfig));
+    }
 
     async function sha256(message) { const msgBuffer = new TextEncoder().encode(message); const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer); return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join(''); }
 
@@ -586,37 +644,46 @@
         else { arcStatus.innerHTML = '<span style="color:var(--danger)">OFF</span>'; arcBtn.innerText = "Enable Archive Lock"; arcBtn.classList.replace('danger', 'primary'); }
     }
 
-    function verifyPasswordFlow(type, onSuccess) {
-        const isApp = type === 'app'; const isProtected = isApp ? secConfig.appLock : secConfig.protectArchive; const hashToMatch = isApp ? secConfig.appHash : secConfig.archiveHash;
-        if (!isProtected) return onSuccess();
-        showAppPrompt(`Enter ${isApp ? 'App' : 'Archive'} Password / PIN:`, true, async (attempt) => {
-            if (await sha256(attempt) === hashToMatch) onSuccess(); else showAppAlert("Incorrect Password. Access Denied.");
+    function verifyPasswordFlow(onSuccess) {
+        if (!secConfig.masterHash) return onSuccess();
+        showAppPrompt(`Enter Master Password / PIN:`, true, async (attempt) => {
+            if (await sha256(attempt) === secConfig.masterHash) onSuccess(); else showAppAlert("Incorrect Password. Access Denied.");
         });
     }
 
     function toggleSecurity(type) {
         const isApp = type === 'app'; const isProtected = isApp ? secConfig.appLock : secConfig.protectArchive;
+        
         if (isProtected) {
-            verifyPasswordFlow(type, () => {
-                if(isApp) { secConfig.appLock = false; secConfig.appHash = ''; } else { secConfig.protectArchive = false; secConfig.archiveHash = ''; }
+            verifyPasswordFlow(() => {
+                if(isApp) secConfig.appLock = false; else secConfig.protectArchive = false;
+                if(!secConfig.appLock && !secConfig.protectArchive) secConfig.masterHash = '';
                 localStorage.setItem('auditor_sec', JSON.stringify(secConfig)); updateSecurityUI(); showAppAlert("Protection Disabled.");
             });
         } else {
-            showAppPrompt(`Create Password/PIN for ${isApp ? 'App Lock' : 'Archive'}:`, true, (p1) => {
-                showAppPrompt("Confirm Password/PIN:", true, async (p2) => {
-                    if (p1 !== p2) return showAppAlert("Passwords do not match. Aborted.");
-                    if(isApp) { secConfig.appLock = true; secConfig.appHash = await sha256(p1); } else { secConfig.protectArchive = true; secConfig.archiveHash = await sha256(p1); }
+            if (!secConfig.masterHash) {
+                showAppPrompt(`Create Master Password for App & Archive:`, true, (p1) => {
+                    showAppPrompt("Confirm Master Password:", true, async (p2) => {
+                        if (p1 !== p2) return showAppAlert("Passwords do not match. Aborted.");
+                        secConfig.masterHash = await sha256(p1);
+                        if(isApp) secConfig.appLock = true; else secConfig.protectArchive = true;
+                        localStorage.setItem('auditor_sec', JSON.stringify(secConfig)); updateSecurityUI(); showAppAlert("Protection Enabled.");
+                    });
+                });
+            } else {
+                verifyPasswordFlow(() => {
+                    if(isApp) secConfig.appLock = true; else secConfig.protectArchive = true;
                     localStorage.setItem('auditor_sec', JSON.stringify(secConfig)); updateSecurityUI(); showAppAlert("Protection Enabled.");
                 });
-            });
+            }
         }
     }
 
     window.addEventListener('DOMContentLoaded', () => {
         if (secConfig.appLock) {
             const enforceAppLock = () => {
-                showAppPrompt("🔒 Warranty Auditor is Locked.\nEnter Password / PIN to access:", true, async (attempt) => {
-                    if (await sha256(attempt) === secConfig.appHash) { document.getElementById('screen-menu').classList.add('active'); loadDashboardNotifications(); } else { showAppAlert("Incorrect Password."); setTimeout(enforceAppLock, 500); }
+                showAppPrompt("🔒 Warranty Auditor is Locked.\nEnter Master Password / PIN to access:", true, async (attempt) => {
+                    if (await sha256(attempt) === secConfig.masterHash) { document.getElementById('screen-menu').classList.add('active'); loadDashboardNotifications(); } else { showAppAlert("Incorrect Password."); setTimeout(enforceAppLock, 500); }
                 }, true);
             }; enforceAppLock();
         } else { document.getElementById('screen-menu').classList.add('active'); loadDashboardNotifications(); }
@@ -663,13 +730,14 @@
     // Active Workspace State
     let workspaceCurrentFilter = 'all';
 
-    const DISCREPANCY_TYPES = { "0": "None Found", "1": "Part is clean (Sent HMIL Suspense)", "3": "Part is Missing", "4": "Part Batch Code Mismatch", "5": "Part Not Tagged", "6": "Part Packing Missing", "7": "Related Part Missing to Causal or Affected Part Missing", "8": "Part is Not Defective" };
+    const DEFAULT_DISCREPANCIES = { "0": "None Found", "1": "Part is clean (Sent HMIL Suspense)", "3": "Part is Missing", "4": "Part Batch Code Mismatch", "5": "Part Not Tagged", "6": "Part Packing Missing", "7": "Related Part Missing to Causal or Affected Part Missing", "8": "Part is Not Defective" };
+    let DISCREPANCY_TYPES = JSON.parse(localStorage.getItem('auditor_custom_codes')) || DEFAULT_DISCREPANCIES;
 
     function isClaimClean(findings) { if (!findings || findings.length === 0) return true; return findings[0].includes("None Found") || findings[0].includes("Sent HMIL Suspense"); }
 
     localforage.getItem('db_index').then(val => { if(val) dbIndex = val; });
 
-    async function saveSessionToDB(sessionData) { dbIndex[currentSessionKey] = { month: sessionData.month, year: sessionData.year, finalized: sessionData.finalized || false, last_saved: sessionData.last_saved }; await localforage.setItem('db_index', dbIndex); await localforage.setItem(currentSessionKey, sessionData); }
+    async function saveSessionToDB(sessionData) { dbIndex[currentSessionKey] = { month: sessionData.month, year: sessionData.year, finalized: sessionData.finalized || false, last_saved: sessionData.last_saved }; await localforage.setItem('db_index', dbIndex); await localforage.setItem(currentSessionKey, sessionData); }      
     function showLoader(show) { document.getElementById('loader').style.display = show ? 'flex' : 'none'; }
     function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); if(id === 'screen-menu') loadDashboardNotifications(); }
 
@@ -720,11 +788,8 @@
         keys.forEach(k => { optContainer.innerHTML += `<div class="custom-option" data-value="${k}">${dbIndex[k].month} ${dbIndex[k].finalized ? '(Finalized)' : '(Draft)'}</div>`; });
         
         document.getElementById('dash-content-area').style.display = 'none';
-        
-        // DIRECT HIT: Ensure placeholder text is reset when dashboard is opened
         document.getElementById('dash-scope').value = ""; 
         document.getElementById('wrap-dash-scope').querySelector('.trigger-text').innerText = "Select an Audit to View...";
-        
         showScreen('screen-dashboard');
     }
 
@@ -738,10 +803,37 @@
         document.getElementById('dash-search').value = '';
 
         let aud = 0; let clr = 0;
-        dashCurrentData.forEach(row => { const entry = dashAuditData[row[dashColMap.claim_no]]; if(entry && entry.audited) { aud++; if(isClaimClean(entry.findings)) clr++; } });
+        let amtAudited = 0, amtUnclear = 0, amtPending = 0;
+
+        dashCurrentData.forEach(row => { 
+            const entry = dashAuditData[row[dashColMap.claim_no]]; 
+            const amt = parseAmt(row[dashColMap.amount]);
+            
+            if(entry && entry.audited) { 
+                aud++; 
+                amtAudited += amt;
+                if(isClaimClean(entry.findings)) { clr++; } else { amtUnclear += amt; }
+            } else {
+                amtPending += amt;
+            }
+        });
         
         document.getElementById('dash-total').innerText = dashCurrentData.length; document.getElementById('dash-clean').innerText = clr;
         document.getElementById('dash-unclear').innerText = aud - clr; document.getElementById('dash-pending').innerText = dashCurrentData.length - aud;
+
+        document.getElementById('dash-amount-stats').innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                <div class="stat-card" style="border-top: 2px solid var(--accent); padding: 12px; min-width: 0;">
+                    <div class="stat-value" style="font-size:1.1rem; margin-bottom:2px;">${fmtAmt(amtAudited)}</div><div class="stat-label" style="font-size:0.65rem;">Amt Audited</div>
+                </div>
+                <div class="stat-card" style="border-top: 2px solid var(--warning); padding: 12px; min-width: 0;">
+                    <div class="stat-value" style="font-size:1.1rem; color:var(--warning); margin-bottom:2px;">${fmtAmt(amtUnclear)}</div><div class="stat-label" style="font-size:0.65rem;">Amt Unclear</div>
+                </div>
+                <div class="stat-card" style="border-top: 2px solid var(--text-muted); padding: 12px; min-width: 0;">
+                    <div class="stat-value" style="font-size:1.1rem; margin-bottom:2px;">${fmtAmt(amtPending)}</div><div class="stat-label" style="font-size:0.65rem;">Amt Pending</div>
+                </div>
+            </div>
+        `;
 
         setDashFilter('all'); 
         document.getElementById('dash-content-area').style.display = 'block'; showLoader(false);
@@ -749,8 +841,9 @@
 
     function setDashFilter(filterType) {
         dashCurrentFilter = filterType;
-        document.querySelectorAll('#dash-content-area .stat-card').forEach(c => c.classList.remove('active-filter'));
-        document.getElementById('dash-card-' + filterType).classList.add('active-filter');
+        document.querySelectorAll('#dash-content-area .stat-card.active-filter').forEach(c => c.classList.remove('active-filter'));
+        const btn = document.getElementById('dash-card-' + filterType);
+        if(btn) btn.classList.add('active-filter');
         applyDashFilters();
     }
 
@@ -807,7 +900,13 @@
         
         if (hasError) return showAppAlert("Please fill in all highlighted fields.");
 
-        showLoader(true); const periodString = `${fromDate.value} to ${toDate.value}`; const reader = new FileReader();
+        showLoader(true); 
+        
+        // Month Year formatting
+        const formatMonthYear = d => { const opts = {month:'short', year:'numeric'}; return new Date(d).toLocaleDateString('en-GB', opts); };
+        const periodString = formatMonthYear(fromDate.value) + ' to ' + formatMonthYear(toDate.value); 
+        
+        const reader = new FileReader();
         reader.onload = async function(e) {
             try {
                 const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'});
@@ -863,10 +962,23 @@
 
     function updateStats() {
         let audited = 0; let clear = 0;
-        currentData.forEach(row => { const entry = currentAuditData[row[colMap.claim_no]]; if(entry && entry.audited) { audited++; if(isClaimClean(entry.findings)) clear++; } });
+        let amtAudited = 0, amtUnclear = 0, amtPending = 0;
+
+        currentData.forEach(row => { 
+            const entry = currentAuditData[row[colMap.claim_no]]; 
+            const amt = parseAmt(row[colMap.amount]);
+            
+            if(entry && entry.audited) { 
+                audited++; 
+                amtAudited += amt;
+                if(isClaimClean(entry.findings)) { clear++; } else { amtUnclear += amt; }
+            } else {
+                amtPending += amt;
+            }
+        });
         
         const html = `
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px;">
                 <div class="stat-card ws-filter-btn ${workspaceCurrentFilter === 'all' ? 'active-filter' : ''}" id="ws-filter-all" onclick="setWorkspaceFilter('all')" style="border-top: 3px solid var(--accent); padding: 10px; cursor: pointer; min-width: 0;">
                     <div class="stat-value" style="font-size:1.1rem; margin-bottom:2px;">${currentData.length}</div><div class="stat-label" style="font-size:0.6rem;">All</div>
                 </div>
@@ -878,6 +990,18 @@
                 </div>
                 <div class="stat-card ws-filter-btn ${workspaceCurrentFilter === 'pending' ? 'active-filter' : ''}" id="ws-filter-pending" onclick="setWorkspaceFilter('pending')" style="border-top: 3px solid var(--text-muted); padding: 10px; cursor: pointer; min-width: 0;">
                     <div class="stat-value" style="font-size:1.1rem; margin-bottom:2px;">${currentData.length - audited}</div><div class="stat-label" style="font-size:0.6rem;">Pending</div>
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                <div class="stat-card" style="border-top: 2px solid var(--accent); padding: 12px; min-width: 0;">
+                    <div class="stat-value" style="font-size:1rem; margin-bottom:2px;">${fmtAmt(amtAudited)}</div><div class="stat-label" style="font-size:0.6rem;">Amt Audited</div>
+                </div>
+                <div class="stat-card" style="border-top: 2px solid var(--warning); padding: 12px; min-width: 0;">
+                    <div class="stat-value" style="font-size:1rem; color:var(--warning); margin-bottom:2px;">${fmtAmt(amtUnclear)}</div><div class="stat-label" style="font-size:0.6rem;">Amt Unclear</div>
+                </div>
+                <div class="stat-card" style="border-top: 2px solid var(--text-muted); padding: 12px; min-width: 0;">
+                    <div class="stat-value" style="font-size:1rem; margin-bottom:2px;">${fmtAmt(amtPending)}</div><div class="stat-label" style="font-size:0.6rem;">Amt Pending</div>
                 </div>
             </div>
         `;
@@ -912,8 +1036,7 @@
         document.getElementById('modal-extra-inputs').style.display = 'none'; 
         document.getElementById('modal-extra-text').value = '';
         
-        // --- 🔥 100% DIRECT UI UPDATE 🔥 ---
-        // Bina kisi function par depend kiye, sidha screen par likh diya "0"
+        // --- 100% DIRECT UI UPDATE ---
         document.getElementById('modal-discrepancy').value = "0"; 
         const wrapper = document.getElementById('wrap-modal-disc');
         wrapper.querySelector('.trigger-text').innerText = "Part is Clean (None Found)";
@@ -922,7 +1045,6 @@
             if(o.getAttribute('data-value') === "0") o.classList.add('selected');
         });
 
-        // Agar purani koi entry mili, toh usko show karega
         if(entry && entry.audited) {
             const f = entry.findings[0]; 
             for(let key in DISCREPANCY_TYPES) {
@@ -946,7 +1068,6 @@
     async function saveClaimAudit() {
         const claimNo = currentFilteredData[activeClaimRowIndex][colMap.claim_no];
         
-        // Fallback default to "0" just in case
         const discCode = document.getElementById('modal-discrepancy').value || "0"; 
         const extraText = document.getElementById('modal-extra-text').value.trim();
         
@@ -967,7 +1088,6 @@
 
         closeModal(); updateStats();
         
-        // IMMEDIATE AWAIT ensures no data is lost on crash
         const session = await localforage.getItem(currentSessionKey);
         if(session) { 
             session.audit_data = currentAuditData; 
@@ -1011,7 +1131,7 @@
         showLoader(false); showScreen('screen-archive');
     }
 
-    async function resumeSession(key, isFinalized) { if (isFinalized) { verifyPasswordFlow('archive', () => loadSession(key)); } else { loadSession(key); } }
+    async function resumeSession(key, isFinalized) { if (isFinalized) { verifyPasswordFlow(() => loadSession(key)); } else { loadSession(key); } }
     
     async function loadSession(key) {
         showLoader(true); const session = await localforage.getItem(key); if(!session) { showLoader(false); return showAppAlert("Error loading session."); }
@@ -1023,7 +1143,7 @@
 
     async function deleteSession(key, isFinalized) {
         const delOp = async () => { delete dbIndex[key]; await localforage.setItem('db_index', dbIndex); await localforage.removeItem(key); openArchive(document.getElementById('archive-title').innerText.includes('Previous')); };
-        if (isFinalized) { verifyPasswordFlow('archive', () => showAppConfirm("Permanently delete this Finalized Audit?", delOp)); } else { showAppConfirm("Permanently delete this Draft?", delOp); }
+        if (isFinalized) { verifyPasswordFlow(() => showAppConfirm("Permanently delete this Finalized Audit?", delOp)); } else { showAppConfirm("Permanently delete this Draft?", delOp); }
     }
 
     // --- REPORTING & EXPORT ENGINE ---
@@ -1044,27 +1164,62 @@
 
     function generateExportData(sessionData, filter) {
         let clearRows = []; let unclearRows = [];
+        let aAud = 0, aUnc = 0, aPen = 0;
+        
         sessionData.raw_data.forEach(row => {
-            const entry = sessionData.audit_data[row[sessionData.col_map.claim_no]] || {}; const isClear = entry.audited && isClaimClean(entry.findings);
+            const entry = sessionData.audit_data[row[sessionData.col_map.claim_no]] || {}; 
+            const isClear = entry.audited && isClaimClean(entry.findings);
+            const amt = parseAmt(row[sessionData.col_map.amount]);
+            
+            if (entry.audited) {
+                aAud += amt;
+                if (!isClear) aUnc += amt;
+            } else {
+                aPen += amt;
+            }
+
             let fRow = formatRowForExport(row, entry, sessionData.col_map);
             if (filter === 'ALL' || filter === 'CLEAR') { if(isClear) clearRows.push(fRow); }
             if (filter === 'ALL' || filter === 'UNCLEAR') { if(!isClear) unclearRows.push(fRow); }
-        }); return { clearRows, unclearRows, periodName: sessionData.month };
+        }); 
+        return { clearRows, unclearRows, periodName: sessionData.month, aAud, aUnc, aPen };
     }
 
     async function executeExport(format) {
         const scope = document.getElementById('report-scope').value; const filter = document.getElementById('report-filter').value; showLoader(true);
         try {
             let combinedClear = []; let combinedUnclear = [];
+            let tAud = 0, tUnc = 0, tPen = 0;
+
             if (scope === 'master') {
-                for (const key of Object.keys(dbIndex)) { const session = await localforage.getItem(key); if (session && session.raw_data) { const data = generateExportData(session, filter); combinedClear = combinedClear.concat(data.clearRows); combinedUnclear = combinedUnclear.concat(data.unclearRows); } }
-            } else { const session = await localforage.getItem(scope); if (session && session.raw_data) { const data = generateExportData(session, filter); combinedClear = data.clearRows; combinedUnclear = data.unclearRows; } }
+                for (const key of Object.keys(dbIndex)) { 
+                    const session = await localforage.getItem(key); 
+                    if (session && session.raw_data) { 
+                        const data = generateExportData(session, filter); 
+                        combinedClear = combinedClear.concat(data.clearRows); combinedUnclear = combinedUnclear.concat(data.unclearRows); 
+                        tAud += data.aAud; tUnc += data.aUnc; tPen += data.aPen;
+                    } 
+                }
+            } else { 
+                const session = await localforage.getItem(scope); 
+                if (session && session.raw_data) { 
+                    const data = generateExportData(session, filter); 
+                    combinedClear = data.clearRows; combinedUnclear = data.unclearRows; 
+                    tAud = data.aAud; tUnc = data.aUnc; tPen = data.aPen;
+                } 
+            }
 
             if (combinedClear.length === 0 && combinedUnclear.length === 0) { showLoader(false); return showAppAlert("No data matches this filter."); }
             const fileName = scope === 'master' ? `Master_Audit_${Date.now()}` : `Audit_${scope}`;
 
             if(format === 'excel') {
                 let aoa = []; let headers = combinedClear.length > 0 ? Object.keys(combinedClear[0]) : Object.keys(combinedUnclear[0]);
+                
+                // Add Amount Summaries at Top
+                aoa.push(["AUDIT AMOUNT SUMMARY"]);
+                aoa.push(["Total Amt Audited:", fmtAmt(tAud), "Total Amt Unclear:", fmtAmt(tUnc), "Total Amt Pending:", fmtAmt(tPen)]);
+                aoa.push([]);
+
                 if (combinedClear.length > 0) { aoa.push([`CLEAR CLAIMS`]); aoa.push(headers); combinedClear.forEach(r => aoa.push(Object.values(r))); }
                 if (combinedUnclear.length > 0) { if(combinedClear.length > 0) aoa.push([]); aoa.push([`UNCLEAR / PENDING CLAIMS`]); aoa.push(headers); combinedUnclear.forEach(r => aoa.push(Object.values(r))); }
                 const ws = XLSX.utils.aoa_to_sheet(aoa); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Audit Report"); XLSX.writeFile(wb, fileName + ".xlsx");
@@ -1073,8 +1228,9 @@
                 const { jsPDF } = window.jspdf; const doc = new jsPDF('l', 'mm', 'a4');
                 doc.setFontSize(14); doc.text(`Warranty Audit Report - ${scope === 'master' ? 'Master' : fileName}`, 14, 15);
                 doc.setFontSize(10); doc.text(`Generated: ${new Date().toLocaleString()} | Filter: ${filter} | Auditor: Aashish Giri H`, 14, 22);
+                doc.setTextColor(0,0,0); doc.text(`Amount Summary: Total Audited ${fmtAmt(tAud)} | Unclear ${fmtAmt(tUnc)} | Pending ${fmtAmt(tPen)}`, 14, 28);
 
-                let startY = 30; let headers = combinedClear.length > 0 ? Object.keys(combinedClear[0]) : Object.keys(combinedUnclear[0]);
+                let startY = 36; let headers = combinedClear.length > 0 ? Object.keys(combinedClear[0]) : Object.keys(combinedUnclear[0]);
                 const pdfOptions = { styles: { fontSize: 6, cellPadding: 2, overflow: 'linebreak' }, columnStyles: { text: { cellWidth: 'wrap' } }, margin: { left: 14, right: 14 } };
 
                 if(combinedClear.length > 0) { doc.setFontSize(12); doc.setTextColor(0, 150, 0); doc.text("CLEAR CLAIMS", 14, startY); doc.autoTable({ startY: startY + 5, head: [headers], body: combinedClear.map(r => Object.values(r)), styles: pdfOptions.styles, headStyles: { fillColor: [34, 139, 34] }, margin: pdfOptions.margin }); startY = doc.lastAutoTable.finalY + 15; }
@@ -1083,6 +1239,115 @@
             }
         } catch (e) { showAppAlert("Failed: " + e.message); } finally { showLoader(false); }
     }
+    
+    // --- CUSTOM CODES & CHART ENGINE ---
+    function openSettingsScreen() {
+        renderSettingsCodes();
+        showScreen('screen-settings');
+    }
+
+    function renderSettingsCodes() {
+        const tbody = document.getElementById('settings-codes-tbody');
+        tbody.innerHTML = '';
+        for (let key in DISCREPANCY_TYPES) {
+            let isDefault = DEFAULT_DISCREPANCIES[key] ? true : false;
+            tbody.innerHTML += `<tr>
+                <td style="font-weight:700;">${key}</td>
+                <td style="white-space:normal;">${DISCREPANCY_TYPES[key]}</td>
+                <td>${isDefault ? '<span class="badge">Default</span>' : `<button class="btn danger" style="padding:4px 10px; margin:0;" onclick="deleteCustomCode('${key}')">Delete</button>`}</td>
+            </tr>`;
+        }
+        updateModalDropdown();
+    }
+
+    function addCustomCode() {
+        const id = document.getElementById('new-code-id').value.trim();
+        const desc = document.getElementById('new-code-desc').value.trim();
+        if (!id || !desc) return showAppAlert("Enter both Code and Description.");
+        if (DISCREPANCY_TYPES[id]) return showAppAlert("This Code already exists!");
+        
+        DISCREPANCY_TYPES[id] = desc;
+        localStorage.setItem('auditor_custom_codes', JSON.stringify(DISCREPANCY_TYPES));
+        document.getElementById('new-code-id').value = '';
+        document.getElementById('new-code-desc').value = '';
+        renderSettingsCodes();
+        showAppAlert("Custom Code Added Successfully!");
+    }
+
+    function deleteCustomCode(key) {
+        delete DISCREPANCY_TYPES[key];
+        localStorage.setItem('auditor_custom_codes', JSON.stringify(DISCREPANCY_TYPES));
+        renderSettingsCodes();
+    }
+
+    function updateModalDropdown() {
+        const wrap = document.getElementById('wrap-modal-disc');
+        if(!wrap) return;
+        const optsContainer = wrap.querySelector('.custom-options');
+        optsContainer.innerHTML = '';
+        for (let key in DISCREPANCY_TYPES) {
+            let displayText = DISCREPANCY_TYPES[key] === "None Found" ? "Part is Clean (None Found)" : DISCREPANCY_TYPES[key];
+            optsContainer.innerHTML += `<div class="custom-option" data-value="${key}">${displayText}</div>`;
+        }
+    }
+    
+    // Auto-load custom codes into dropdown on start
+    setTimeout(updateModalDropdown, 300);
+
+    // --- CHART SYSTEM ---
+    let dashChartInstance = null;
+
+    function toggleDashChart() {
+        const container = document.getElementById('dash-chart-container');
+        const btn = document.getElementById('btn-toggle-chart');
+        if (container.style.display === 'none') {
+            container.style.display = 'block';
+            btn.innerHTML = '📉 Hide Chart';
+            renderDashChart();
+        } else {
+            container.style.display = 'none';
+            btn.innerHTML = '📊 Show Chart';
+        }
+    }
+
+    function renderDashChart() {
+        const ctx = document.getElementById('auditChart');
+        if(!ctx) return;
+        if (dashChartInstance) dashChartInstance.destroy();
+        
+        let cln = parseInt(document.getElementById('dash-clean').innerText) || 0;
+        let unc = parseInt(document.getElementById('dash-unclear').innerText) || 0;
+        let pen = parseInt(document.getElementById('dash-pending').innerText) || 0;
+
+        dashChartInstance = new Chart(ctx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Clean', 'Unclear', 'Pending'],
+                datasets: [{
+                    data: [cln, unc, pen],
+                    backgroundColor: ['#10b981', '#f59e0b', '#64748b'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { 
+                    legend: { position: 'right', labels: { color: 'var(--text-main)' } } 
+                } 
+            }
+        });
+    }
+
+    // Magic Trick: Filter change hone par chart apne aap update ho jayega!
+    const originalApplyDashFilters = applyDashFilters;
+    applyDashFilters = function() {
+        originalApplyDashFilters();
+        if (document.getElementById('dash-chart-container').style.display === 'block') {
+            renderDashChart();
+        }
+    };
 </script>
 </body>
 </html>
