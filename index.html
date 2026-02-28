@@ -1526,25 +1526,20 @@ window.addEventListener('DOMContentLoaded', () => {
 
     async function silentAutoSync(trigger){
         if(!isAutoSyncOn()||!localStorage.getItem('gist_token_enc'))return;
-        // If no cached passphrase, try to get it (only for manual/finalize triggers, not background timers)
-        if(!_gistPassCache){
-            if(trigger==='10min'||trigger==='hidden')return; // silent bg triggers: skip silently
-            // For finalize/crash-recovery: prompt passphrase
-            const enc=localStorage.getItem('gist_token_enc');
-            if(!enc)return;
-            const tok=await getDecryptedToken();
-            if(!tok)return; // user cancelled or wrong pass
-        }
+        // Background timers only run if passphrase already cached (no UI prompt)
+        if(!_gistPassCache && (trigger==='10min'||trigger==='hidden'||trigger==='queued'))return;
         if(_syncing){_syncPending=true;return;}
         _syncing=true;showSyncDot(true);
         try{
-            const tok=await decryptToken(localStorage.getItem('gist_token_enc'),_gistPassCache);
+            // getDecryptedToken handles both: returns cached token or prompts user
+            const tok=await getDecryptedToken();
+            if(!tok){return;}
             let bk={};const ks=await localforage.keys();for(let k of ks)bk[k]=await localforage.getItem(k);
             bk['_secConfig']=localStorage.getItem('auditor_sec')||'{}';
             const gid=localStorage.getItem('gist_id'),ds=new Date().toLocaleString();
             const res=await fetch(gid?'https://api.github.com/gists/'+gid:'https://api.github.com/gists',{method:gid?'PATCH':'POST',headers:{'Authorization':'token '+tok,'Content-Type':'application/json'},body:JSON.stringify({description:'WA Auto-Backup['+trigger+'] '+ds,public:false,files:{'auditor_backup.json':{content:JSON.stringify(bk)}}})});
             bumpRate();
-            if(res.ok){const j=await res.json();localStorage.setItem('gist_id',j.id);localStorage.setItem('gist_last_sync',ds);localStorage.setItem('gist_last_sync_iso',new Date().toISOString());localStorage.removeItem('gist_dirty_flag');const sel=document.getElementById('autosync-status-text');if(sel&&isAutoSyncOn())sel.innerText='Last sync: '+ds;updateLastSyncCard();}
+            if(res.ok){const j=await res.json();localStorage.setItem('gist_id',j.id);localStorage.setItem('gist_last_sync',ds);localStorage.setItem('gist_last_sync_iso',new Date().toISOString());localStorage.removeItem('gist_dirty_flag');const sel=document.getElementById('autosync-status-text');if(sel&&isAutoSyncOn())sel.innerText='Last sync: '+ds;updateLastSyncCard();showToast('Auto-sync complete! '+ds,'success',4000);}
             else if(res.status===403||res.status===429){localStorage.setItem('gist_autosync','false');stopSyncTimer();updateSyncUI();showToast('Auto-Sync disabled — GitHub rate limit hit ('+res.status+'). Turned OFF automatically.','danger',10000);}
         }catch(e){console.warn('silent sync fail:',e.message);}
         finally{_syncing=false;showSyncDot(false);if(_syncPending){_syncPending=false;setTimeout(()=>silentAutoSync('queued'),3000);}}
@@ -1651,7 +1646,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     const _oFA=finalizeAuditFlow;
-    finalizeAuditFlow=async function(){await _oFA();if(isAutoSyncOn()&&_gistPassCache)setTimeout(()=>silentAutoSync('finalize'),1500);};
+    finalizeAuditFlow=async function(){await _oFA();if(isAutoSyncOn()&&localStorage.getItem('gist_token_enc'))setTimeout(()=>silentAutoSync('finalize'),1500);};
 
     setTimeout(()=>{
         if(isAutoSyncOn()&&localStorage.getItem('gist_token_enc')){startSyncTimer();const d=getRateData();if(d.c>=RATE_WARN)checkRate(d.c);}
