@@ -1559,7 +1559,7 @@ window.addEventListener('DOMContentLoaded', () => {
     async function silentAutoSync(trigger){
         if(!isAutoSyncOn()||!localStorage.getItem('gist_token_enc'))return;
         // Background timers only run if passphrase already cached (no UI prompt)
-        if(!_gistPassCache && (trigger==='10min'||trigger==='hidden'||trigger==='queued'))return;
+        if(!_gistPassCache)return; // never prompt during auto-sync — only sync if passphrase already cached
         if(_syncing){_syncPending=true;return;}
         _syncing=true;showSyncDot(true);
         try{
