@@ -15,12 +15,14 @@
             --border: #e2e8f0; --primary: #0f172a; --primary-hover: #334155; --primary-text: #ffffff;
             --danger: #ef4444; --success: #10b981; --warning: #f59e0b; --accent: #3b82f6;
             --radius: 8px; --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); --modal-overlay: rgba(15, 23, 42, 0.6);
+            color-scheme: light;
         }
 
         [data-theme="dark"] {
             --bg-base: #09090b; --surface: #18181b; --text-main: #f4f4f5; --text-muted: #a1a1aa;
             --border: #27272a; --primary: #ffffff; --primary-hover: #e4e4e7; --primary-text: #000000;
             --modal-overlay: rgba(0, 0, 0, 0.85);
+            color-scheme: dark; /* Forces native date pickers to follow dark mode */
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
@@ -28,7 +30,6 @@
         
         .card { background-color: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; margin-bottom: 16px; }
         
-        /* Pleasing Header */
         .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
         .app-title { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px; background: linear-gradient(90deg, var(--accent), var(--success)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin:0; }
         
@@ -138,16 +139,12 @@
             <h3>Setup Audit</h3>
             <div class="grid-2">
                 <div>
-                    <label>Month</label>
-                    <select id="audit-month" class="select">
-                        <option value="January">Jan</option><option value="February">Feb</option><option value="March">Mar</option><option value="April">Apr</option>
-                        <option value="May">May</option><option value="June">Jun</option><option value="July">Jul</option><option value="August">Aug</option>
-                        <option value="September">Sep</option><option value="October">Oct</option><option value="November">Nov</option><option value="December">Dec</option>
-                    </select>
+                    <label>From Date</label>
+                    <input type="date" id="audit-from" class="input">
                 </div>
                 <div>
-                    <label>Year</label>
-                    <input type="number" id="audit-year" class="input" value="2026">
+                    <label>To Date</label>
+                    <input type="date" id="audit-to" class="input">
                 </div>
             </div>
             <label>Source Excel File</label>
@@ -202,9 +199,17 @@
         <div class="card" style="max-width: 400px; margin: 0 auto;">
             <h3>Reporting & Export Engine</h3>
             <p>Download your finalized audits securely.</p>
-            <label>Select Audit Scope</label>
-            <select id="report-scope" class="select"><option value="master">Master Report (All Months)</option></select>
             
+            <label>Select Audit Scope</label>
+            <select id="report-scope" class="select"><option value="master">Master Report (All Dates)</option></select>
+            
+            <label>Filter Output</label>
+            <select id="report-filter" class="select">
+                <option value="ALL">All Claims</option>
+                <option value="CLEAR">Clear Claims Only</option>
+                <option value="UNCLEAR">Unclear Claims Only</option>
+            </select>
+
             <div class="grid-2" style="margin-top: 16px;">
                 <button class="btn primary" style="margin:0;" onclick="executeExport('excel')">📥 Export Excel</button>
                 <button class="btn danger" style="margin:0; border-color: var(--danger); color: var(--danger);" onclick="executeExport('pdf')">📄 Export PDF</button>
@@ -247,7 +252,7 @@
     </div>
 
 <script>
-    // --- APP DIALOG SYSTEM (Replaces alert, confirm, prompt) ---
+    // --- APP DIALOG SYSTEM ---
     let dialogCallback = null;
     function closeDialog() { document.getElementById('app-dialog').classList.remove('active'); document.getElementById('dialog-input').value = ''; }
     
@@ -369,7 +374,6 @@
         "7": "Related Part Missing to Causal or Affected Part Missing", "8": "Part is Not Defective"
     };
 
-    // LOGIC FIX: Check if a claim is clean based on original python logic + HMIL suspense
     function isClaimClean(findings) {
         if (!findings || findings.length === 0) return true;
         return findings[0].includes("None Found") || findings[0].includes("Sent HMIL Suspense");
@@ -402,9 +406,14 @@
 
     function startNewAudit() {
         const fileInput = document.getElementById('audit-file');
-        const month = document.getElementById('audit-month').value; const year = document.getElementById('audit-year').value;
+        const fromDate = document.getElementById('audit-from').value; 
+        const toDate = document.getElementById('audit-to').value;
+        
+        if (!fromDate || !toDate) return showAppAlert("Please select From Date and To Date.");
         if (!fileInput.files.length) return showAppAlert("Select an Excel file.");
         showLoader(true);
+
+        const periodString = `${fromDate} to ${toDate}`;
 
         const reader = new FileReader();
         reader.onload = async function(e) {
@@ -424,11 +433,11 @@
                     return true;
                 });
 
-                currentSessionKey = `audit_${month}_${year}_${Date.now()}`; currentAuditData = {}; currentFilteredData = [...currentData]; currentPage = 1;
+                currentSessionKey = `audit_${fromDate}_${toDate}_${Date.now()}`; currentAuditData = {}; currentFilteredData = [...currentData]; currentPage = 1;
 
-                await saveSessionToDB({ month, year, last_saved: new Date().toLocaleString(), finalized: false, col_map: colMap, audit_data: currentAuditData, raw_data: currentData });
+                await saveSessionToDB({ month: periodString, year: '', last_saved: new Date().toLocaleString(), finalized: false, col_map: colMap, audit_data: currentAuditData, raw_data: currentData });
 
-                document.getElementById('workspace-title').innerText = `${month} ${year}`;
+                document.getElementById('workspace-title').innerText = periodString;
                 showScreen('screen-workspace'); updateStats(); renderTablePage();
             } catch(err) { showAppAlert(err.message); } finally { showLoader(false); }
         };
@@ -533,7 +542,6 @@
         let finding = DISCREPANCY_TYPES[discCode];
         let entry = { audited: true, timestamp: new Date().toISOString() };
 
-        // LOGIC RESTORED: Background assignments for Suspense & Couriers
         if(discCode === '1') { 
             entry.pod_number = extraText;
             entry.remarks = "Sent to Hmil Suspense (P)";
@@ -597,6 +605,7 @@
     async function resumeSession(key, isFinalized) {
         if (isFinalized) { verifyPasswordFlow(() => loadSession(key)); } else { loadSession(key); }
     }
+    
     async function loadSession(key) {
         showLoader(true); const session = await localforage.getItem(key);
         if(!session) { showLoader(false); return showAppAlert("Error loading session."); }
@@ -611,16 +620,13 @@
             delete dbIndex[key]; await localforage.setItem('db_index', dbIndex); await localforage.removeItem(key);
             openArchive(document.getElementById('archive-title').innerText.includes('Previous'));
         };
-        if (isFinalized) {
-            verifyPasswordFlow(() => showAppConfirm("Permanently delete this audit?", delOp));
-        } else {
-            showAppConfirm("Permanently delete this draft?", delOp);
-        }
+        if (isFinalized) { verifyPasswordFlow(() => showAppConfirm("Permanently delete this audit?", delOp)); } 
+        else { showAppConfirm("Permanently delete this draft?", delOp); }
     }
 
     // --- REPORTING & EXPORT ENGINE ---
     function openReportingMenu() {
-        const select = document.getElementById('report-scope'); select.innerHTML = '<option value="master">Master Report (All Months)</option>';
+        const select = document.getElementById('report-scope'); select.innerHTML = '<option value="master">Master Report (All Dates)</option>';
         for (const [key, meta] of Object.entries(dbIndex)) {
             const opt = document.createElement('option'); opt.value = key; opt.text = `${meta.month} ${meta.year} ${meta.finalized ? '(Fin)' : '(Drf)'}`; select.appendChild(opt);
         }
@@ -630,82 +636,96 @@
     function formatRowForExport(row, auditEntry, colMapping) {
         let expRow = {};
         for(let key in colMapping) expRow[colMapping[key]] = row[colMapping[key]];
-        expRow["Audit Status"] = auditEntry.audited ? "✔ Audited" : "○ Pending";
+        
+        // Removed unicode symbols to fix PDF/Excel encoding bugs
+        expRow["Audit Status"] = auditEntry.audited ? "Audited" : "Pending";
         expRow["Discrepancy Found"] = (!isClaimClean(auditEntry.findings) && auditEntry.audited) ? "Yes" : "No";
         expRow["Discrepancy Details"] = auditEntry.findings ? auditEntry.findings.join("; ") : "";
-        expRow["Audit Time"] = auditEntry.timestamp || "";
-        expRow["Remarks"] = auditEntry.remarks || ""; // Uses restored logic
+        expRow["Audit Time"] = auditEntry.timestamp ? new Date(auditEntry.timestamp).toLocaleString() : "";
+        expRow["Remarks"] = auditEntry.remarks || ""; 
         expRow["POD Number"] = auditEntry.pod_number || "";
-        expRow["Courier Provider"] = auditEntry.courier_provider || ""; // Uses restored logic
+        expRow["Courier Provider"] = auditEntry.courier_provider || ""; 
         expRow["Missing Part Name"] = auditEntry.missing_part_name || "";
         expRow["Auditor"] = "Aashish Giri H";
         return expRow;
     }
 
-    function generateExportData(sessionData) {
+    function generateExportData(sessionData, filter) {
         let clearRows = []; let unclearRows = [];
         sessionData.raw_data.forEach(row => {
             const entry = sessionData.audit_data[row[sessionData.col_map.claim_no]] || {};
             const isClear = entry.audited && isClaimClean(entry.findings);
             let fRow = formatRowForExport(row, entry, sessionData.col_map);
-            if(isClear) clearRows.push(fRow); else unclearRows.push(fRow);
+            
+            if (filter === 'ALL' || filter === 'CLEAR') { if(isClear) clearRows.push(fRow); }
+            if (filter === 'ALL' || filter === 'UNCLEAR') { if(!isClear) unclearRows.push(fRow); }
         });
-        return { clearRows, unclearRows, monthYear: `${sessionData.month} ${sessionData.year}` };
+        return { clearRows, unclearRows, periodName: sessionData.month };
     }
 
     async function executeExport(format) {
-        const scope = document.getElementById('report-scope').value; showLoader(true);
+        const scope = document.getElementById('report-scope').value; 
+        const filter = document.getElementById('report-filter').value;
+        showLoader(true);
         try {
             let combinedClear = []; let combinedUnclear = [];
             if (scope === 'master') {
                 for (const key of Object.keys(dbIndex)) {
                     const session = await localforage.getItem(key);
                     if (session && session.raw_data) {
-                        const data = generateExportData(session);
+                        const data = generateExportData(session, filter);
                         combinedClear = combinedClear.concat(data.clearRows); combinedUnclear = combinedUnclear.concat(data.unclearRows);
                     }
                 }
             } else {
                 const session = await localforage.getItem(scope);
                 if (session && session.raw_data) {
-                    const data = generateExportData(session);
+                    const data = generateExportData(session, filter);
                     combinedClear = data.clearRows; combinedUnclear = data.unclearRows;
                 }
             }
 
-            if (combinedClear.length === 0 && combinedUnclear.length === 0) return showAppAlert("No data to export.");
+            if (combinedClear.length === 0 && combinedUnclear.length === 0) return showAppAlert("No data to export for this filter.");
 
             const fileName = scope === 'master' ? `Master_Audit_${Date.now()}` : `Audit_${scope}`;
 
             if(format === 'excel') {
-                let aoa = []; let headers = combinedClear.length > 0 ? Object.keys(combinedClear[0]) : Object.keys(combinedUnclear[0]);
-                if (combinedClear.length > 0) { aoa.push([`✔ CLEAR CLAIMS`]); aoa.push(headers); combinedClear.forEach(r => aoa.push(Object.values(r))); }
-                if (combinedUnclear.length > 0) { if(combinedClear.length > 0) aoa.push([]); aoa.push([`⚠ UNCLEAR / PENDING CLAIMS`]); aoa.push(headers); combinedUnclear.forEach(r => aoa.push(Object.values(r))); }
+                let aoa = []; 
+                let headers = combinedClear.length > 0 ? Object.keys(combinedClear[0]) : Object.keys(combinedUnclear[0]);
+                
+                if (combinedClear.length > 0) { aoa.push([`CLEAR CLAIMS`]); aoa.push(headers); combinedClear.forEach(r => aoa.push(Object.values(r))); }
+                if (combinedUnclear.length > 0) { if(combinedClear.length > 0) aoa.push([]); aoa.push([`UNCLEAR / PENDING CLAIMS`]); aoa.push(headers); combinedUnclear.forEach(r => aoa.push(Object.values(r))); }
+                
                 const ws = XLSX.utils.aoa_to_sheet(aoa); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Audit Report"); XLSX.writeFile(wb, fileName + ".xlsx");
             } 
             else if (format === 'pdf') {
                 const { jsPDF } = window.jspdf; const doc = new jsPDF('l', 'mm', 'a4');
                 doc.setFontSize(14); doc.text(`Warranty Audit Report - ${scope === 'master' ? 'Master' : fileName}`, 14, 15);
-                doc.setFontSize(10); doc.text(`Generated: ${new Date().toLocaleString()} | Auditor: Aashish Giri H`, 14, 22);
+                doc.setFontSize(10); doc.text(`Generated: ${new Date().toLocaleString()} | Filter: ${filter} | Auditor: Aashish Giri H`, 14, 22);
 
                 let startY = 30;
                 let headers = combinedClear.length > 0 ? Object.keys(combinedClear[0]) : Object.keys(combinedUnclear[0]);
-                // Truncate headers for PDF fit
-                let pdfHeaders = headers.map(h => h.length > 15 ? h.substring(0,12)+'...' : h);
+
+                // The overflow: 'linebreak' forces text wrapping in jspdf-autotable
+                const pdfOptions = {
+                    styles: { fontSize: 6, cellPadding: 2, overflow: 'linebreak' },
+                    columnStyles: { text: { cellWidth: 'wrap' } },
+                    margin: { left: 14, right: 14 }
+                };
 
                 if(combinedClear.length > 0) {
-                    doc.setFontSize(12); doc.setTextColor(0, 150, 0); doc.text("✔ CLEAR CLAIMS", 14, startY);
+                    doc.setFontSize(12); doc.setTextColor(0, 150, 0); doc.text("CLEAR CLAIMS", 14, startY);
                     doc.autoTable({
-                        startY: startY + 5, head: [pdfHeaders], body: combinedClear.map(r => Object.values(r)),
-                        styles: { fontSize: 6, cellPadding: 1 }, headStyles: { fillColor: [34, 139, 34] } // Green Header
+                        startY: startY + 5, head: [headers], body: combinedClear.map(r => Object.values(r)),
+                        styles: pdfOptions.styles, headStyles: { fillColor: [34, 139, 34] }, margin: pdfOptions.margin
                     });
                     startY = doc.lastAutoTable.finalY + 15;
                 }
                 if(combinedUnclear.length > 0) {
-                    doc.setFontSize(12); doc.setTextColor(200, 0, 0); doc.text("⚠ UNCLEAR / PENDING CLAIMS", 14, startY);
+                    doc.setFontSize(12); doc.setTextColor(200, 0, 0); doc.text("UNCLEAR / PENDING CLAIMS", 14, startY);
                     doc.autoTable({
-                        startY: startY + 5, head: [pdfHeaders], body: combinedUnclear.map(r => Object.values(r)),
-                        styles: { fontSize: 6, cellPadding: 1 }, headStyles: { fillColor: [204, 0, 0] } // Red Header
+                        startY: startY + 5, head: [headers], body: combinedUnclear.map(r => Object.values(r)),
+                        styles: pdfOptions.styles, headStyles: { fillColor: [204, 0, 0] }, margin: pdfOptions.margin
                     });
                 }
                 doc.save(fileName + ".pdf");
