@@ -126,6 +126,15 @@
         th:first-child, td:first-child { position: sticky; left: 0; z-index: 2; border-right: 1px solid var(--border); font-weight: 600; }
         th:first-child { background-color: var(--bg-base); } td:first-child { background-color: var(--surface); }
 
+        /* Mobile Compact Table for Custom Codes */
+        @media (max-width: 600px) {
+            #screen-settings .table-wrap table { font-size: 0.75rem; }
+            #screen-settings th, #screen-settings td { padding: 10px 8px; }
+            #screen-settings th:nth-child(2), #screen-settings td:nth-child(2) { white-space: normal; word-break: break-word; min-width: 120px; }
+            #screen-settings .btn.danger { padding: 4px 8px; font-size: 0.7rem; }
+            #screen-settings td:last-child { text-align: center; }
+        }
+
         .status-clear { color: var(--success); font-weight: 700; } .status-unclear { color: var(--warning); font-weight: 700; } .status-pending { color: var(--text-muted); font-weight: 600;}
         
         /* Abbreviations Hint - Top Global Position */
@@ -306,8 +315,19 @@
         <div class="card">
             <p>Add your own codes for the audit dropdown. (e.g. Code: 9, Desc: Labour Mismatch)</p>
             <div class="grid-2">
-                <input type="text" id="new-code-id" class="input" placeholder="Enter Code Number">
+                <div style="position:relative; width: 100%; margin-bottom: 16px;">
+                    <input type="text" id="new-code-id" inputmode="numeric" class="input" placeholder="Enter Code Number" style="padding-right:44px; margin-bottom:0;">
+                    <button onclick="toggleKeyboardMode('new-code-id', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:var(--bg-base); border:1px solid var(--border); border-radius:6px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-muted); transition:0.2s;" title="Toggle Keyboard">🔢</button>
+                </div>
                 <input type="text" id="new-code-desc" class="input" placeholder="Enter Description">
+            </div>
+            <div class="custom-select-wrapper" id="wrap-new-code-type" style="margin-bottom: 16px;">
+                <input type="hidden" id="new-code-type" value="unclear">
+                <div class="custom-select-trigger"><span class="trigger-text">Marks as Unclear (Discrepancy Found)</span> <svg style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+                <div class="custom-options">
+                    <div class="custom-option selected" data-value="unclear">Marks as Unclear (Discrepancy Found)</div>
+                    <div class="custom-option" data-value="clean">Marks as Clean (No Discrepancy)</div>
+                </div>
             </div>
             <button class="btn primary" onclick="addCustomCode()">+ Add Code</button>
         </div>
@@ -679,16 +699,32 @@
         }
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-        if (secConfig.appLock) {
-            const enforceAppLock = () => {
-                showAppPrompt("🔒 Warranty Auditor is Locked.\nEnter Master Password / PIN to access:", true, async (attempt) => {
-                    if (await sha256(attempt) === secConfig.masterHash) { document.getElementById('screen-menu').classList.add('active'); loadDashboardNotifications(); } else { showAppAlert("Incorrect Password."); setTimeout(enforceAppLock, 500); }
-                }, true);
-            }; enforceAppLock();
-        } else { document.getElementById('screen-menu').classList.add('active'); loadDashboardNotifications(); }
-        updateSecurityUI();
-    });
+    async function initApp() {
+    const savedIndex = await localforage.getItem('db_index');
+    if(savedIndex) dbIndex = savedIndex;
+    if (secConfig.appLock) {
+        const enforceAppLock = () => {
+            showAppPrompt("🔒 Warranty Auditor is Locked.\nEnter Master Password / PIN to access:", true, async (attempt) => {
+                if (await sha256(attempt) === secConfig.masterHash) { 
+                    document.getElementById('screen-menu').classList.add('active'); 
+                    loadDashboardNotifications(); 
+                } else { 
+                    showAppAlert("Incorrect Password."); 
+                    setTimeout(enforceAppLock, 500); 
+                }
+            }, true);
+        }; 
+        enforceAppLock();
+    } else { 
+        document.getElementById('screen-menu').classList.add('active'); 
+        loadDashboardNotifications(); 
+    }
+    updateSecurityUI();
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    initApp();
+});
 
     // --- BACKUP AND RESTORE ---
     async function backupDatabase() {
@@ -733,7 +769,7 @@
     const DEFAULT_DISCREPANCIES = { "0": "None Found", "1": "Part is clean (Sent HMIL Suspense)", "3": "Part is Missing", "4": "Part Batch Code Mismatch", "5": "Part Not Tagged", "6": "Part Packing Missing", "7": "Related Part Missing to Causal or Affected Part Missing", "8": "Part is Not Defective" };
     let DISCREPANCY_TYPES = JSON.parse(localStorage.getItem('auditor_custom_codes')) || DEFAULT_DISCREPANCIES;
 
-    function isClaimClean(findings) { if (!findings || findings.length === 0) return true; return findings[0].includes("None Found") || findings[0].includes("Sent HMIL Suspense"); }
+    function isClaimClean(findings) { if (!findings || findings.length === 0) return true; return findings[0].includes("None Found") || findings[0].includes("Sent HMIL Suspense") || findings[0].includes("[CLN]"); }
 
     localforage.getItem('db_index').then(val => { if(val) dbIndex = val; });
 
@@ -750,6 +786,7 @@
     // --- READ-ONLY DASHBOARD ENGINE ---
     async function loadDashboardNotifications() {
         let tunclear = 0; let tpending = 0; let pendingDrafts = 0;
+        let actionMonths = [];
         
         for (const key of Object.keys(dbIndex)) {
             if (dbIndex[key].finalized) { 
@@ -761,7 +798,12 @@
                         if(entry && entry.audited) { aud++; if(isClaimClean(entry.findings)) clr++; } 
                     });
                     const p = session.raw_data.length - aud; const u = aud - clr; 
-                    if(p > 0 || u > 0) { tunclear += u; tpending += p; }
+                    if(p > 0 || u > 0) { 
+                        tunclear += u; tpending += p; 
+                        if (!actionMonths.includes(dbIndex[key].month)) {
+                            actionMonths.push(dbIndex[key].month);
+                        }
+                    }
                 }
             } else {
                 pendingDrafts++;
@@ -770,10 +812,14 @@
         
         const banner = document.getElementById('main-notification');
         if (tunclear > 0 || tpending > 0) { 
-            document.getElementById('notif-text').innerText = `Action Required: ${tunclear} Unclear & ${tpending} Pending claims in Previous Audits.`; 
+            const monthsStr = actionMonths.join(', ');
+            // HTML use kiya taaki title bold ho aur clear dikhe
+            document.getElementById('notif-text').innerHTML = `<strong style="font-size:1rem; display:block; margin-bottom:4px; color:var(--danger);">Action Required</strong> <span style="color:var(--text-muted);">You have ${tunclear} Unclear & ${tpending} Pending claims in <b>${monthsStr}</b>. Click to view.</span>`; 
+            banner.className = 'notification-banner alert-mode';
             banner.style.display = 'flex'; 
         } else if (pendingDrafts > 0) {
-            document.getElementById('notif-text').innerText = `You have ${pendingDrafts} Draft session(s) pending completion.`; 
+            document.getElementById('notif-text').innerHTML = `<strong style="font-size:1rem; display:block; margin-bottom:4px; color:var(--accent);">📝 Draft Pending</strong> <span style="color:var(--text-muted);">You have ${pendingDrafts} Draft session(s) pending completion. Click to view.</span>`; 
+            banner.className = 'notification-banner info-mode';
             banner.style.display = 'flex';
         } else { 
             banner.style.display = 'none'; 
@@ -1228,9 +1274,16 @@
                 const { jsPDF } = window.jspdf; const doc = new jsPDF('l', 'mm', 'a4');
                 doc.setFontSize(14); doc.text(`Warranty Audit Report - ${scope === 'master' ? 'Master' : fileName}`, 14, 15);
                 doc.setFontSize(10); doc.text(`Generated: ${new Date().toLocaleString()} | Filter: ${filter} | Auditor: Aashish Giri H`, 14, 22);
-                doc.setTextColor(0,0,0); doc.text(`Amount Summary: Total Audited ${fmtAmt(tAud)} | Unclear ${fmtAmt(tUnc)} | Pending ${fmtAmt(tPen)}`, 14, 28);
+                doc.setTextColor(0,0,0);
+                doc.setFontSize(12); doc.text('Amount Summary:', 14, 30);
+                doc.setFontSize(10);
+                const totalClaims = tAud + tPen;
+                doc.text(`Total Claims Amount: ${fmtAmt(totalClaims)}`, 14, 38);
+                doc.text(`Audited Amount: ${fmtAmt(tAud)}`, 14, 44);
+                doc.text(`Unclear Amount: ${fmtAmt(tUnc)}`, 14, 50);
+                doc.text(`Pending Amount: ${fmtAmt(tPen)}`, 14, 56);
 
-                let startY = 36; let headers = combinedClear.length > 0 ? Object.keys(combinedClear[0]) : Object.keys(combinedUnclear[0]);
+                let startY = 66; let headers = combinedClear.length > 0 ? Object.keys(combinedClear[0]) : Object.keys(combinedUnclear[0]);
                 const pdfOptions = { styles: { fontSize: 6, cellPadding: 2, overflow: 'linebreak' }, columnStyles: { text: { cellWidth: 'wrap' } }, margin: { left: 14, right: 14 } };
 
                 if(combinedClear.length > 0) { doc.setFontSize(12); doc.setTextColor(0, 150, 0); doc.text("CLEAR CLAIMS", 14, startY); doc.autoTable({ startY: startY + 5, head: [headers], body: combinedClear.map(r => Object.values(r)), styles: pdfOptions.styles, headStyles: { fillColor: [34, 139, 34] }, margin: pdfOptions.margin }); startY = doc.lastAutoTable.finalY + 15; }
@@ -1262,14 +1315,25 @@
 
     function addCustomCode() {
         const id = document.getElementById('new-code-id').value.trim();
-        const desc = document.getElementById('new-code-desc').value.trim();
+        let desc = document.getElementById('new-code-desc').value.trim();
+        const codeType = document.getElementById('new-code-type').value; // Dropdown ki value yahan read hogi
+        
         if (!id || !desc) return showAppAlert("Enter both Code and Description.");
         if (DISCREPANCY_TYPES[id]) return showAppAlert("This Code already exists!");
+        
+        // Agar clean select kiya hai, toh description mein invisibly [CLN] add kar do
+        if (codeType === 'clean') {
+            desc = desc + " [CLN]";
+        }
         
         DISCREPANCY_TYPES[id] = desc;
         localStorage.setItem('auditor_custom_codes', JSON.stringify(DISCREPANCY_TYPES));
         document.getElementById('new-code-id').value = '';
         document.getElementById('new-code-desc').value = '';
+        
+        // Dropdown ko wapas default (unclear) par set karne ke liye
+        setCustomSelectValue('wrap-new-code-type', 'unclear');
+        
         renderSettingsCodes();
         showAppAlert("Custom Code Added Successfully!");
     }
@@ -1300,13 +1364,18 @@
     function toggleDashChart() {
         const container = document.getElementById('dash-chart-container');
         const btn = document.getElementById('btn-toggle-chart');
-        if (container.style.display === 'none') {
+        const chartIcon = '<svg style="width:18px; height:18px; stroke:currentColor; stroke-width:2; fill:none; stroke-linecap:round; stroke-linejoin:round; vertical-align:middle; margin-right:4px;" viewBox="0 0 24 24"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>';
+        
+        if (container.style.display === 'none' || container.style.display === '') {
             container.style.display = 'block';
-            btn.innerHTML = '📉 Hide Chart';
-            renderDashChart();
+            btn.innerHTML = chartIcon + ' Hide Chart';
+            
+            setTimeout(() => {
+                renderDashChart();
+            }, 50);
         } else {
             container.style.display = 'none';
-            btn.innerHTML = '📊 Show Chart';
+            btn.innerHTML = chartIcon + ' Show Chart';
         }
     }
 
