@@ -490,7 +490,8 @@
             <h3 id="workspace-title" style="margin:0; font-size:1.15rem;">Workspace</h3>
             <div style="display: flex; gap: 8px;">
                 <button class="btn primary" style="width: auto; margin:0; padding: 8px 16px; font-size:0.8rem;" onclick="finalizeAuditFlow()">Finalize</button>
-                <button class="btn danger" style="width: auto; margin:0; padding: 8px 16px; font-size:0.8rem;" onclick="requestExitWorkspace()">Menu</button>
+                <button class="btn danger" style="width: auto; margin:0; padding: 8px 16px; font-size:0.8rem;" onclick="discardWorkspace()">Discard</button>
+                <button class="btn" style="width: auto; margin:0; padding: 8px 16px; font-size:0.8rem;" onclick="requestExitWorkspace()">Menu</button>
             </div>
         </div>
 
@@ -601,9 +602,8 @@
                     <input type="text" id="modal-extra-text" class="input" placeholder="...">
                 </div>
 
-                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top: 24px;">
+                <div class="grid-2" style="margin-top: 24px;">
                     <button class="btn primary" style="margin:0;" onclick="saveClaimAudit()">Save Remark</button>
-                    <button class="btn danger" style="margin:0;" onclick="discardClaimAudit()">Discard</button>
                     <button class="btn" style="margin:0;" onclick="closeModal()">Cancel</button>
                 </div>
             </div>
@@ -1065,6 +1065,18 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // --- WORKSPACE ACTIVE STATE & FILTERS ---
     function requestExitWorkspace() { showAppConfirm("Return to menu?\nYour progress is safely auto-saved as a Draft.", () => { showScreen('screen-menu'); }); }
+
+    async function discardWorkspace() {
+        showAppConfirm("Discard this audit?\n\nAre you sure? All current progress will be lost and cannot be recovered.", async () => {
+            showLoader(true);
+            await localforage.removeItem(currentSessionKey);
+            delete dbIndex[currentSessionKey];
+            await localforage.setItem('db_index', dbIndex);
+            currentData = []; currentAuditData = {}; currentSessionKey = null;
+            showLoader(false);
+            showScreen('screen-menu');
+        });
+    }
     function handleSearch() { applyWorkspaceFilters(); }
     function changePage(dir) { const maxPage = Math.ceil(currentFilteredData.length / pageSize) || 1; currentPage = Math.max(1, Math.min(currentPage + dir, maxPage)); renderTablePage(); }
 
@@ -1158,34 +1170,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function closeModal() { document.getElementById('audit-modal').classList.remove('active'); }
-
-    async function discardClaimAudit() {
-        const row = currentFilteredData[activeClaimRowIndex];
-        const claimNo = row[colMap.claim_no];
-        const hasExisting = currentAuditData[claimNo] && currentAuditData[claimNo].audited;
-
-        showAppConfirm(
-            hasExisting
-                ? `Discard Claim ${claimNo}?\n\nAre you sure? All current progress will be lost and this claim will return to Pending.`
-                : `Discard Claim ${claimNo}?\n\nAre you sure? All current selections will be lost.`,
-            async () => {
-                if (hasExisting) {
-                    delete currentAuditData[claimNo];
-                    closeModal();
-                    updateStats();
-                    const session = await localforage.getItem(currentSessionKey);
-                    if (session) {
-                        session.audit_data = currentAuditData;
-                        session.last_saved = new Date().toLocaleString();
-                        await saveSessionToDB(session);
-                    }
-                    renderTablePage();
-                } else {
-                    closeModal();
-                }
-            }
-        );
-    }
 
     function openAuditModal(filteredIndex) {
         activeClaimRowIndex = filteredIndex; const row = currentFilteredData[filteredIndex];
