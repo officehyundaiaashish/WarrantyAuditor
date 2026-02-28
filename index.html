@@ -922,6 +922,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const keys = Object.keys(dbIndex);
         if(keys.length === 0) return showAppAlert("No audits saved. Please create an audit first.");
         
+        optContainer.innerHTML = '<div class="custom-option" data-value="__all__">📊 All Months Combined</div>';
         keys.forEach(k => { optContainer.innerHTML += `<div class="custom-option" data-value="${k}">${dbIndex[k].month} ${dbIndex[k].finalized ? '(Finalized)' : '(Draft)'}</div>`; });
         
         document.getElementById('dash-content-area').style.display = 'none';
@@ -933,11 +934,26 @@ window.addEventListener('DOMContentLoaded', () => {
     async function loadDashboardMonth(sessionKey) {
         if(!sessionKey) return;
         showLoader(true);
-        const session = await localforage.getItem(sessionKey);
-        if(!session || !session.raw_data) { showLoader(false); return showAppAlert("Error loading audit data."); }
 
-        dashCurrentData = session.raw_data; dashAuditData = session.audit_data; dashColMap = session.col_map; dashCurrentPage = 1;
-        document.getElementById('dash-search').value = '';
+        if(sessionKey === '__all__') {
+            // Merge all sessions
+            dashCurrentData = []; dashAuditData = {}; dashColMap = null; dashCurrentPage = 1;
+            const keys = Object.keys(dbIndex);
+            for(const k of keys) {
+                const s = await localforage.getItem(k);
+                if(!s || !s.raw_data) continue;
+                if(!dashColMap) dashColMap = s.col_map;
+                dashCurrentData = dashCurrentData.concat(s.raw_data);
+                Object.assign(dashAuditData, s.audit_data);
+            }
+            if(dashCurrentData.length === 0) { showLoader(false); return showAppAlert("No data found."); }
+            document.getElementById('dash-search').value = '';
+        } else {
+            const session = await localforage.getItem(sessionKey);
+            if(!session || !session.raw_data) { showLoader(false); return showAppAlert("Error loading audit data."); }
+            dashCurrentData = session.raw_data; dashAuditData = session.audit_data; dashColMap = session.col_map; dashCurrentPage = 1;
+            document.getElementById('dash-search').value = '';
+        }
 
         let aud = 0; let clr = 0;
         let amtAudited = 0, amtUnclear = 0, amtPending = 0;
