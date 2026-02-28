@@ -170,7 +170,7 @@
                 <h3 id="dialog-msg" style="margin-bottom:20px; font-size:1.05rem; line-height: 1.5;"></h3>
                 
                 <div id="dialog-input-wrapper" style="position:relative; display:none; margin-bottom: 16px;" autocomplete="off">
-                    <input type="password" id="dialog-input" inputmode="numeric" class="input" style="text-align:center; letter-spacing: 4px; font-size: 1.2rem; margin:0; padding-right: 44px;" placeholder="••••••••" autocomplete="new-password" data-lpignore="true" data-form-type="other">
+                    <input type="text" id="dialog-input" inputmode="numeric" class="input" style="text-align:center; letter-spacing: 4px; font-size: 1.2rem; margin:0; padding-right: 44px; -webkit-text-security: disc; text-security: disc;" placeholder="••••••••" autocomplete="off" data-lpignore="true" data-form-type="other" spellcheck="false" autocorrect="off" autocapitalize="off">
                     <button id="kb-toggle" onclick="toggleKeyboardMode('dialog-input', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:var(--bg-base); border:1px solid var(--border); border-radius:6px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-muted); transition:0.2s;" title="Toggle Keyboard">🔢</button>
                 </div>
 
@@ -392,7 +392,7 @@
             <div id="gist-setup-section">
                 <label>GitHub Personal Access Token</label>
                 <div style="position:relative; margin-bottom:12px;">
-                    <input type="password" id="gist-token-input" class="input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="margin-bottom:0; padding-right:44px; font-family:monospace; font-size:0.85rem;">
+                    <input type="text" id="gist-token-input" class="input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="margin-bottom:0; padding-right:44px; font-family:monospace; font-size:0.85rem; -webkit-text-security: disc; text-security: disc;" autocomplete="off" data-lpignore="true" data-form-type="other" spellcheck="false" autocorrect="off" autocapitalize="off">
                     <button onclick="toggleGistTokenVisibility()" id="gist-token-eye" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:var(--bg-base);border:1px solid var(--border);border-radius:6px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted);font-size:16px;" title="Show/Hide Token">👁</button>
                 </div>
                 <p style="font-size:0.7rem; color:var(--text-muted); margin-bottom:16px; line-height:1.6;">
@@ -720,7 +720,7 @@
         document.getElementById('dialog-msg').innerText = msg;
         const inputWrap = document.getElementById('dialog-input-wrapper'); const input = document.getElementById('dialog-input'); const kbBtn = document.getElementById('kb-toggle');
         
-        input.type = isPassword ? 'password' : 'text'; input.setAttribute('autocomplete', isPassword ? 'new-password' : 'off'); input.setAttribute('data-lpignore', 'true'); input.setAttribute('data-form-type', 'other');
+        input.type = 'text'; input.style.webkitTextSecurity = isPassword ? 'disc' : 'none'; input.style.textSecurity = isPassword ? 'disc' : 'none'; input.setAttribute('autocomplete', 'off'); input.setAttribute('data-lpignore', 'true'); input.setAttribute('data-form-type', 'other');
         input.inputMode = 'numeric'; kbBtn.innerText = '🔢'; kbBtn.style.background = 'var(--bg-base)';
         
         inputWrap.style.display = 'block'; input.value = '';
@@ -1067,14 +1067,19 @@ window.addEventListener('DOMContentLoaded', () => {
     function requestExitWorkspace() { showAppConfirm("Return to menu?\nYour progress is safely auto-saved as a Draft.", () => { showScreen('screen-menu'); }); }
 
     async function discardWorkspace() {
-        showAppConfirm("Discard this audit?\n\nAre you sure? All current progress will be lost and cannot be recovered.", async () => {
+        showAppConfirm("Discard current progress?\n\nAre you sure? All unsaved changes will be lost and the last saved state will be restored.", async () => {
             showLoader(true);
-            await localforage.removeItem(currentSessionKey);
-            delete dbIndex[currentSessionKey];
-            await localforage.setItem('db_index', dbIndex);
-            currentData = []; currentAuditData = {}; currentSessionKey = null;
+            const session = await localforage.getItem(currentSessionKey);
+            if (session) {
+                currentAuditData = session.audit_data || {};
+                currentFilteredData = [...currentData];
+                workspaceCurrentFilter = 'all';
+                currentPage = 1;
+                document.getElementById('search-claim').value = '';
+            }
             showLoader(false);
-            showScreen('screen-menu');
+            updateStats();
+            renderTablePage();
         });
     }
     function handleSearch() { applyWorkspaceFilters(); }
@@ -1611,7 +1616,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const _oSS=showScreen;
     showScreen=function(id){_oSS(id);if(id==='screen-backup')setTimeout(initGistUI,50);};
 
-    function toggleGistTokenVisibility(){const i=document.getElementById('gist-token-input'),b=document.getElementById('gist-token-eye');if(i.type==='password'){i.type='text';b.innerText='Hide';}else{i.type='password';b.innerText='Show';}}
+    function toggleGistTokenVisibility(){const i=document.getElementById('gist-token-input'),b=document.getElementById('gist-token-eye');const hidden=i.style.webkitTextSecurity==='disc';i.style.webkitTextSecurity=hidden?'none':'disc';i.style.textSecurity=hidden?'none':'disc';b.innerText=hidden?'Hide':'Show';}
 
     async function connectGist(){
         const tok=document.getElementById('gist-token-input').value.trim();
