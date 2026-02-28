@@ -156,6 +156,7 @@
         #loader { position: fixed; inset: 0; background: var(--surface); z-index: 2000; display: none; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; color: var(--primary); flex-direction: column; gap: 16px; transition: opacity 0.3s; }
         .spinner { width: 44px; height: 44px; border: 4px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s cubic-bezier(0.6, 0.2, 0.4, 0.8) infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
         .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; background: var(--bg-base); border: 1px solid var(--border); }
     </style>
 </head>
@@ -397,28 +398,70 @@
                 <p style="font-size:0.7rem; color:var(--text-muted); margin-bottom:16px; line-height:1.6;">
                     <b>How to get token:</b> GitHub → Settings → Developer Settings → Personal Access Tokens → Tokens (classic) → Generate new token → Select <b>"gist"</b> scope only → Copy & paste here.
                 </p>
+                <div style="background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.25); border-radius:8px; padding:10px 12px; margin-bottom:14px; font-size:0.72rem; color:var(--accent); line-height:1.6;">
+                    🔐 <b>Zero-Knowledge Security:</b> Your token is encrypted with <b>AES-256-GCM</b> using a passphrase only you know. The raw token is <b>never stored</b> anywhere — not even in DevTools.
+                </div>
                 <button class="btn primary" onclick="connectGist()" style="margin-bottom:8px;">
-                    <svg style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                    Connect & Save Token
+                    <svg style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    Connect & Encrypt Token
                 </button>
             </div>
 
             <div id="gist-connected-section" style="display:none;">
-                <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); border-radius:10px; padding:14px; margin-bottom:16px; font-size:0.8rem;">
+                <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); border-radius:10px; padding:14px; margin-bottom:12px; font-size:0.8rem;">
                     <div style="font-weight:700; color:var(--success); margin-bottom:4px;">✅ Connected to GitHub Gist</div>
                     <div style="color:var(--text-muted);" id="gist-info-text">Gist ID: loading...</div>
                 </div>
+                <!-- LAST SYNC CARD -->
+                <div id="last-sync-card" style="display:none; background:var(--bg-base); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:3px;">Last Cloud Backup</div>
+                            <div id="last-sync-display" style="font-size:0.88rem; font-weight:700; color:var(--text-main);">—</div>
+                            <div id="last-sync-age" style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;"></div>
+                        </div>
+                        <svg style="width:26px;height:26px;stroke:var(--success);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;opacity:0.7;" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    </div>
+                </div>
+
+                <!-- AUTO-SYNC TOGGLE -->
+                <div style="background:var(--bg-base); border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <div>
+                            <div style="font-weight:700; font-size:0.85rem;">⚡ Auto-Sync</div>
+                            <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;" id="autosync-status-text">Loading...</div>
+                        </div>
+                        <button id="btn-autosync-toggle" onclick="toggleAutoSync()" style="padding:6px 14px; border-radius:20px; border:1px solid var(--border); background:var(--surface); font-size:0.78rem; font-weight:700; cursor:pointer; transition:all 0.2s; color:var(--text-muted);">OFF</button>
+                    </div>
+                    <!-- Rate limit warning -->
+                    <div id="autosync-warning" style="display:none; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:8px; padding:10px; font-size:0.72rem; color:var(--warning); line-height:1.6;">
+                        ⚠️ <b>GitHub Rate Limit Warning:</b> GitHub allows <b>5,000 API requests/hour</b> per account. Auto-sync uses ~3 requests per sync. With 10-min intervals = ~18 requests/hour — well within limits. However if multiple devices or apps also use the same token, requests add up. You can always turn this OFF and sync manually.
+                    </div>
+                    <div id="autosync-triggers" style="display:none; margin-top:10px; font-size:0.72rem; color:var(--text-muted); line-height:1.8;">
+                        Auto-syncs on: <b>Audit Finalize</b> · <b>Tab close / crash</b> · <b>Every 10 minutes</b>
+                    </div>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
+                    <span id="gist-sync-indicator" style="display:none; font-size:0.75rem; color:var(--accent); font-weight:600; animation: pulse 1.5s infinite;">● Syncing...</span>
+                </div>
+
                 <div class="grid-2" style="gap:8px; margin-bottom:8px;">
-                    <button class="btn primary" onclick="syncToGist()" style="margin:0;">
+                    <button class="btn primary" onclick="syncToGist(true)" style="margin:0;">
                         <svg style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
-                        Upload to Cloud
+                        Upload Now
                     </button>
                     <button class="btn" onclick="restoreFromGist()" style="margin:0;">
                         <svg style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><polyline points="8 8 12 12 16 8"/><line x1="12" y1="12" x2="12" y2="3"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
                         Restore from Cloud
                     </button>
                 </div>
-                <button class="btn danger" onclick="disconnectGist()" style="margin-bottom:0; padding:8px;">Disconnect GitHub</button>
+                <div class="grid-2" style="gap:8px; margin-top:8px;">
+                    <button class="btn danger" onclick="disconnectGist()" style="margin:0; padding:8px;">Disconnect GitHub</button>
+                    <button class="btn danger" onclick="deleteGistFile()" style="margin:0; padding:8px; opacity:0.85;">
+                        <svg style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-right:4px;" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>Delete Cloud File
+                    </button>
+                </div>
             </div>
             <!-- ══════════════════════════════════════════════ -->
 
@@ -1417,161 +1460,190 @@ window.addEventListener('DOMContentLoaded', () => {
     setTimeout(updateModalDropdown, 300);
 
     // ══════════════════════════════════════════════════
-    // GITHUB GIST CLOUD SYNC MODULE
+    // GITHUB GIST CLOUD SYNC MODULE (AES-GCM ENCRYPTED)
     // ══════════════════════════════════════════════════
 
-    function initGistUI() {
-        const token = localStorage.getItem('gist_token');
-        const gistId = localStorage.getItem('gist_id');
-        const setupSection = document.getElementById('gist-setup-section');
-        const connectedSection = document.getElementById('gist-connected-section');
-        const statusDot = document.getElementById('gist-status-dot');
+    async function deriveKey(pass,salt){const km=await crypto.subtle.importKey('raw',new TextEncoder().encode(pass),{name:'PBKDF2'},false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:310000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);}
+    async function encryptToken(plain,pass){const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),key=await deriveKey(pass,salt),c=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(plain)),o=new Uint8Array(16+12+c.byteLength);o.set(salt,0);o.set(iv,16);o.set(new Uint8Array(c),28);return btoa(String.fromCharCode(...o));}
+    async function decryptToken(b64,pass){const b=Uint8Array.from(atob(b64),c=>c.charCodeAt(0)),key=await deriveKey(pass,b.slice(0,16));return new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:b.slice(16,28)},key,b.slice(28)));}
 
-        if (token) {
-            setupSection.style.display = 'none';
-            connectedSection.style.display = 'block';
-            statusDot.innerText = '🟢 Connected';
-            statusDot.style.background = 'rgba(16,185,129,0.1)';
-            statusDot.style.color = 'var(--success)';
-            const gistInfoText = document.getElementById('gist-info-text');
-            if (gistId) {
-                gistInfoText.innerHTML = `Gist ID: <a href="https://gist.github.com/${gistId}" target="_blank" style="color:var(--accent); text-decoration:none; font-family:monospace;">${gistId.substring(0,20)}...</a>`;
-            } else {
-                gistInfoText.innerText = 'No backup uploaded yet. Press Upload to create one.';
-            }
-        } else {
-            setupSection.style.display = 'block';
-            connectedSection.style.display = 'none';
-            statusDot.innerText = 'Not Connected';
-            statusDot.style.background = 'rgba(100,116,139,0.1)';
-            statusDot.style.color = 'var(--text-muted)';
-        }
-    }
-
-    // Init on backup screen open
-    const _origShowScreen = showScreen;
-    showScreen = function(id) {
-        _origShowScreen(id);
-        if (id === 'screen-backup') setTimeout(initGistUI, 50);
-    };
-
-    function toggleGistTokenVisibility() {
-        const input = document.getElementById('gist-token-input');
-        const btn = document.getElementById('gist-token-eye');
-        if (input.type === 'password') { input.type = 'text'; btn.innerText = '🙈'; }
-        else { input.type = 'password'; btn.innerText = '👁'; }
-    }
-
-    async function connectGist() {
-        const token = document.getElementById('gist-token-input').value.trim();
-        if (!token || !token.startsWith('ghp_')) {
-            return showAppAlert("Invalid token. GitHub tokens start with 'ghp_'. Please check and try again.");
-        }
-        showLoader(true);
-        try {
-            // Verify token is valid
-            const res = await fetch('https://api.github.com/user', {
-                headers: { 'Authorization': `token ${token}` }
+    let _gistPassCache=null;
+    async function getDecryptedToken(){
+        const enc=localStorage.getItem('gist_token_enc');
+        if(!enc) return null;
+        if(_gistPassCache){try{return await decryptToken(enc,_gistPassCache);}catch{_gistPassCache=null;}}
+        return new Promise(resolve=>{
+            showAppPrompt('Enter Token Passphrase:',true,async pass=>{
+                try{const t=await decryptToken(enc,pass);_gistPassCache=pass;if(localStorage.getItem('gist_dirty_flag')==='true'){localStorage.removeItem('gist_dirty_flag');setTimeout(()=>silentAutoSync('crash-recovery'),2000);}resolve(t);}
+                catch{showAppAlert('Wrong passphrase.');resolve(null);}
             });
-            if (!res.ok) throw new Error("Token invalid or expired. Please generate a new one.");
-            const user = await res.json();
-            localStorage.setItem('gist_token', token);
-            document.getElementById('gist-token-input').value = '';
-            showLoader(false);
-            initGistUI();
-            showAppAlert(`✅ Connected as @${user.login}!\n\nYour token is saved. Now press "Upload to Cloud" to create your first backup.`);
-        } catch(e) {
-            showLoader(false);
-            showAppAlert("Connection Failed: " + e.message);
+        });
+    }
+
+    const RATE_WARN=4000, RATE_MAX=4500;
+    function getRateData(){try{return JSON.parse(localStorage.getItem('gist_rate_data'))||{c:0,t:Date.now()};}catch{return{c:0,t:Date.now()};}}
+    function bumpRate(){let d=getRateData();if(Date.now()-d.t>3600000)d={c:0,t:Date.now()};d.c++;localStorage.setItem('gist_rate_data',JSON.stringify(d));checkRate(d.c);}
+    function checkRate(c){
+        if(c>=RATE_MAX&&isAutoSyncOn()){localStorage.setItem('gist_autosync','false');stopSyncTimer();updateSyncUI();showToast('Auto-Sync disabled — GitHub rate limit almost reached ('+c+'/5000 this hour). You can still upload manually.','danger',12000);}
+        else if(c>=RATE_WARN&&c<RATE_MAX){showToast('GitHub rate limit warning: '+c+'/5000 requests used this hour. Auto-sync will disable at 4500.','warning',7000);}
+    }
+
+    function showToast(msg,type,dur){
+        let t=document.getElementById('gist-toast');
+        if(!t){t=document.createElement('div');t.id='gist-toast';t.style.cssText='position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;max-width:92vw;width:380px;padding:14px 18px;border-radius:12px;font-size:0.8rem;font-weight:600;line-height:1.5;box-shadow:0 8px 32px rgba(0,0,0,0.22);cursor:pointer;transition:opacity 0.3s;';t.onclick=()=>{t.style.opacity='0';setTimeout(()=>{if(t.parentNode)t.remove();},300);};document.body.appendChild(t);}
+        const S={danger:{bg:'rgba(239,68,68,0.97)',b:'#ef4444',c:'#fff'},warning:{bg:'rgba(245,158,11,0.97)',b:'#f59e0b',c:'#111'},success:{bg:'rgba(16,185,129,0.97)',b:'#10b981',c:'#fff'}};
+        const s=S[type]||S.success;t.style.background=s.bg;t.style.border='1px solid '+s.b;t.style.color=s.c;t.style.opacity='1';t.innerText=msg;
+        if(t._x)clearTimeout(t._x);t._x=setTimeout(()=>{t.style.opacity='0';setTimeout(()=>{if(t.parentNode)t.remove();},300);},(dur||5000));
+    }
+
+    let _syncTimer=null,_syncing=false,_syncPending=false;
+    const SYNC_INTERVAL=10*60*1000;
+    function isAutoSyncOn(){return localStorage.getItem('gist_autosync')==='true';}
+    function toggleAutoSync(){const n=!isAutoSyncOn();localStorage.setItem('gist_autosync',n?'true':'false');n?startSyncTimer():stopSyncTimer();updateSyncUI();if(n){const w=document.getElementById('autosync-warning');if(w)w.style.display='block';}}
+    function startSyncTimer(){stopSyncTimer();_syncTimer=setInterval(()=>silentAutoSync('10min'),SYNC_INTERVAL);}
+    function stopSyncTimer(){if(_syncTimer){clearInterval(_syncTimer);_syncTimer=null;}}
+
+    function updateSyncUI(){
+        const en=isAutoSyncOn(),btn=document.getElementById('btn-autosync-toggle');
+        if(!btn)return;
+        const st=document.getElementById('autosync-status-text'),tr=document.getElementById('autosync-triggers'),wa=document.getElementById('autosync-warning');
+        if(en){btn.innerText='ON';btn.style.cssText='padding:6px 14px;border-radius:20px;font-size:0.78rem;font-weight:700;cursor:pointer;background:rgba(16,185,129,0.15);color:var(--success);border:1px solid rgba(16,185,129,0.4);';const ls=localStorage.getItem('gist_last_sync');if(st)st.innerText=ls?'Last sync: '+ls:'Active — not synced yet';if(tr)tr.style.display='block';if(wa)wa.style.display='block';}
+        else{btn.innerText='OFF';btn.style.cssText='padding:6px 14px;border-radius:20px;font-size:0.78rem;font-weight:700;cursor:pointer;background:var(--surface);color:var(--text-muted);border:1px solid var(--border);';if(st)st.innerText='Enable to auto-backup on finalize, close & every 10 min';if(tr)tr.style.display='none';if(wa)wa.style.display='none';}
+        updateLastSyncCard();
+    }
+
+    function updateLastSyncCard(){
+        const card=document.getElementById('last-sync-card'),disp=document.getElementById('last-sync-display'),age=document.getElementById('last-sync-age');
+        if(!card||!disp)return;
+        const ls=localStorage.getItem('gist_last_sync');
+        if(ls){card.style.display='block';disp.innerText=ls;const d=new Date(ls);if(!isNaN(d)){const diff=Math.floor((Date.now()-d)/1000);age.innerText=diff<60?diff+'s ago':diff<3600?Math.floor(diff/60)+'m ago':diff<86400?Math.floor(diff/3600)+'h ago':Math.floor(diff/86400)+'d ago';}}
+        else{card.style.display='none';}
+    }
+
+    async function silentAutoSync(trigger){
+        if(!isAutoSyncOn()||!localStorage.getItem('gist_token_enc')||!_gistPassCache)return;
+        if(_syncing){_syncPending=true;return;}
+        _syncing=true;showSyncDot(true);
+        try{
+            const tok=await decryptToken(localStorage.getItem('gist_token_enc'),_gistPassCache);
+            let bk={};const ks=await localforage.keys();for(let k of ks)bk[k]=await localforage.getItem(k);
+            bk['_secConfig']=localStorage.getItem('auditor_sec')||'{}';
+            const gid=localStorage.getItem('gist_id'),ds=new Date().toLocaleString();
+            const res=await fetch(gid?'https://api.github.com/gists/'+gid:'https://api.github.com/gists',{method:gid?'PATCH':'POST',headers:{'Authorization':'token '+tok,'Content-Type':'application/json'},body:JSON.stringify({description:'WA Auto-Backup['+trigger+'] '+ds,public:false,files:{'auditor_backup.json':{content:JSON.stringify(bk)}}})});
+            bumpRate();
+            if(res.ok){const j=await res.json();localStorage.setItem('gist_id',j.id);localStorage.setItem('gist_last_sync',ds);localStorage.removeItem('gist_dirty_flag');const sel=document.getElementById('autosync-status-text');if(sel&&isAutoSyncOn())sel.innerText='Last sync: '+ds;updateLastSyncCard();}
+            else if(res.status===403||res.status===429){localStorage.setItem('gist_autosync','false');stopSyncTimer();updateSyncUI();showToast('Auto-Sync disabled — GitHub rate limit hit ('+res.status+'). Turned OFF automatically.','danger',10000);}
+        }catch(e){console.warn('silent sync fail:',e.message);}
+        finally{_syncing=false;showSyncDot(false);if(_syncPending){_syncPending=false;setTimeout(()=>silentAutoSync('queued'),3000);}}
+    }
+    function showSyncDot(s){const el=document.getElementById('gist-sync-indicator');if(el)el.style.display=s?'inline':'none';}
+
+    window.addEventListener('beforeunload',()=>{if(isAutoSyncOn()&&localStorage.getItem('gist_token_enc'))localStorage.setItem('gist_dirty_flag','true');});
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&isAutoSyncOn())silentAutoSync('hidden');});
+
+    function initGistUI(){
+        const hasEnc=!!localStorage.getItem('gist_token_enc'),gid=localStorage.getItem('gist_id');
+        const setup=document.getElementById('gist-setup-section'),conn=document.getElementById('gist-connected-section'),dot=document.getElementById('gist-status-dot');
+        if(!setup||!conn||!dot)return;
+        if(hasEnc){
+            setup.style.display='none';conn.style.display='block';dot.innerText='Connected';dot.style.background='rgba(16,185,129,0.1)';dot.style.color='var(--success)';
+            const ls=localStorage.getItem('gist_last_sync'),gi=document.getElementById('gist-info-text');
+            if(gi)gi.innerHTML=gid?'Gist: <span style="font-family:monospace;color:var(--accent);">'+gid.substring(0,20)+'...</span>'+(ls?'<br><small style="color:var(--text-muted);">Last sync: '+ls+'</small>':''):'Connected. No backup yet.';
+            updateSyncUI();if(isAutoSyncOn()&&!_syncTimer)startSyncTimer();
+        }else{
+            setup.style.display='block';conn.style.display='none';dot.innerText='Not Connected';dot.style.background='rgba(100,116,139,0.1)';dot.style.color='var(--text-muted)';stopSyncTimer();
         }
     }
 
-    async function syncToGist() {
-        const token = localStorage.getItem('gist_token');
-        if (!token) return showAppAlert("Not connected. Please connect GitHub first.");
+    const _oSS=showScreen;
+    showScreen=function(id){_oSS(id);if(id==='screen-backup')setTimeout(initGistUI,50);};
+
+    function toggleGistTokenVisibility(){const i=document.getElementById('gist-token-input'),b=document.getElementById('gist-token-eye');if(i.type==='password'){i.type='text';b.innerText='Hide';}else{i.type='password';b.innerText='Show';}}
+
+    async function connectGist(){
+        const tok=document.getElementById('gist-token-input').value.trim();
+        if(!tok||!tok.startsWith('ghp_'))return showAppAlert("Invalid token. Must start with ghp_");
         showLoader(true);
-        try {
-            // Collect all data (same as local backup)
-            let backupObj = {};
-            const keys = await localforage.keys();
-            for (let k of keys) { backupObj[k] = await localforage.getItem(k); }
-            backupObj['_secConfig'] = localStorage.getItem('auditor_sec') || "{}";
-            const content = JSON.stringify(backupObj);
-
-            const gistId = localStorage.getItem('gist_id');
-            const url = gistId ? `https://api.github.com/gists/${gistId}` : 'https://api.github.com/gists';
-            const method = gistId ? 'PATCH' : 'POST';
-            const dateStr = new Date().toLocaleString();
-
-            const res = await fetch(url, {
-                method,
-                headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    description: `Warranty Auditor Backup — ${dateStr}`,
-                    public: false,
-                    files: { 'auditor_backup.json': { content } }
-                })
-            });
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.message || 'GitHub API error');
-            }
-            const json = await res.json();
-            localStorage.setItem('gist_id', json.id);
-            localStorage.setItem('gist_last_sync', dateStr);
-            showLoader(false);
-            initGistUI();
-            showAppAlert(`☁️ Upload Successful!\n\nYour data is now saved to GitHub.\nDate: ${dateStr}`);
-        } catch(e) {
-            showLoader(false);
-            showAppAlert("Upload Failed: " + e.message + "\n\nIf your token expired, please disconnect and reconnect with a new token.");
-        }
-    }
-
-    async function restoreFromGist() {
-        const token = localStorage.getItem('gist_token');
-        const gistId = localStorage.getItem('gist_id');
-        if (!token) return showAppAlert("Not connected. Please connect GitHub first.");
-        if (!gistId) return showAppAlert("No cloud backup found. Please upload first.");
-
-        showAppConfirm("⚠️ Restore from GitHub Cloud?\n\nThis will OVERWRITE all current local data with your cloud backup.", async () => {
-            showLoader(true);
-            try {
-                const res = await fetch(`https://api.github.com/gists/${gistId}`, {
-                    headers: { 'Authorization': `token ${token}` }
+        try{
+            const r=await fetch('https://api.github.com/user',{headers:{'Authorization':'token '+tok}});
+            if(!r.ok)throw new Error("Token invalid or expired.");
+            const u=await r.json();showLoader(false);
+            showAppPrompt('Verified as @'+u.login+'! Set a Passphrase to encrypt your token (needed on new devices):',true,p1=>{
+                if(p1.length<4)return showAppAlert("Passphrase too short. Min 4 characters.");
+                showAppPrompt('Confirm Passphrase:',true,async p2=>{
+                    if(p1!==p2)return showAppAlert("Passphrases do not match.");
+                    showLoader(true);
+                    try{const e=await encryptToken(tok,p1);localStorage.setItem('gist_token_enc',e);_gistPassCache=p1;document.getElementById('gist-token-input').value='';showLoader(false);initGistUI();showAppAlert('Connected as @'+u.login+'. Token encrypted with AES-256. Raw token never stored.');}
+                    catch(e){showLoader(false);showAppAlert("Encryption failed: "+e.message);}
                 });
-                if (!res.ok) throw new Error('Could not fetch backup from GitHub.');
-                const json = await res.json();
-                const content = json.files['auditor_backup.json']?.content;
-                if (!content) throw new Error("Backup file not found in Gist.");
+            });
+        }catch(e){showLoader(false);showAppAlert("Connection Failed: "+e.message);}
+    }
 
-                const data = JSON.parse(content);
-                await localforage.clear();
-                for (let key in data) {
-                    if (key === '_secConfig') { localStorage.setItem('auditor_sec', data[key]); }
-                    else { await localforage.setItem(key, data[key]); }
-                }
-                showLoader(false);
-                showAppAlert("✅ Cloud Restore Successful!\n\nApp will reload now.");
-                setTimeout(() => window.location.reload(), 2000);
-            } catch(e) {
-                showLoader(false);
-                showAppAlert("Restore Failed: " + e.message);
-            }
+    async function syncToGist(alert){
+        const tok=await getDecryptedToken();if(!tok)return;
+        if(alert)showLoader(true);
+        try{
+            let bk={};const ks=await localforage.keys();for(let k of ks)bk[k]=await localforage.getItem(k);bk['_secConfig']=localStorage.getItem('auditor_sec')||'{}';
+            const gid=localStorage.getItem('gist_id'),ds=new Date().toLocaleString();
+            const res=await fetch(gid?'https://api.github.com/gists/'+gid:'https://api.github.com/gists',{method:gid?'PATCH':'POST',headers:{'Authorization':'token '+tok,'Content-Type':'application/json'},body:JSON.stringify({description:'Warranty Auditor Backup '+ds,public:false,files:{'auditor_backup.json':{content:JSON.stringify(bk)}}})});
+            bumpRate();
+            if(!res.ok){const e=await res.json();throw new Error(e.message||'API error');}
+            const j=await res.json();localStorage.setItem('gist_id',j.id);localStorage.setItem('gist_last_sync',ds);localStorage.removeItem('gist_dirty_flag');
+            if(alert){showLoader(false);initGistUI();showAppAlert('Upload Successful! '+ds);}else initGistUI();
+        }catch(e){if(alert){showLoader(false);showAppAlert("Upload Failed: "+e.message);}}
+    }
+
+    async function restoreFromGist(){
+        const gid=localStorage.getItem('gist_id');
+        if(!localStorage.getItem('gist_token_enc'))return showAppAlert("Not connected.");
+        if(!gid)return showAppAlert("No cloud backup found. Upload first.");
+        showAppConfirm("Restore from GitHub Cloud? This will OVERWRITE all local data.",async()=>{
+            const tok=await getDecryptedToken();if(!tok)return;
+            showLoader(true);
+            try{
+                const r=await fetch('https://api.github.com/gists/'+gid,{headers:{'Authorization':'token '+tok}});bumpRate();
+                if(!r.ok)throw new Error('Could not fetch backup.');
+                const j=await r.json(),ct=j.files['auditor_backup.json']?.content;
+                if(!ct)throw new Error("Backup file not found in Gist.");
+                const data=JSON.parse(ct);await localforage.clear();
+                for(let k in data){if(k==='_secConfig')localStorage.setItem('auditor_sec',data[k]);else await localforage.setItem(k,data[k]);}
+                showLoader(false);showAppAlert("Restore Successful! App will reload.");setTimeout(()=>window.location.reload(),2000);
+            }catch(e){showLoader(false);showAppAlert("Restore Failed: "+e.message);}
         });
     }
 
-    function disconnectGist() {
-        showAppConfirm("Disconnect GitHub?\n\nYour cloud backup will remain safe on GitHub. Only the connection on this device will be removed.", () => {
-            localStorage.removeItem('gist_token');
-            localStorage.removeItem('gist_id');
-            localStorage.removeItem('gist_last_sync');
-            initGistUI();
-            showAppAlert("Disconnected from GitHub.");
+    async function deleteGistFile(){
+        if(!localStorage.getItem('gist_token_enc'))return showAppAlert("Not connected.");
+        const gid=localStorage.getItem('gist_id');
+        if(!gid)return showAppAlert("No cloud file to delete.");
+        verifyPasswordFlow(async()=>{
+            showAppConfirm("Delete cloud backup file from GitHub? Local data is NOT affected.",async()=>{
+                const tok=await getDecryptedToken();if(!tok)return;
+                showLoader(true);
+                try{
+                    const res=await fetch('https://api.github.com/gists/'+gid,{method:'PATCH',headers:{'Authorization':'token '+tok,'Content-Type':'application/json'},body:JSON.stringify({files:{'auditor_backup.json':null}})});bumpRate();
+                    if(!res.ok){const e=await res.json();throw new Error(e.message||'Delete failed');}
+                    localStorage.removeItem('gist_last_sync');localStorage.removeItem('gist_id');showLoader(false);initGistUI();showAppAlert("Cloud backup file deleted. Local data is safe.");
+                }catch(e){showLoader(false);showAppAlert("Delete Failed: "+e.message);}
+            });
         });
     }
 
-    // ══════════════════════════════════════════════════
+    function disconnectGist(){
+        showAppConfirm("Disconnect GitHub? Cloud backup stays safe. Only this device connection is removed.",()=>{
+            ['gist_token_enc','gist_id','gist_last_sync','gist_autosync','gist_dirty_flag','gist_rate_data'].forEach(k=>localStorage.removeItem(k));
+            _gistPassCache=null;stopSyncTimer();initGistUI();showAppAlert("Disconnected from GitHub.");
+        });
+    }
+
+    const _oFA=finalizeAuditFlow;
+    finalizeAuditFlow=async function(){await _oFA();if(isAutoSyncOn()&&_gistPassCache)setTimeout(()=>silentAutoSync('finalize'),1500);};
+
+    setTimeout(()=>{
+        if(isAutoSyncOn()&&localStorage.getItem('gist_token_enc')){startSyncTimer();const d=getRateData();if(d.c>=RATE_WARN)checkRate(d.c);}
+    },800);
+
 
     // --- CHART SYSTEM ---
     let dashChartInstance = null;
