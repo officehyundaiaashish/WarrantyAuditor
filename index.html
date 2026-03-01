@@ -1682,19 +1682,34 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     async function restoreFromGist(){
-        const gid=localStorage.getItem('gist_id');
         if(!localStorage.getItem('gist_token_enc'))return showAppAlert("Not connected.");
-        if(!gid)return showAppAlert("No cloud backup found. Upload first.");
         showAppConfirm("Restore from GitHub Cloud? This will OVERWRITE all local data.",async()=>{
             const tok=await getDecryptedToken();if(!tok)return;
             showLoader(true);
             try{
+                // Use stored gist_id if available, otherwise search all gists for the backup file
+                let gid=localStorage.getItem('gist_id');
+                if(!gid){
+                    showLoader(true);
+                    let page=1,found=false;
+                    while(!found){
+                        const gr=await fetch('https://api.github.com/gists?per_page=100&page='+page,{headers:{'Authorization':'token '+tok}});bumpRate();
+                        if(!gr.ok)throw new Error('Could not search Gists.');
+                        const gists=await gr.json();
+                        if(gists.length===0)throw new Error("No backup found in your GitHub Gists. Please upload from your other device first.");
+                        const match=gists.find(g=>g.files&&g.files['auditor_backup.json']);
+                        if(match){gid=match.id;localStorage.setItem('gist_id',gid);found=true;}
+                        else if(gists.length<100){throw new Error("No backup found in your GitHub Gists. Please upload from your other device first.");}
+                        else{page++;}
+                    }
+                }
                 const r=await fetch('https://api.github.com/gists/'+gid,{headers:{'Authorization':'token '+tok}});bumpRate();
                 if(!r.ok)throw new Error('Could not fetch backup.');
                 const j=await r.json(),ct=j.files['auditor_backup.json']?.content;
                 if(!ct)throw new Error("Backup file not found in Gist.");
                 const data=JSON.parse(ct);await localforage.clear();
                 for(let k in data){if(k==='_secConfig')localStorage.setItem('auditor_sec',data[k]);else await localforage.setItem(k,data[k]);}
+                localStorage.setItem('gist_id',gid);
                 showLoader(false);showAppAlert("Restore Successful! App will reload.");setTimeout(()=>window.location.reload(),2000);
             }catch(e){showLoader(false);showAppAlert("Restore Failed: "+e.message);}
         });
