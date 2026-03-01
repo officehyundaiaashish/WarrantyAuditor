@@ -64,7 +64,7 @@
             box-shadow: none;
         }
         .app-title-icon {
-            height: 28px; width: auto; flex-shrink: 0;
+            height: 38px; width: auto; flex-shrink: 0;
             display: block;
             filter: none;
             mix-blend-mode: multiply;
@@ -80,7 +80,7 @@
             50% { opacity: 0.82; transform: scale(0.96); }
         }
         .app-title-text {
-            font-size: 1.15rem; font-weight: 800;
+            font-size: 1.35rem; font-weight: 800;
             letter-spacing: 0.3px; white-space: nowrap;
             color: var(--text-main);
             -webkit-text-fill-color: var(--text-main);
@@ -3405,8 +3405,8 @@ window.addEventListener('DOMContentLoaded', () => {
     async function getGdriveToken(forcePrompt = false) {
         // If valid token in memory, return it
         if (!forcePrompt && isGdriveTokenValid()) return _gdriveToken;
-        // If not forcing prompt and user hasn't explicitly connected, never show popup
-        if (!forcePrompt && !isGdriveConnected()) return null;
+        // NEVER auto-trigger OAuth popup — only when user explicitly clicks a button
+        if (!forcePrompt) return null;
         return new Promise((resolve) => {
             try {
                 const client = google.accounts.oauth2.initTokenClient({
@@ -3420,8 +3420,6 @@ window.addEventListener('DOMContentLoaded', () => {
                     },
                     error_callback: () => resolve(null)
                 });
-                // prompt='' means silent re-auth (no popup if user already consented)
-                // prompt='select_account' means force account chooser
                 client.requestAccessToken({ prompt: forcePrompt ? 'select_account' : '' });
             } catch(e) { resolve(null); }
         });
@@ -3543,7 +3541,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         try {
             const tok = await getGdriveToken();
-            if (!tok) { statusBody.innerHTML = '<div style="color:var(--danger);font-size:0.78rem;">Session expired. Please reconnect.</div>'; return; }
+            if (!tok) { statusBody.innerHTML = '<div style="color:var(--text-muted);font-size:0.78rem;">Click "Backup to Drive" or "Restore from Drive" to reconnect Google session.</div>'; return; }
 
             const file = await findGdriveBackupFile(tok);
             _gdriveCloudInfo = file;
@@ -3610,7 +3608,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (!isGdriveConnected()) return showAppAlert("Not connected to Google Drive.");
         showLoader(true);
         try {
-            const tok = await getGdriveToken();
+            const tok = await getGdriveToken(true);
             if (!tok) { showLoader(false); return showAppAlert("Google session expired. Please reconnect."); }
 
             // Build full backup payload
