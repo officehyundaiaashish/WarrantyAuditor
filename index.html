@@ -138,6 +138,41 @@
         .theme-toggle svg { position: absolute; width: 15px; height: 15px; transition: all 0.4s cubic-bezier(0.68,-0.55,0.27,1.55); stroke: var(--text-main); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
         body[data-theme="dark"] .icon-sun { transform: translateY(28px) rotate(90deg); opacity: 0; }
         body:not([data-theme="dark"]) .icon-moon { transform: translateY(-28px) rotate(-90deg); opacity: 0; }
+
+        /* ── Backup Tabs ── */
+        .backup-tab-bar {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-base);
+            border-radius: 12px 12px 0 0;
+            overflow: hidden;
+        }
+        .backup-tab {
+            flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+            padding: 12px 8px;
+            border: none; background: none; cursor: pointer;
+            font-size: 0.78rem; font-weight: 700; color: var(--text-muted);
+            border-bottom: 2px solid transparent;
+            transition: all 0.18s ease;
+            position: relative;
+        }
+        .backup-tab:hover { color: var(--text-main); background: rgba(0,0,0,0.03); }
+        .backup-tab.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--surface); }
+        [data-theme="dark"] .backup-tab:hover { background: rgba(255,255,255,0.04); }
+        [data-theme="dark"] .backup-tab.active { background: var(--surface); }
+        .btab-badge {
+            display: none; width: 7px; height: 7px; border-radius: 50%;
+            background: var(--success); position: absolute; top: 8px; right: 10px;
+        }
+        .btab-badge.show { display: block; }
+        .backup-tab-panel {
+            display: none;
+            padding: 16px;
+            animation: tabFadeIn 0.18s ease;
+        }
+        .backup-tab-panel.active { display: block; }
+        @keyframes tabFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
         h2, h3 { font-weight: 700; margin-bottom: 8px; letter-spacing: -0.3px; }
         p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px; line-height: 1.5; }
         label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 8px; color: var(--text-main); }
@@ -787,7 +822,28 @@
             <h3 style="margin:0;">Backup &amp; Restore</h3>
             <button class="btn" style="width:auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg> Main Menu</button>
         </div>
-        <div class="card" style="max-width: 440px; margin: 0 auto; width: 100%;">
+        <div class="card" style="max-width: 440px; margin: 0 auto; width: 100%; padding: 0; overflow: hidden;">
+
+            <!-- ── Tab Bar ── -->
+            <div class="backup-tab-bar">
+                <button class="backup-tab active" onclick="switchBackupTab('local')" id="btab-local">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Local
+                </button>
+                <button class="backup-tab" onclick="switchBackupTab('drive')" id="btab-drive">
+                    <svg width="13" height="13" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;"><path d="M4.433 22l2.396-4.167h13.538L18 22H4.433z" fill="#1DA462"/><path d="M2 18l2.4 4h3.2L5.2 18H2z" fill="#1565C0"/><path d="M15.567 22h4.8L12 8.333 9.6 12.5 15.567 22z" fill="#EA4335"/><path d="M12 8.333L7.6 16h7.967L12 8.333z" fill="#FBBC04"/><path d="M2 18l5.6-9.667h4.8L6.8 18H2z" fill="#4285F4"/><path d="M12 8.333l4.4 7.667h5.6L14 2.667 12 8.333z" fill="#34A853"/></svg>
+                    Drive
+                    <span class="btab-badge" id="btab-drive-badge"></span>
+                </button>
+                <button class="backup-tab" onclick="switchBackupTab('github')" id="btab-github">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+                    GitHub
+                    <span class="btab-badge" id="btab-github-badge"></span>
+                </button>
+            </div>
+
+            <!-- ── Tab Panels ── -->
+            <div class="backup-tab-panel active" id="bpanel-local">
             <p style="margin-bottom:16px;">Export and restore a full local backup of all audit data.</p>
             
             <button class="btn primary" style="margin-bottom: 24px; padding: 14px;" onclick="backupDatabase()">
@@ -805,114 +861,17 @@
             </div>
             <div id="restore-file-card" style="display: none;"></div>
 
-        </div><!-- end local backup card -->
-
-        <!-- ══════════ GITHUB GIST CLOUD SYNC ══════════ -->
-        <div class="card" style="max-width: 440px; margin: 0 auto 16px auto; width: 100%;">
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-                <svg style="width:22px;height:22px;fill:var(--text-main);flex-shrink:0;" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
-                <h3 style="margin:0; font-size:1rem;">GitHub Cloud Sync</h3>
-                <span id="gist-status-dot" style="margin-left:auto; font-size:0.75rem; font-weight:700; padding:3px 10px; border-radius:20px; background:rgba(100,116,139,0.1); color:var(--text-muted);">Not Connected</span>
-            </div>
-            <p style="font-size:0.75rem; margin-bottom:12px;">Sync to a private GitHub Gist. Accessible from any device with your token.</p>
-
-            <div id="gist-setup-section">
-                <label>GitHub Personal Access Token</label>
-                <div style="position:relative; margin-bottom:12px;">
-                    <input type="text" id="gist-token-input" class="input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="margin-bottom:0; padding-right:44px; font-family:monospace; font-size:0.85rem; -webkit-text-security: disc; text-security: disc;" autocomplete="off" data-lpignore="true" data-form-type="other" spellcheck="false" autocorrect="off" autocapitalize="off">
-                    <button onclick="toggleGistTokenVisibility()" id="gist-token-eye" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:var(--bg-base);border:1px solid var(--border);border-radius:6px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted);font-size:16px;" title="Show/Hide Token"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-                </div>
-                <p style="font-size:0.7rem; color:var(--text-muted); margin-bottom:16px; line-height:1.6;">
-                    <b>How to get token:</b> GitHub → Settings → Developer Settings → Personal Access Tokens → Tokens (classic) → Generate new token → Select <b>"gist"</b> scope only → Copy & paste here.
-                </p>
-                <p style="font-size:0.7rem; color:var(--text-muted); margin-bottom:14px;">Token is encrypted with AES-256-GCM. Raw value is never stored.</p>
-                <button class="btn primary" onclick="connectGist()" style="margin-bottom:8px;">
-                    <svg style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                    Connect & Encrypt Token
-                </button>
             </div>
 
-            <div id="gist-connected-section" style="display:none;">
-                <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); border-radius:10px; padding:14px; margin-bottom:12px; font-size:0.8rem;">
-                    <div style="font-weight:700; color:var(--success); margin-bottom:4px;">Connected to GitHub Gist</div>
-                    <div style="color:var(--text-muted);" id="gist-info-text">Gist ID: loading...</div>
+            <div class="backup-tab-panel" id="bpanel-drive">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                    <span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);">Google Drive</span>
+                    <span id="gdrive-status-dot" style="font-size:0.72rem; font-weight:700; padding:2px 9px; border-radius:20px; background:rgba(100,116,139,0.1); color:var(--text-muted);">Not Connected</span>
                 </div>
-                <!-- LAST SYNC CARD -->
-                <div id="last-sync-card" style="display:none; background:var(--bg-base); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:14px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:3px;">Last Cloud Backup</div>
-                            <div id="last-sync-display" style="font-size:0.88rem; font-weight:700; color:var(--text-main);">—</div>
-                            <div id="last-sync-age" style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;"></div>
-                        </div>
-                        <svg style="width:26px;height:26px;stroke:var(--success);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;opacity:0.7;" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                    </div>
-                </div>
-
-                <!-- AUTO-SYNC TOGGLE -->
-                <div style="background:var(--bg-base); border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:14px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <div>
-                            <div style="font-weight:700; font-size:0.85rem;">Auto-Sync</div>
-                            <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;" id="autosync-status-text">Loading...</div>
-                        </div>
-                        <button id="btn-autosync-toggle" onclick="toggleAutoSync()" style="padding:6px 14px; border-radius:20px; border:1px solid var(--border); background:var(--surface); font-size:0.78rem; font-weight:700; cursor:pointer; transition:all 0.2s; color:var(--text-muted);">OFF</button>
-                    </div>
-                    <!-- Rate limit warning -->
-                    <div id="autosync-warning" style="display:none; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:8px; padding:10px; font-size:0.72rem; color:var(--warning); line-height:1.6;">
-                        GitHub allows 5,000 API requests/hour. Auto-sync uses ~18/hour. Turn off if sharing token across multiple devices.
-                    </div>
-                    <div id="autosync-triggers" style="display:none; margin-top:10px; font-size:0.72rem; color:var(--text-muted); line-height:1.8;">
-                        Triggers on: <b>Finalize</b> · <b>Tab close</b> · <b>Every 3 min</b>
-                    </div>
-                </div>
-
-                <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
-                    <span id="gist-sync-indicator" style="display:none; font-size:0.75rem; color:var(--accent); font-weight:600; align-items:center; gap:6px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block;animation:pulse 1.2s ease-in-out infinite;"></span> Syncing...</span>
-                </div>
-
-                <div class="grid-2" style="gap:8px; margin-bottom:8px;">
-                    <button class="btn" onclick="syncToGist(true)" style="margin:0; background:var(--success); color:white; border-color:var(--success);">
-                        <svg style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
-                        Backup Now
-                    </button>
-                    <button class="btn" onclick="restoreFromGist()" style="margin:0;">
-                        <svg style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><polyline points="8 8 12 12 16 8"/><line x1="12" y1="12" x2="12" y2="3"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
-                        Restore from Cloud
-                    </button>
-                </div>
-                <div class="grid-2" style="gap:8px; margin-top:8px;">
-                    <button class="btn" onclick="disconnectGist()" style="margin:0; padding:10px 16px; background:rgba(239,68,68,0.06); border:1px solid var(--danger); color:var(--danger); font-weight:600;">
-                        <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-right:4px;" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                        Disconnect GitHub
-                    </button>
-                    <button class="btn" onclick="deleteGistFile()" style="margin:0; padding:10px 16px; background:rgba(239,68,68,0.06); border:1px solid var(--danger); color:var(--danger); font-weight:600;">
-                        <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-right:4px;" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                        Delete Cloud File
-                    </button>
-                </div>
-            </div>
-        </div><!-- end GitHub card -->
-
-        <!-- ══════════ GOOGLE DRIVE CLOUD SYNC ══════════ -->
-        <div class="card" style="max-width: 440px; margin: 0 auto 16px auto; width: 100%;">
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-                <!-- Google Drive logo (official colors) -->
-                <svg style="width:22px;height:22px;flex-shrink:0;" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
-                    <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
-                    <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
-                    <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
-                    <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
-                    <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
-                    <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
-                </svg>
-                <h3 style="margin:0; font-size:1rem;">Google Drive Sync</h3>
-                <span id="gdrive-status-dot" style="margin-left:auto; font-size:0.75rem; font-weight:700; padding:3px 10px; border-radius:20px; background:rgba(100,116,139,0.1); color:var(--text-muted);">Not Connected</span>
-            </div>
-            <p style="font-size:0.75rem; margin-bottom:12px;">Sync backup to Google Drive. Accessible from any signed-in device.</p>
+            
 
             <div id="gdrive-setup-section">
-                <p style="font-size:0.7rem; color:var(--text-muted); margin-bottom:14px;">Sign in to authorize access. Backup is stored privately in your Google Drive.</p>
+
                 <button class="btn" onclick="connectGoogleDrive()" style="margin-bottom:8px; background:white; color:#1f2937; border:1px solid #dadce0; font-weight:700; gap:10px;">
                     <svg style="width:18px;height:18px;flex-shrink:0;" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>
                     Sign in with Google
@@ -929,7 +888,7 @@
                 <!-- Cloud backup status card — shows what's on Drive -->
                 <div id="gdrive-cloud-status-card" style="background:var(--bg-base); border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:14px;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
-                        <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);">Cloud Backup Status</div>
+                        <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);">Drive Status</div>
                         <button onclick="checkGdriveBackupStatus()" id="gdrive-refresh-btn" style="background:none;border:none;cursor:pointer;font-size:0.68rem;color:var(--accent);font-weight:700;padding:0;">↻ Refresh</button>
                     </div>
                     <div id="gdrive-cloud-status-body">
@@ -950,7 +909,7 @@
                 </div>
                 <!-- New device hint -->
                 <div id="gdrive-new-device-hint" style="display:none; background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.25); border-radius:8px; padding:10px 12px; margin-bottom:10px; font-size:0.72rem; color:var(--accent); line-height:1.6;">
-                    <b>New Device:</b> No local data found. A backup exists from <span id="gdrive-hint-date" style="font-weight:700;"></span>. Click <b>Restore from Drive</b> to load.
+                    📥 Cloud backup from <span id="gdrive-hint-date" style="font-weight:700;"></span> — click Restore to load.
                 </div>
                 <button class="btn" onclick="disconnectGoogleDrive()" style="margin:0; padding:10px 16px; background:rgba(239,68,68,0.06); border:1px solid var(--danger); color:var(--danger); font-weight:600;">
                     <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-right:4px;" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
@@ -958,7 +917,79 @@
                 </button>
             </div>
             <!-- ══════════════════════════════════════════════ -->
-        </div><!-- end Google Drive card -->
+            </div>
+
+            <div class="backup-tab-panel" id="bpanel-github">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                    <span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);">GitHub Gist</span>
+                    <span id="gist-status-dot" style="font-size:0.72rem; font-weight:700; padding:2px 9px; border-radius:20px; background:rgba(100,116,139,0.1); color:var(--text-muted);">Not Connected</span>
+                </div>
+                <div id="gist-setup-section">
+                <label>GitHub Personal Access Token</label>
+                <div style="position:relative; margin-bottom:12px;">
+                    <input type="text" id="gist-token-input" class="input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="margin-bottom:0; padding-right:44px; font-family:monospace; font-size:0.85rem; -webkit-text-security: disc; text-security: disc;" autocomplete="off" data-lpignore="true" data-form-type="other" spellcheck="false" autocorrect="off" autocapitalize="off">
+                    <button onclick="toggleGistTokenVisibility()" id="gist-token-eye" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:var(--bg-base);border:1px solid var(--border);border-radius:6px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted);font-size:16px;" title="Show/Hide Token"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                </div>
+                <p style="font-size:0.68rem; color:var(--text-muted); margin-bottom:14px; line-height:1.5;">GitHub → Settings → Developer Settings → PAT (classic) → <b>gist</b> scope → Copy. <span style="opacity:0.7;">AES-256 encrypted.</span></p>
+                <button class="btn primary" onclick="connectGist()" style="margin-bottom:8px;">
+                    <svg style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    Connect &amp; Encrypt Token
+                </button>
+            </div>
+
+            <div id="gist-connected-section" style="display:none;">
+                <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); border-radius:10px; padding:14px; margin-bottom:12px; font-size:0.8rem;">
+                    <div style="font-weight:700; color:var(--success); margin-bottom:4px;">Connected to GitHub Gist</div>
+                    <div style="color:var(--text-muted);" id="gist-info-text">Gist ID: loading...</div>
+                </div>
+                <div id="last-sync-card" style="display:none; background:var(--bg-base); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:3px;">Last Cloud Backup</div>
+                            <div id="last-sync-display" style="font-size:0.88rem; font-weight:700; color:var(--text-main);">—</div>
+                            <div id="last-sync-age" style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;"></div>
+                        </div>
+                        <svg style="width:26px;height:26px;stroke:var(--success);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;opacity:0.7;" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    </div>
+                </div>
+                <div style="background:var(--bg-base); border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <div>
+                            <div style="font-weight:700; font-size:0.85rem;">Auto-Sync</div>
+                            <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;" id="autosync-status-text">Loading...</div>
+                        </div>
+                        <button id="btn-autosync-toggle" onclick="toggleAutoSync()" style="padding:6px 14px; border-radius:20px; border:1px solid var(--border); background:var(--surface); font-size:0.78rem; font-weight:700; cursor:pointer; transition:all 0.2s; color:var(--text-muted);">OFF</button>
+                    </div>
+                    <div id="autosync-warning" style="display:none; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:8px; padding:10px; font-size:0.72rem; color:var(--warning); line-height:1.6;">5,000 req/hr limit. Auto-sync uses ~18/hr.</div>
+                    <div id="autosync-triggers" style="display:none; margin-top:10px; font-size:0.72rem; color:var(--text-muted); line-height:1.8;">⚡ Finalize · Tab close · Every 3 min</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
+                    <span id="gist-sync-indicator" style="display:none; font-size:0.75rem; color:var(--accent); font-weight:600; align-items:center; gap:6px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block;animation:pulse 1.2s ease-in-out infinite;"></span> Syncing...</span>
+                </div>
+                <div class="grid-2" style="gap:8px; margin-bottom:8px;">
+                    <button class="btn" onclick="syncToGist(true)" style="margin:0; background:var(--success); color:white; border-color:var(--success);">
+                        <svg style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+                        Backup Now
+                    </button>
+                    <button class="btn" onclick="restoreFromGist()" style="margin:0;">
+                        <svg style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><polyline points="8 8 12 12 16 8"/><line x1="12" y1="12" x2="12" y2="3"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+                        Restore from Cloud
+                    </button>
+                </div>
+                <div class="grid-2" style="gap:8px; margin-top:8px;">
+                    <button class="btn" onclick="disconnectGist()" style="margin:0; padding:10px 16px; background:rgba(239,68,68,0.06); border:1px solid var(--danger); color:var(--danger); font-weight:600;">
+                        <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-right:4px;" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        Disconnect
+                    </button>
+                    <button class="btn" onclick="deleteGistFile()" style="margin:0; padding:10px 16px; background:rgba(239,68,68,0.06); border:1px solid var(--danger); color:var(--danger); font-weight:600;">
+                        <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-right:4px;" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                        Delete File
+                    </button>
+                </div>
+            </div>
+            </div>
+
+        </div><!-- end backup tabs card -->
 
     </div>
 
@@ -3372,7 +3403,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ── Get OAuth token (silent if possible, popup if needed) ──
     async function getGdriveToken(forcePrompt = false) {
+        // If valid token in memory, return it
         if (!forcePrompt && isGdriveTokenValid()) return _gdriveToken;
+        // If not forcing prompt and user hasn't explicitly connected, never show popup
+        if (!forcePrompt && !isGdriveConnected()) return null;
         return new Promise((resolve) => {
             try {
                 const client = google.accounts.oauth2.initTokenClient({
@@ -3386,20 +3420,47 @@ window.addEventListener('DOMContentLoaded', () => {
                     },
                     error_callback: () => resolve(null)
                 });
+                // prompt='' means silent re-auth (no popup if user already consented)
+                // prompt='select_account' means force account chooser
                 client.requestAccessToken({ prompt: forcePrompt ? 'select_account' : '' });
             } catch(e) { resolve(null); }
         });
     }
 
-    // ── Search Drive for existing backup file ──
-    async function findGdriveBackupFile(tok) {
+    // ── Search Drive for ALL backup files (for limit management) ──
+    const GDRIVE_MAX_BACKUPS = 5; // max versions to keep
+    const GDRIVE_MIN_INTERVAL_MS = 5 * 60 * 1000; // 5 min min between backups
+
+    async function findAllGdriveBackupFiles(tok) {
         const r = await fetch(
-            `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${GDRIVE_BACKUP_FILENAME}'&fields=files(id,name,modifiedTime,size)&orderBy=modifiedTime+desc`,
+            `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${GDRIVE_BACKUP_FILENAME}'&fields=files(id,name,modifiedTime,size)&orderBy=modifiedTime+desc&pageSize=20`,
             { headers: { 'Authorization': 'Bearer ' + tok } }
         );
         if (!r.ok) throw new Error('Could not search Drive.');
         const d = await r.json();
-        return d.files && d.files.length > 0 ? d.files[0] : null;
+        return d.files || [];
+    }
+
+    async function findGdriveBackupFile(tok) {
+        const files = await findAllGdriveBackupFiles(tok);
+        return files.length > 0 ? files[0] : null;
+    }
+
+    // Delete old backup files beyond limit
+    async function pruneOldGdriveBackups(tok) {
+        try {
+            const files = await findAllGdriveBackupFiles(tok);
+            if (files.length <= GDRIVE_MAX_BACKUPS) return;
+            // Delete oldest ones beyond limit
+            const toDelete = files.slice(GDRIVE_MAX_BACKUPS);
+            for (const f of toDelete) {
+                await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + tok }
+                });
+            }
+            console.log(`Pruned ${toDelete.length} old backup(s) from Drive.`);
+        } catch(e) { console.warn('Prune failed:', e.message); }
     }
 
     // ── Connect — sign in + immediately check cloud state ──
@@ -3564,35 +3625,38 @@ window.addEventListener('DOMContentLoaded', () => {
             const content = JSON.stringify(bk);
             const ds = new Date().toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
 
-            // Check if file already exists — update vs create
-            const existingFile = _gdriveCloudInfo || await findGdriveBackupFile(tok);
-            let uploadRes;
-
-            if (existingFile) {
-                // PATCH — update existing file content
-                uploadRes = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${existingFile.id}?uploadType=media`, {
-                    method: 'PATCH',
-                    headers: { 'Authorization': 'Bearer ' + tok, 'Content-Type': 'application/json' },
-                    body: content
-                });
-            } else {
-                // POST — create new file in appDataFolder (hidden, private)
-                const form = new FormData();
-                form.append('metadata', new Blob([JSON.stringify({ name: GDRIVE_BACKUP_FILENAME, parents: ['appDataFolder'] })], { type: 'application/json' }));
-                form.append('file', new Blob([content], { type: 'application/json' }));
-                uploadRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                    method: 'POST', headers: { 'Authorization': 'Bearer ' + tok }, body: form
-                });
+            // ── Throttle: prevent backup more than once per 5 mins ──
+            const lastBackupTime = parseInt(localStorage.getItem('gdrive_last_backup_ts') || '0');
+            if (Date.now() - lastBackupTime < GDRIVE_MIN_INTERVAL_MS) {
+                const minsLeft = Math.ceil((GDRIVE_MIN_INTERVAL_MS - (Date.now() - lastBackupTime)) / 60000);
+                showLoader(false);
+                return showAppAlert(`Please wait ${minsLeft} more minute(s) before backing up again.`);
             }
+
+            // ── Always create new versioned file (not override) ──
+            const form = new FormData();
+            form.append('metadata', new Blob([JSON.stringify({
+                name: GDRIVE_BACKUP_FILENAME,
+                parents: ['appDataFolder'],
+                description: 'WA Backup ' + ds
+            })], { type: 'application/json' }));
+            form.append('file', new Blob([content], { type: 'application/json' }));
+            const uploadRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                method: 'POST', headers: { 'Authorization': 'Bearer ' + tok }, body: form
+            });
 
             if (!uploadRes.ok) { const err = await uploadRes.json(); throw new Error(err.error?.message || 'Upload failed'); }
             const uploaded = await uploadRes.json();
-            localStorage.setItem('gdrive_file_id', uploaded.id || existingFile?.id);
+            localStorage.setItem('gdrive_file_id', uploaded.id);
             localStorage.setItem('gdrive_last_sync', ds);
-            _gdriveCloudInfo = null; // reset cache so next check is fresh
+            localStorage.setItem('gdrive_last_backup_ts', Date.now().toString());
+            _gdriveCloudInfo = null;
+
+            // ── Prune old backups beyond limit (keep latest 5) ──
+            await pruneOldGdriveBackups(tok);
 
             showLoader(false);
-            await checkGdriveBackupStatus(); // refresh status card
+            await checkGdriveBackupStatus();
             showToast(`Backup saved to Google Drive — ${ds}`, 'success', 4000);
         } catch(e) {
             showLoader(false);
@@ -3698,6 +3762,24 @@ window.addEventListener('DOMContentLoaded', () => {
     const _oSSv3 = showScreen;
     showScreen = function(id) { _oSSv3(id); if (id === 'screen-backup') setTimeout(initGdriveUI, 80); };
     setTimeout(initGdriveUI, 900);
+
+    // ── Backup Tabs ──
+    function switchBackupTab(tab) {
+        document.querySelectorAll('.backup-tab').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.backup-tab-panel').forEach(p => p.classList.remove('active'));
+        document.getElementById('btab-' + tab).classList.add('active');
+        document.getElementById('bpanel-' + tab).classList.add('active');
+    }
+    function updateBackupTabBadges() {
+        const driveConnected = !!localStorage.getItem('gdrive_connected');
+        const githubConnected = !!localStorage.getItem('gist_token_enc');
+        const driveBadge = document.getElementById('btab-drive-badge');
+        const githubBadge = document.getElementById('btab-github-badge');
+        if (driveBadge) driveBadge.classList.toggle('show', driveConnected);
+        if (githubBadge) githubBadge.classList.toggle('show', githubConnected);
+    }
+    document.addEventListener('DOMContentLoaded', () => setTimeout(updateBackupTabBadges, 500));
+
 </script>
 </body>
 </html>
