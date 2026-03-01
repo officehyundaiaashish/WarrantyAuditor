@@ -860,6 +860,8 @@ window.addEventListener('DOMContentLoaded', () => {
             for (let k of keys) { backupObj[k] = await localforage.getItem(k); }
             backupObj['_secConfig'] = localStorage.getItem('auditor_sec') || "{}";
             backupObj['_autosync'] = localStorage.getItem('gist_autosync') || 'false';
+            backupObj['_theme'] = localStorage.getItem('auditor_theme') || 'light';
+            backupObj['_customCodes'] = localStorage.getItem('auditor_custom_codes') || '{}';
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupObj));
             const dlAnchorElem = document.createElement('a'); dlAnchorElem.setAttribute("href", dataStr);
             dlAnchorElem.setAttribute("download", `WarrantyAuditor_Backup_${new Date().toISOString().split('T')[0]}.json`);
@@ -874,7 +876,7 @@ window.addEventListener('DOMContentLoaded', () => {
             reader.onload = async (e) => {
                 try {
                     const data = JSON.parse(e.target.result); await localforage.clear();
-                    for (let key in data) { if (key === '_secConfig') { localStorage.setItem('auditor_sec', data[key]); } else if (key === '_autosync') { localStorage.setItem('gist_autosync', data[key]); } else { await localforage.setItem(key, data[key]); } }
+                    for (let key in data) { if (key === '_secConfig') { localStorage.setItem('auditor_sec', data[key]); } else if (key === '_autosync') { localStorage.setItem('gist_autosync', data[key]); } else if (key === '_theme') { localStorage.setItem('auditor_theme', data[key]); applyTheme(data[key]); } else if (key === '_customCodes') { localStorage.setItem('auditor_custom_codes', data[key]); } else { await localforage.setItem(key, data[key]); } }
                     showLoader(false); showAppAlert("Database Restored Successfully! App will reload."); setTimeout(() => window.location.reload(), 2000);
                 } catch(err) { showLoader(false); showAppAlert("Restore failed. Invalid backup."); document.getElementById('restore-file').value = ''; }
             }; reader.readAsText(file);
@@ -902,7 +904,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     localforage.getItem('db_index').then(val => { if(val) dbIndex = val; });
 
-    async function saveSessionToDB(sessionData) { dbIndex[currentSessionKey] = { month: sessionData.month, year: sessionData.year, finalized: sessionData.finalized || false, last_saved: sessionData.last_saved }; await localforage.setItem('db_index', dbIndex); await localforage.setItem(currentSessionKey, sessionData); }      
+    async function saveSessionToDB(sessionData) { dbIndex[currentSessionKey] = { month: sessionData.month, year: sessionData.year, finalized: sessionData.finalized || false, last_saved: sessionData.last_saved, audit_remark: sessionData.audit_remark || '' }; await localforage.setItem('db_index', dbIndex); await localforage.setItem(currentSessionKey, sessionData); }      
     function showLoader(show) { document.getElementById('loader').style.display = show ? 'flex' : 'none'; }
     function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); if(id === 'screen-menu') setTimeout(loadDashboardNotifications, 100); if(id === 'screen-new-audit') { const today = new Date(); const y = today.getFullYear(); const m = today.getMonth(); const firstDay = new Date(y, m, 1).toISOString().split('T')[0]; const lastDay = new Date(y, m + 1, 0).toISOString().split('T')[0]; const fromEl = document.getElementById('audit-from'); const toEl = document.getElementById('audit-to'); if(!fromEl.value) fromEl.value = firstDay; if(!toEl.value) toEl.value = lastDay; } }
 
@@ -1362,11 +1364,40 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         summary += `\nFinalize this audit?`;
 
-        const processFinalize = async () => {
-            showLoader(true); const session = await localforage.getItem(currentSessionKey); session.finalized = true; await saveSessionToDB(session);
+        const processFinalize = async (auditRemark) => {
+            showLoader(true);
+            const session = await localforage.getItem(currentSessionKey);
+            session.finalized = true;
+            if(auditRemark) session.audit_remark = auditRemark;
+            await saveSessionToDB(session);
             showLoader(false); showAppAlert("Audit Finalized & Saved to Previous Audits."); showScreen('screen-menu');
         };
-        showAppConfirm(summary, processFinalize);
+
+        // Show summary confirm first, then prompt for optional remark (allows empty)
+        showAppConfirm(summary, () => {
+            // Custom prompt that allows empty value (remark is optional)
+            const msg = "Add a final remark for this audit?\n(Leave blank and press Confirm to skip)";
+            document.getElementById('dialog-msg').innerText = msg;
+            document.getElementById('dialog-input-wrapper').style.display = 'block';
+            const input = document.getElementById('dialog-input');
+            const kbBtn = document.getElementById('kb-toggle');
+            input.value = '';
+            input.type = 'text';
+            input.style.webkitTextSecurity = 'none';
+            input.style.textSecurity = 'none';
+            input.setAttribute('inputmode', 'text');
+            input.placeholder = 'e.g. Checked by Rajesh, Oct batch...';
+            if(kbBtn) kbBtn.style.display = 'none';
+            document.getElementById('dialog-btn-no').style.display = 'block';
+            document.getElementById('dialog-btn-no').onclick = closeDialog;
+            document.getElementById('dialog-btn-yes').onclick = () => {
+                const remark = input.value.trim();
+                closeDialog();
+                processFinalize(remark);
+            };
+            document.getElementById('app-dialog').classList.add('active');
+            setTimeout(() => input.focus(), 100);
+        });
     }
 
     // --- ARCHIVE ---
@@ -1377,7 +1408,7 @@ window.addEventListener('DOMContentLoaded', () => {
             if (meta.finalized === showFinalized) {
                 found = true; const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td style="font-weight:600;">${meta.month}<br><span style="font-size:0.7rem; color:var(--text-muted); font-weight:normal;">${meta.last_saved}</span></td>
+                    <td style="font-weight:600;">${meta.month}<br><span style="font-size:0.7rem; color:var(--text-muted); font-weight:normal;">${meta.last_saved}</span>${meta.audit_remark ? `<br><span style="font-size:0.7rem; color:var(--accent); font-weight:600; font-style:italic;">"${meta.audit_remark}"</span>` : ''}</td>
                     <td><span class="badge ${meta.finalized ? 'status-clear' : 'status-unclear'}">${meta.finalized ? 'Fin' : 'Drf'}</span></td>
                     <td><div style="display:flex; gap:6px;"><button class="btn primary" style="padding:6px; width:auto; margin:0;" onclick="resumeSession('${key}', ${meta.finalized})">Open</button><button class="btn danger" style="padding:6px; width:auto; margin:0;" onclick="deleteSession('${key}', ${meta.finalized})">Del</button></div></td>
                 `; tbody.appendChild(tr);
@@ -1713,7 +1744,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const tok=await getDecryptedToken();
             if(!tok){return;}
             let bk={};const ks=await localforage.keys();for(let k of ks)bk[k]=await localforage.getItem(k);
-            bk['_secConfig']=localStorage.getItem('auditor_sec')||'{}';bk['_autosync']=localStorage.getItem('gist_autosync')||'false';
+            bk['_secConfig']=localStorage.getItem('auditor_sec')||'{}';bk['_autosync']=localStorage.getItem('gist_autosync')||'false';bk['_theme']=localStorage.getItem('auditor_theme')||'light';bk['_customCodes']=localStorage.getItem('auditor_custom_codes')||'{}';
             const gid=localStorage.getItem('gist_id'),ds=new Date().toLocaleString();
             const res=await fetch(gid?'https://api.github.com/gists/'+gid:'https://api.github.com/gists',{method:gid?'PATCH':'POST',headers:{'Authorization':'token '+tok,'Content-Type':'application/json'},body:JSON.stringify({description:'WA Auto-Backup['+trigger+'] '+ds,public:false,files:{'auditor_backup.json':{content:JSON.stringify(bk)}}})});
             bumpRate();
@@ -1786,7 +1817,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const j = await r.json(), ct = j.files['auditor_backup.json']?.content;
                 if (!ct) throw new Error("Backup file not found.");
                 const data = JSON.parse(ct); await localforage.clear();
-                for (let k in data) { if (k === '_secConfig') localStorage.setItem('auditor_sec', data[k]); else if (k === '_autosync') localStorage.setItem('gist_autosync', data[k]); else await localforage.setItem(k, data[k]); }
+                for (let k in data) { if (k === '_secConfig') localStorage.setItem('auditor_sec', data[k]); else if (k === '_autosync') localStorage.setItem('gist_autosync', data[k]); else if (k === '_theme') { localStorage.setItem('auditor_theme', data[k]); applyTheme(data[k]); } else if (k === '_customCodes') { localStorage.setItem('auditor_custom_codes', data[k]); } else await localforage.setItem(k, data[k]); }
                 localStorage.setItem('gist_id', gid);
                 btn.classList.remove('loading'); btn.classList.add('done');
                 showToast('Restore Successful! Reloading...', 'success', 3000);
@@ -1842,7 +1873,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const tok=await getDecryptedToken();if(!tok)return;
         if(alert)showLoader(true);
         try{
-            let bk={};const ks=await localforage.keys();for(let k of ks)bk[k]=await localforage.getItem(k);bk['_secConfig']=localStorage.getItem('auditor_sec')||'{}';bk['_autosync']=localStorage.getItem('gist_autosync')||'false';
+            let bk={};const ks=await localforage.keys();for(let k of ks)bk[k]=await localforage.getItem(k);bk['_secConfig']=localStorage.getItem('auditor_sec')||'{}';bk['_autosync']=localStorage.getItem('gist_autosync')||'false';bk['_theme']=localStorage.getItem('auditor_theme')||'light';bk['_customCodes']=localStorage.getItem('auditor_custom_codes')||'{}';
             const gid=localStorage.getItem('gist_id'),ds=new Date().toLocaleString();
             const res=await fetch(gid?'https://api.github.com/gists/'+gid:'https://api.github.com/gists',{method:gid?'PATCH':'POST',headers:{'Authorization':'token '+tok,'Content-Type':'application/json'},body:JSON.stringify({description:'Warranty Auditor Backup '+ds,public:false,files:{'auditor_backup.json':{content:JSON.stringify(bk)}}})});
             bumpRate();
@@ -1879,7 +1910,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const j=await r.json(),ct=j.files['auditor_backup.json']?.content;
                 if(!ct)throw new Error("Backup file not found in Gist.");
                 const data=JSON.parse(ct);await localforage.clear();
-                for(let k in data){if(k==='_secConfig')localStorage.setItem('auditor_sec',data[k]);else if(k==='_autosync')localStorage.setItem('gist_autosync',data[k]);else await localforage.setItem(k,data[k]);}
+                for(let k in data){if(k==='_secConfig')localStorage.setItem('auditor_sec',data[k]);else if(k==='_autosync')localStorage.setItem('gist_autosync',data[k]);else if(k==='_theme'){localStorage.setItem('auditor_theme',data[k]);applyTheme(data[k]);}else if(k==='_customCodes'){localStorage.setItem('auditor_custom_codes',data[k]);}else await localforage.setItem(k,data[k]);}
                 localStorage.setItem('gist_id',gid);
                 showLoader(false);showAppAlert("Restore Successful! App will reload.");setTimeout(()=>window.location.reload(),2000);
             }catch(e){showLoader(false);showAppAlert("Restore Failed: "+e.message);}
@@ -1921,6 +1952,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // --- PC KEYBOARD SHORTCUTS (Workspace / Auditing only) ---
     document.addEventListener('keydown', function(e) {
         const workspaceActive = document.getElementById('screen-workspace').classList.contains('active');
+        const dashboardActive = document.getElementById('screen-dashboard').classList.contains('active');
         const modalOpen = document.getElementById('audit-modal').classList.contains('active');
         const dialogOpen = document.getElementById('app-dialog').classList.contains('active');
 
@@ -1961,6 +1993,16 @@ window.addEventListener('DOMContentLoaded', () => {
                 saveClaimAudit();
             }
             return;
+        }
+
+        // Dashboard autofocus search — same behaviour as workspace
+        if (dashboardActive && !dialogOpen) {
+            const dashSearch = document.getElementById('dash-search');
+            const isTypingInDash = document.activeElement === dashSearch;
+            if (!isTypingInDash && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                e.preventDefault(); dashSearch.focus(); dashSearch.value += e.key; handleDashSearch(); return;
+            }
+            if (!isTypingInDash && e.key === 'Backspace') { e.preventDefault(); dashSearch.focus(); return; }
         }
 
         if (!workspaceActive) return;
