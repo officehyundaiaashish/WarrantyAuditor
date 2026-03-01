@@ -909,9 +909,15 @@ window.addEventListener('DOMContentLoaded', () => {
     function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); if(id === 'screen-menu') setTimeout(loadDashboardNotifications, 100); if(id === 'screen-new-audit') { const today = new Date(); const y = today.getFullYear(); const m = today.getMonth(); const firstDay = new Date(y, m, 1).toISOString().split('T')[0]; const lastDay = new Date(y, m + 1, 0).toISOString().split('T')[0]; const fromEl = document.getElementById('audit-from'); const toEl = document.getElementById('audit-to'); if(!fromEl.value) fromEl.value = firstDay; if(!toEl.value) toEl.value = lastDay; } }
 
     function detectColumns(headers) {
-        const map = {}; const lowerHeaders = headers.map(h => h.toString().toLowerCase().replace(/[\s_]/g, ''));
-        const fuzzy = { "claim_no": ["claimno","claimnumber","clmno"], "ro_no": ["rono","r/ono","repairorderno"], "claim_type": ["claimtype","clmtype"], "causal_part": ["causalpart","partno","partnumber"], "part_desc": ["partdesc","partdescription","partname"], "amount": ["totalamt","totalamount","claimamount","amount"] };
-        for (const [key, terms] of Object.entries(fuzzy)) { const idx = lowerHeaders.findIndex(h => terms.some(t => h.includes(t))); if (idx !== -1) map[key] = headers[idx]; } return map;
+        const map = {}; 
+        const lowerHeaders = headers.map(h => h.toString().toLowerCase().replace(/[\s_]/g, ''));
+        const used = new Set(); // prevent two keys from grabbing same column
+        const fuzzy = { "claim_no": ["claimno","claimnumber","clmno","clm#"], "ro_no": ["rono","r/ono","repairorderno","ronumber"], "claim_type": ["claimtype","clmtype","typeofclaim"], "causal_part": ["causalpart","causalpartno","causalpartnumber","causalpno"], "amount": ["totalamt","totalamount","claimamount","netamount","netamt","amount","amt"], "part_desc": ["partdesc","partdescription","partname","partsname","itemdesc","itemdescription","description"] };
+        for (const [key, terms] of Object.entries(fuzzy)) { 
+            const idx = lowerHeaders.findIndex((h, i) => !used.has(i) && terms.some(t => h.includes(t))); 
+            if (idx !== -1) { map[key] = headers[idx]; used.add(idx); } 
+        } 
+        return map;
     }
 
     // --- READ-ONLY DASHBOARD ENGINE ---
