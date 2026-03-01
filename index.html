@@ -717,7 +717,7 @@
                     </div>
                 </div>
                 <p style="font-size:0.78rem;color:var(--text-muted);line-height:1.65;margin:0;">
-                    A professional warranty claims audit tool built for dealership audit specialists. Supports Excel import, claim-by-claim auditing with discrepancy tagging, finalized reports with PDF &amp; Excel export, AES-256 local encryption, and cloud backup via GitHub Gist &amp; Google Drive — all fully offline-capable.
+                    A professional warranty claims audit tool built for dealership audit specialists. Supports Excel import, claim-by-claim auditing with discrepancy tagging, finalized reports with PDF &amp; Excel export, AES-256 local encryption, and cloud backup via GitHub Gist &amp; Firebase — all fully offline-capable.
                 </p>
             </div>
         </footer>
@@ -874,8 +874,8 @@
                     Local
                 </button>
                 <button class="backup-tab" onclick="switchBackupTab('drive')" id="btab-drive">
-                    <svg width="13" height="13" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;"><path d="M4.433 22l2.396-4.167h13.538L18 22H4.433z" fill="#1DA462"/><path d="M2 18l2.4 4h3.2L5.2 18H2z" fill="#1565C0"/><path d="M15.567 22h4.8L12 8.333 9.6 12.5 15.567 22z" fill="#EA4335"/><path d="M12 8.333L7.6 16h7.967L12 8.333z" fill="#FBBC04"/><path d="M2 18l5.6-9.667h4.8L6.8 18H2z" fill="#4285F4"/><path d="M12 8.333l4.4 7.667h5.6L14 2.667 12 8.333z" fill="#34A853"/></svg>
-                    Drive
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 22 22 7 12 2"/><line x1="12" y1="22" x2="12" y2="2"/><line x1="2" y1="7" x2="22" y2="7"/></svg>
+                    Firebase
                     <span class="btab-badge" id="btab-drive-badge"></span>
                 </button>
                 <button class="backup-tab" onclick="switchBackupTab('github')" id="btab-github">
@@ -908,7 +908,7 @@
 
             <div class="backup-tab-panel" id="bpanel-drive">
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
-                    <span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);">Google Drive</span>
+                    <span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);">Firebase</span>
                     <span id="gdrive-status-dot" style="font-size:0.72rem; font-weight:700; padding:2px 9px; border-radius:20px; background:rgba(100,116,139,0.1); color:var(--text-muted);">Not Connected</span>
                 </div>
             
@@ -924,18 +924,18 @@
             <div id="gdrive-connected-section" style="display:none;">
                 <!-- Account info -->
                 <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); border-radius:10px; padding:14px; margin-bottom:12px; font-size:0.8rem;">
-                    <div style="font-weight:700; color:var(--success); margin-bottom:4px;">Connected to Google Drive</div>
+                    <div style="font-weight:700; color:var(--success); margin-bottom:4px;">Connected to Firebase</div>
                     <div style="color:var(--text-muted);" id="gdrive-info-text">Loading account info...</div>
                 </div>
 
                 <!-- Cloud backup status card — shows what's on Drive -->
                 <div id="gdrive-cloud-status-card" style="background:var(--bg-base); border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:14px;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
-                        <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);">Drive Status</div>
+                        <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);">Cloud Status</div>
                         <button onclick="checkGdriveBackupStatus()" id="gdrive-refresh-btn" style="background:none;border:none;cursor:pointer;font-size:0.68rem;color:var(--accent);font-weight:700;padding:0;">↻ Refresh</button>
                     </div>
                     <div id="gdrive-cloud-status-body">
-                        <div style="color:var(--text-muted); font-size:0.78rem;">Checking Drive...</div>
+                        <div style="color:var(--text-muted); font-size:0.78rem;">Checking Firebase...</div>
                     </div>
                 </div>
 
@@ -943,20 +943,20 @@
                 <div class="grid-2" style="gap:8px; margin-bottom:8px;">
                     <button class="btn" id="gdrive-backup-btn" onclick="uploadToGoogleDrive()" style="margin:0; background:#4285f4; color:white; border-color:#4285f4; font-weight:700;">
                         <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
-                        Backup to Drive
+                        Backup to Firebase
                     </button>
                     <button class="btn" id="gdrive-restore-btn" onclick="restoreFromGoogleDrive()" style="margin:0; font-weight:700;">
                         <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><polyline points="8 8 12 12 16 8"/><line x1="12" y1="12" x2="12" y2="3"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
-                        Restore from Drive
+                        Restore from Firebase
                     </button>
                 </div>
                 <!-- New device hint -->
                 <div id="gdrive-new-device-hint" style="display:none; background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.25); border-radius:8px; padding:10px 12px; margin-bottom:10px; font-size:0.72rem; color:var(--accent); line-height:1.6;">
-                    📥 Cloud backup from <span id="gdrive-hint-date" style="font-weight:700;"></span> — click Restore to load.
+                    Cloud backup from <span id="gdrive-hint-date" style="font-weight:700;"></span> — click Restore to load.
                 </div>
                 <button class="btn" onclick="disconnectGoogleDrive()" style="margin:0; padding:10px 16px; background:rgba(239,68,68,0.06); border:1px solid var(--danger); color:var(--danger); font-weight:600;">
                     <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-right:4px;" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                    Disconnect Google Drive
+                    Disconnect Firebase
                 </button>
             </div>
             <!-- ══════════════════════════════════════════════ -->
@@ -3595,7 +3595,7 @@ window.addEventListener('DOMContentLoaded', () => {
                         <svg style="width:18px;height:18px;stroke:var(--text-muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
                         <div>
                             <div style="font-size:0.8rem;font-weight:700;color:var(--text-main);">No backup on cloud yet</div>
-                            <div style="font-size:0.7rem;color:var(--text-muted);">Click <b>"Backup to Drive"</b> to save your data.</div>
+                            <div style="font-size:0.7rem;color:var(--text-muted);">Click <b>"Backup to Firebase"</b> to save your data.</div>
                         </div>
                     </div>`;
                 if (hintBox) hintBox.style.display = 'none';
