@@ -337,7 +337,7 @@
 
             <div class="table-wrap">
                 <table id="dash-table">
-                    <thead><tr><th>Claim No</th><th>Status</th><th>R/O No</th><th>Type</th><th>Causal Part</th><th>Part Desc</th><th>Prod Date</th><th>Amount</th><th>Findings</th></tr></thead>
+                    <thead><tr><th>Claim No</th><th>Status</th><th>R/O No</th><th>Type</th><th>Causal Part</th><th>Part Desc</th><th>Prod Date</th><th>Amount</th><th>Findings</th><th>Remarks</th></tr></thead>
                     <tbody id="dash-tbody"></tbody>
                 </table>
             </div>
@@ -553,7 +553,7 @@
 
         <div class="table-wrap">
             <table id="claims-table">
-                <thead><tr><th>Claim No</th><th>Status</th><th>R/O No</th><th>Type</th><th>Causal Part</th><th>Part Desc</th><th>Prod Date</th><th>Amount</th><th>Findings</th></tr></thead>
+                <thead><tr><th>Claim No</th><th>Status</th><th>R/O No</th><th>Type</th><th>Causal Part</th><th>Part Desc</th><th>Prod Date</th><th>Amount</th><th>Findings</th><th>Remarks</th></tr></thead>
                 <tbody id="claims-tbody"></tbody>
             </table>
         </div>
@@ -913,7 +913,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // Active Workspace State
     let workspaceCurrentFilter = 'all';
 
-    const DEFAULT_DISCREPANCIES = { "0": "None Found", "1": "Part is clean (Sent HMIL Suspense)", "3": "Part is Missing", "4": "Part Batch Code Mismatch", "5": "Part Not Tagged", "6": "Part Packing Missing", "7": "Related Part Missing to Causal or Affected Part Missing", "8": "Part is Not Defective", "9": "Part is Damaged" };
+    const DEFAULT_DISCREPANCIES = { "0": "None Found", "1": "Part is clean (Sent HMIL Suspense)", "3": "Part is Missing", "4": "Part Batch Code Mismatch", "5": "Part Not Tagged", "6": "Part Packing Missing", "7": "Related Part Missing to Causal or Affected Part Missing", "8": "Part is Not Defective", "9": "Part is Damaged", "10": "Issue part casual issue. Else Fine [CLN]", "11": "Labour Only Claim [CLN]" };
     let DISCREPANCY_TYPES = JSON.parse(localStorage.getItem('auditor_custom_codes')) || DEFAULT_DISCREPANCIES;
 
     function isClaimClean(findings) { if (!findings || findings.length === 0) return true; return findings[0].includes("None Found") || findings[0].includes("Sent HMIL Suspense") || findings[0].includes("[CLN]"); }
@@ -1095,7 +1095,7 @@ window.addEventListener('DOMContentLoaded', () => {
             let statusHtml = '<span class="status-pending">Pen</span>'; if (isClear) statusHtml = '<span class="status-clear">Cln</span>'; else if (entry.audited) statusHtml = `<span class="status-unclear">Unc</span>`;
             
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${claimNo}</td><td>${statusHtml}</td><td>${row[dashColMap.ro_no] || '-'}</td><td>${row[dashColMap.claim_type] || '-'}</td><td>${row[dashColMap.causal_part] || '-'}</td><td style="color:var(--text-muted); max-width:100px; overflow:hidden; text-overflow:ellipsis;">${row[dashColMap.part_desc] || '-'}</td><td style="white-space:nowrap;">${row[dashColMap.prod_date] || '-'}</td><td>${row[dashColMap.amount] || '-'}</td><td style="color:var(--text-muted);">${(entry.findings||[]).join('; ')}</td>`;
+            tr.innerHTML = `<td>${claimNo}</td><td>${statusHtml}</td><td>${row[dashColMap.ro_no] || '-'}</td><td>${row[dashColMap.claim_type] || '-'}</td><td>${row[dashColMap.causal_part] || '-'}</td><td style="color:var(--text-muted); max-width:100px; overflow:hidden; text-overflow:ellipsis;">${row[dashColMap.part_desc] || '-'}</td><td style="white-space:nowrap;">${row[dashColMap.prod_date] || '-'}</td><td>${row[dashColMap.amount] || '-'}</td><td style="color:var(--text-muted);">${(entry.findings||[]).join('; ')}</td><td style="color:var(--accent); font-style:italic; max-width:120px; overflow:hidden; text-overflow:ellipsis;">${entry.optional_remark || '-'}</td>`;
             frag.appendChild(tr);
         }); tbody.appendChild(frag);
 
@@ -1257,7 +1257,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const claimNo = row[colMap.claim_no]; const entry = currentAuditData[claimNo] || {}; const isClear = entry.audited && isClaimClean(entry.findings);
             let statusHtml = '<span class="status-pending">Pen</span>'; if (isClear) statusHtml = '<span class="status-clear">Cln</span>'; else if (entry.audited) statusHtml = `<span class="status-unclear">Unc</span>`;
             const tr = document.createElement('tr'); tr.onclick = () => openAuditModal(start + i);
-            tr.innerHTML = `<td>${claimNo}</td><td>${statusHtml}</td><td>${row[colMap.ro_no] || '-'}</td><td>${row[colMap.claim_type] || '-'}</td><td>${row[colMap.causal_part] || '-'}</td><td style="color:var(--text-muted); max-width:100px; overflow:hidden; text-overflow:ellipsis;">${row[colMap.part_desc] || '-'}</td><td style="white-space:nowrap;">${row[colMap.prod_date] || '-'}</td><td>${row[colMap.amount] || '-'}</td><td style="color:var(--text-muted);">${(entry.findings||[]).join('; ')}</td>`;
+            tr.innerHTML = `<td>${claimNo}</td><td>${statusHtml}</td><td>${row[colMap.ro_no] || '-'}</td><td>${row[colMap.claim_type] || '-'}</td><td>${row[colMap.causal_part] || '-'}</td><td style="color:var(--text-muted); max-width:100px; overflow:hidden; text-overflow:ellipsis;">${row[colMap.part_desc] || '-'}</td><td style="white-space:nowrap;">${row[colMap.prod_date] || '-'}</td><td>${row[colMap.amount] || '-'}</td><td style="color:var(--text-muted);">${(entry.findings||[]).join('; ')}</td><td style="color:var(--accent); font-style:italic; max-width:120px; overflow:hidden; text-overflow:ellipsis;">${entry.optional_remark || '-'}</td>`;
             frag.appendChild(tr);
         }); tbody.appendChild(frag);
         const maxPage = Math.ceil(currentFilteredData.length / pageSize) || 1; document.getElementById('page-indicator').innerText = `${currentPage} / ${maxPage}`;
