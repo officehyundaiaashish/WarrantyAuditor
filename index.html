@@ -62,7 +62,13 @@
         /* Inputs */
         .input { width: 100%; background-color: var(--bg-base); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 0.95rem; margin-bottom: 16px; transition: all 0.3s ease; outline: none; color-scheme: inherit; }
         .input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
-        [data-theme="dark"] ::-webkit-calendar-picker-indicator { filter: invert(1) brightness(2) contrast(1); opacity: 1; cursor: pointer; }
+        /* Date input icon fix for all themes */
+        input[type="date"] { color-scheme: light; }
+        [data-theme="dark"] input[type="date"] { color-scheme: dark; }
+        ::-webkit-calendar-picker-indicator { opacity: 0.7; cursor: pointer; }
+        ::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+        [data-theme="dark"] ::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.85; cursor: pointer; }
+        [data-theme="dark"] ::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 
         /* Custom Dropdown UI (In-App) */
         .custom-select-wrapper { position: relative; user-select: none; width: 100%; margin-bottom: 16px; }
