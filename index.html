@@ -622,7 +622,7 @@
                 <h3 id="dialog-msg" style="margin-bottom:20px; font-size:1.05rem; line-height: 1.5;"></h3>
                 
                 <div id="dialog-input-wrapper" style="position:relative; display:none; margin-bottom: 16px;" autocomplete="off">
-                    <input type="text" id="dialog-input" inputmode="numeric" class="input" style="text-align:center; letter-spacing: 4px; font-size: 1.2rem; margin:0; padding-right: 44px; -webkit-text-security: disc; text-security: disc;" placeholder="••••••••" autocomplete="off" data-lpignore="true" data-form-type="other" spellcheck="false" autocorrect="off" autocapitalize="off">
+                    <input type="text" id="dialog-input" inputmode="numeric" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" class="input" style="text-align:center; letter-spacing: 4px; font-size: 1.2rem; margin:0; padding-right: 44px; -webkit-text-security: disc; text-security: disc;" placeholder="••••••••">
                     <button id="kb-toggle" onclick="toggleKeyboardMode('dialog-input', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:var(--bg-base); border:1px solid var(--border); border-radius:6px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-muted); transition:0.2s;" title="Toggle Keyboard"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></button>
                 </div>
 
@@ -2867,45 +2867,78 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     // ── Header shortcut: show minimal method picker then act ──
-    function showMethodPicker(action) {
+    function showMethodPicker(action, anchorId) {
         const hasGithub = !!localStorage.getItem('gist_token_enc');
         const hasFirebase = !!window._fbUser;
 
-        // Build available options
         const options = [];
-        if (hasFirebase) options.push({ label: '☁️ Firebase', key: 'firebase' });
-        if (hasGithub)   options.push({ label: '🐙 GitHub',   key: 'github'   });
+        if (hasFirebase) options.push({ key: 'firebase', label: 'Firebase', sub: 'Google Cloud Firestore',
+            icon: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 22 22 7 12 2"/><line x1="12" y1="22" x2="12" y2="2"/><line x1="2" y1="7" x2="22" y2="7"/></svg>` });
+        if (hasGithub) options.push({ key: 'github', label: 'GitHub', sub: 'Secret Gist Backup',
+            icon: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>` });
 
         if (options.length === 0) {
             showAppAlert("No cloud connected.\nGo to Backup & Restore to connect.");
             return;
         }
-
-        // If only one method available — act directly, no picker needed
         if (options.length === 1) {
             action === 'backup' ? _doHeaderBackup(options[0].key) : _doHeaderRestore(options[0].key);
             return;
         }
 
-        // Show minimal picker overlay
         const existing = document.getElementById('method-picker-overlay');
-        if (existing) existing.remove();
+        if (existing) { existing.remove(); return; }
+
+        // Position anchored to button
+        const anchor = document.getElementById(anchorId);
+        const rect = anchor ? anchor.getBoundingClientRect() : { bottom: 60, right: 16, left: null };
 
         const overlay = document.createElement('div');
         overlay.id = 'method-picker-overlay';
-        overlay.style.cssText = 'position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;background:var(--modal-overlay);backdrop-filter:blur(4px);';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:3000;';
+
+        const isLeft = rect.left < window.innerWidth / 2;
+        const posStyle = isLeft
+            ? `left:${Math.max(8, rect.left)}px;`
+            : `right:${Math.max(8, window.innerWidth - rect.right)}px;`;
+
+        const actionLabel = action === 'backup' ? 'Save backup to' : 'Restore data from';
+        const actionIcon = action === 'backup'
+            ? `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>`
+            : `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/><polyline points="8 13 12 17 16 13"/><line x1="12" y1="17" x2="12" y2="9"/></svg>`;
+
         overlay.innerHTML = `
-            <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;min-width:220px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.3);">
-                <div style="font-size:0.8rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">${action === 'backup' ? '⬆ Backup to' : '⬇ Restore from'}</div>
+            <div id="method-picker-card" style="
+                position:fixed;
+                top:${rect.bottom + 8}px;
+                ${posStyle}
+                background:var(--surface);
+                border:1px solid var(--border);
+                border-radius:14px;
+                padding:6px;
+                min-width:210px;
+                box-shadow:0 20px 40px -8px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.04);
+                animation:pickerFadeIn 0.15s ease;
+            ">
+                <div style="display:flex;align-items:center;gap:6px;padding:8px 10px 6px;color:var(--text-muted);font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;border-bottom:1px solid var(--border);margin-bottom:4px;">
+                    ${actionIcon} ${actionLabel}
+                </div>
                 ${options.map(o => `
                 <button onclick="document.getElementById('method-picker-overlay').remove(); ${action === 'backup' ? '_doHeaderBackup' : '_doHeaderRestore'}('${o.key}')"
-                    style="display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);border-radius:10px;background:var(--bg-base);cursor:pointer;font-size:0.88rem;font-weight:700;color:var(--text-main);transition:all 0.15s;">
-                    ${o.label}
+                    style="display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border:none;border-radius:10px;background:transparent;cursor:pointer;text-align:left;transition:background 0.12s;color:var(--text-main);"
+                    onmouseover="this.style.background='var(--bg-base)'" onmouseout="this.style.background='transparent'">
+                    <span style="width:34px;height:34px;border-radius:9px;background:var(--bg-base);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text-main);">${o.icon}</span>
+                    <span>
+                        <span style="display:block;font-size:0.85rem;font-weight:700;line-height:1.3;">${o.label}</span>
+                        <span style="display:block;font-size:0.7rem;color:var(--text-muted);font-weight:400;">${o.sub}</span>
+                    </span>
                 </button>`).join('')}
-                <button onclick="document.getElementById('method-picker-overlay').remove()"
-                    style="width:100%;padding:8px;border:none;background:none;cursor:pointer;font-size:0.78rem;color:var(--text-muted);">Cancel</button>
-            </div>`;
-        overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+            </div>
+            <style>@keyframes pickerFadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}</style>`;
+
+        overlay.addEventListener('click', e => {
+            if (!document.getElementById('method-picker-card').contains(e.target)) overlay.remove();
+        });
         document.body.appendChild(overlay);
     }
 
@@ -2969,8 +3002,8 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function headerUploadNow() { showMethodPicker('backup'); }
-    async function headerRestoreNow() { showMethodPicker('restore'); }
+    async function headerUploadNow() { showMethodPicker('backup', 'header-upload-btn'); }
+    async function headerRestoreNow() { showMethodPicker('restore', 'header-restore-btn'); }
 
     // Update header buttons visibility based on connection state
     function updateHeaderUploadBtn() {
