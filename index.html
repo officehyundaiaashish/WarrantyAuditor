@@ -43,32 +43,28 @@
             margin: 0; display: inline-flex; align-items: center;
         }
         .app-title-badge {
-            display: inline-flex; align-items: center; gap: 8px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            height: 36px;
-            padding: 0 12px 0 10px;
+            display: inline-flex; align-items: center; gap: 10px;
+            background: none;
+            border: none;
+            border-radius: 0;
+            height: auto;
+            padding: 0;
             position: relative;
             box-shadow: none;
-            transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
-            overflow: hidden;
         }
         .app-title-badge::after {
             content: none;
         }
         .app-title-badge:hover {
-            border-color: var(--accent);
-            box-shadow: 0 2px 12px rgba(59,130,246,0.1);
-            transform: translateY(-1px);
+            transform: none;
         }
         [data-theme="dark"] .app-title-badge {
-            background: var(--surface);
-            border-color: var(--border);
+            background: none;
+            border: none;
             box-shadow: none;
         }
         .app-title-icon {
-            height: 18px; width: auto; flex-shrink: 0;
+            height: 28px; width: auto; flex-shrink: 0;
             display: block;
             filter: none;
             mix-blend-mode: multiply;
@@ -84,8 +80,8 @@
             50% { opacity: 0.82; transform: scale(0.96); }
         }
         .app-title-text {
-            font-size: 0.92rem; font-weight: 800;
-            letter-spacing: 0.5px; white-space: nowrap;
+            font-size: 1.15rem; font-weight: 800;
+            letter-spacing: 0.3px; white-space: nowrap;
             color: var(--text-main);
             -webkit-text-fill-color: var(--text-main);
             background: none;
@@ -886,11 +882,11 @@
                     </button>
                 </div>
                 <div class="grid-2" style="gap:8px; margin-top:8px;">
-                    <button class="btn" onclick="disconnectGist()" style="margin:0; padding:10px 16px; background:var(--surface); border:1px solid var(--warning); color:var(--warning); font-weight:600;">
+                    <button class="btn" onclick="disconnectGist()" style="margin:0; padding:10px 16px; background:rgba(239,68,68,0.06); border:1px solid var(--danger); color:var(--danger); font-weight:600;">
                         <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-right:4px;" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
                         Disconnect GitHub
                     </button>
-                    <button class="btn" onclick="deleteGistFile()" style="margin:0; padding:10px 16px; background:var(--surface); border:1px solid var(--danger); color:var(--danger); font-weight:600;">
+                    <button class="btn" onclick="deleteGistFile()" style="margin:0; padding:10px 16px; background:rgba(239,68,68,0.06); border:1px solid var(--danger); color:var(--danger); font-weight:600;">
                         <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-right:4px;" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                         Delete Cloud File
                     </button>
@@ -956,7 +952,7 @@
                 <div id="gdrive-new-device-hint" style="display:none; background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.25); border-radius:8px; padding:10px 12px; margin-bottom:10px; font-size:0.72rem; color:var(--accent); line-height:1.6;">
                     <b>New Device:</b> No local data found. A backup exists from <span id="gdrive-hint-date" style="font-weight:700;"></span>. Click <b>Restore from Drive</b> to load.
                 </div>
-                <button class="btn" onclick="disconnectGoogleDrive()" style="margin:0; padding:10px 16px; background:var(--surface); border:1px solid var(--warning); color:var(--warning); font-weight:600;">
+                <button class="btn" onclick="disconnectGoogleDrive()" style="margin:0; padding:10px 16px; background:rgba(239,68,68,0.06); border:1px solid var(--danger); color:var(--danger); font-weight:600;">
                     <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-right:4px;" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     Disconnect Google Drive
                 </button>
@@ -3363,7 +3359,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ══════════════════════════════════════════════════════════════
     // GOOGLE DRIVE CLOUD BACKUP & RESTORE — SMART CROSS-DEVICE
     // ══════════════════════════════════════════════════════════════
-    const GDRIVE_CLIENT_ID = '740711070362-b0vjh0kgouuc3s27b7b8o136icj16d55.apps.googleusercontent.com';
+    const GDRIVE_CLIENT_ID = '509579480155-9hkhdlg2f1ntg3mejapurr411fgrvvud.apps.googleusercontent.com';
     const GDRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
     const GDRIVE_BACKUP_FILENAME = 'warranty_auditor_backup.json';
 
