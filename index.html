@@ -337,7 +337,7 @@
 
             <div class="table-wrap">
                 <table id="dash-table">
-                    <thead><tr><th>Claim No</th><th>Status</th><th>R/O No</th><th>Type</th><th>Causal Part</th><th>Part Desc</th><th>Amount</th><th>Findings</th></tr></thead>
+                    <thead><tr><th>Claim No</th><th>Status</th><th>R/O No</th><th>Type</th><th>Causal Part</th><th>Part Desc</th><th>Prod Date</th><th>Amount</th><th>Findings</th></tr></thead>
                     <tbody id="dash-tbody"></tbody>
                 </table>
             </div>
@@ -553,7 +553,7 @@
 
         <div class="table-wrap">
             <table id="claims-table">
-                <thead><tr><th>Claim No</th><th>Status</th><th>R/O No</th><th>Type</th><th>Causal Part</th><th>Part Desc</th><th>Amount</th><th>Findings</th></tr></thead>
+                <thead><tr><th>Claim No</th><th>Status</th><th>R/O No</th><th>Type</th><th>Causal Part</th><th>Part Desc</th><th>Prod Date</th><th>Amount</th><th>Findings</th></tr></thead>
                 <tbody id="claims-tbody"></tbody>
             </table>
         </div>
@@ -927,7 +927,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const map = {}; 
         const lowerHeaders = headers.map(h => h.toString().toLowerCase().replace(/[\s_]/g, ''));
         const used = new Set(); // prevent two keys from grabbing same column
-        const fuzzy = { "claim_no": ["claimno","claimnumber","clmno","clm#"], "ro_no": ["rono","r/ono","repairorderno","ronumber"], "claim_type": ["claimtype","clmtype","typeofclaim"], "causal_part": ["causalpart","causalpartno","causalpartnumber","causalpno"], "amount": ["totalamt","totalamount","claimamount","netamount","netamt","amount","amt"], "part_desc": ["partdesc","partdescription","partname","partsname","itemdesc","itemdescription","description"] };
+        const fuzzy = { "claim_no": ["claimno","claimnumber","clmno","clm#"], "ro_no": ["rono","r/ono","repairorderno","ronumber"], "claim_type": ["claimtype","clmtype","typeofclaim"], "causal_part": ["causalpart","causalpartno","causalpartnumber","causalpno"], "amount": ["totalamt","totalamount","claimamount","netamount","netamt","amount","amt"], "part_desc": ["partdesc","partdescription","partname","partsname","itemdesc","itemdescription","description"], "prod_date": ["proddate","productiondate","mfgdate","manufacturedate","dateofmanufacture","prod.date","mfg.date","proddt","mfgdt","dateofmfg"] };
         for (const [key, terms] of Object.entries(fuzzy)) { 
             const idx = lowerHeaders.findIndex((h, i) => !used.has(i) && terms.some(t => h.includes(t))); 
             if (idx !== -1) { map[key] = headers[idx]; used.add(idx); } 
@@ -1094,7 +1094,7 @@ window.addEventListener('DOMContentLoaded', () => {
             let statusHtml = '<span class="status-pending">Pen</span>'; if (isClear) statusHtml = '<span class="status-clear">Cln</span>'; else if (entry.audited) statusHtml = `<span class="status-unclear">Unc</span>`;
             
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${claimNo}</td><td>${statusHtml}</td><td>${row[dashColMap.ro_no] || '-'}</td><td>${row[dashColMap.claim_type] || '-'}</td><td>${row[dashColMap.causal_part] || '-'}</td><td style="color:var(--text-muted); max-width:120px; overflow:hidden; text-overflow:ellipsis;">${row[dashColMap.part_desc] || '-'}</td><td>${row[dashColMap.amount] || '-'}</td><td style="color:var(--text-muted);">${(entry.findings||[]).join('; ')}</td>`;
+            tr.innerHTML = `<td>${claimNo}</td><td>${statusHtml}</td><td>${row[dashColMap.ro_no] || '-'}</td><td>${row[dashColMap.claim_type] || '-'}</td><td>${row[dashColMap.causal_part] || '-'}</td><td style="color:var(--text-muted); max-width:100px; overflow:hidden; text-overflow:ellipsis;">${row[dashColMap.part_desc] || '-'}</td><td style="white-space:nowrap;">${row[dashColMap.prod_date] || '-'}</td><td>${row[dashColMap.amount] || '-'}</td><td style="color:var(--text-muted);">${(entry.findings||[]).join('; ')}</td>`;
             frag.appendChild(tr);
         }); tbody.appendChild(frag);
 
@@ -1256,7 +1256,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const claimNo = row[colMap.claim_no]; const entry = currentAuditData[claimNo] || {}; const isClear = entry.audited && isClaimClean(entry.findings);
             let statusHtml = '<span class="status-pending">Pen</span>'; if (isClear) statusHtml = '<span class="status-clear">Cln</span>'; else if (entry.audited) statusHtml = `<span class="status-unclear">Unc</span>`;
             const tr = document.createElement('tr'); tr.onclick = () => openAuditModal(start + i);
-            tr.innerHTML = `<td>${claimNo}</td><td>${statusHtml}</td><td>${row[colMap.ro_no] || '-'}</td><td>${row[colMap.claim_type] || '-'}</td><td>${row[colMap.causal_part] || '-'}</td><td style="color:var(--text-muted); max-width:120px; overflow:hidden; text-overflow:ellipsis;">${row[colMap.part_desc] || '-'}</td><td>${row[colMap.amount] || '-'}</td><td style="color:var(--text-muted);">${(entry.findings||[]).join('; ')}</td>`;
+            tr.innerHTML = `<td>${claimNo}</td><td>${statusHtml}</td><td>${row[colMap.ro_no] || '-'}</td><td>${row[colMap.claim_type] || '-'}</td><td>${row[colMap.causal_part] || '-'}</td><td style="color:var(--text-muted); max-width:100px; overflow:hidden; text-overflow:ellipsis;">${row[colMap.part_desc] || '-'}</td><td style="white-space:nowrap;">${row[colMap.prod_date] || '-'}</td><td>${row[colMap.amount] || '-'}</td><td style="color:var(--text-muted);">${(entry.findings||[]).join('; ')}</td>`;
             frag.appendChild(tr);
         }); tbody.appendChild(frag);
         const maxPage = Math.ceil(currentFilteredData.length / pageSize) || 1; document.getElementById('page-indicator').innerText = `${currentPage} / ${maxPage}`;
@@ -1269,7 +1269,7 @@ window.addEventListener('DOMContentLoaded', () => {
         activeClaimRowIndex = filteredIndex; const row = currentFilteredData[filteredIndex];
         const claimNo = row[colMap.claim_no]; document.getElementById('modal-claim-no').innerText = claimNo;
         
-        const displayKeys = ["ro_no", "claim_type", "causal_part", "part_desc", "amount"]; let detailsHtml = '';
+        const displayKeys = ["ro_no", "claim_type", "causal_part", "part_desc", "prod_date", "amount"]; let detailsHtml = '';
         displayKeys.forEach(k => { if(colMap[k]) { let val = row[colMap[k]] || "-"; let lbl = colMap[k].replace(/_/g, " "); detailsHtml += `<div class="detail-item"><span class="detail-lbl">${lbl}</span><span class="detail-val">${val}</span></div>`; } });
         document.getElementById('modal-all-details').innerHTML = detailsHtml;
 
@@ -1452,7 +1452,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     async function deleteSession(key, isFinalized) {
         const delOp = async () => { delete dbIndex[key]; await localforage.setItem('db_index', dbIndex); await localforage.removeItem(key); openArchive(document.getElementById('archive-title').innerText.includes('Previous')); };
-        if (isFinalized) { verifyPasswordFlow(() => showAppConfirm("Permanently delete this Finalized Audit?", delOp)); } else { showAppConfirm("Permanently delete this Draft?", delOp); }
+        if (isFinalized) { verifyPasswordFlow(() => showAppConfirm("Permanently delete this Finalized Audit?", delOp)); } else { showAppConfirm("Permanently delete this Draft?", () => verifyPasswordFlow(delOp)); }
     }
 
     // --- REPORTING & EXPORT ENGINE ---
@@ -1464,11 +1464,22 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function formatRowForExport(row, auditEntry, colMapping) {
-        let expRow = {}; for(let key in colMapping) expRow[colMapping[key]] = row[colMapping[key]];
-        expRow["Audit Status"] = auditEntry.audited ? "Audited" : "Pending"; expRow["Discrepancy Found"] = (!isClaimClean(auditEntry.findings) && auditEntry.audited) ? "Yes" : "No";
-        expRow["Discrepancy Details"] = auditEntry.findings ? auditEntry.findings.join("; ") : ""; expRow["Remark"] = auditEntry.optional_remark || ""; expRow["Audit Time"] = auditEntry.timestamp ? new Date(auditEntry.timestamp).toLocaleString() : "";
-        expRow["Remarks"] = auditEntry.remarks || ""; expRow["POD Number"] = auditEntry.pod_number || ""; expRow["Courier Provider"] = auditEntry.courier_provider || ""; 
-        expRow["Missing Part Name"] = auditEntry.missing_part_name || ""; expRow["Auditor"] = "Aashish Giri H"; return expRow;
+        // Build ordered export row with key fields first
+        let expRow = {};
+        const orderedKeys = ["claim_no","ro_no","claim_type","causal_part","part_desc","prod_date","amount"];
+        orderedKeys.forEach(k => { if(colMapping[k]) expRow[colMapping[k]] = row[colMapping[k]] || ""; });
+        // Any remaining columns from source
+        for(let key in colMapping) { if(!orderedKeys.includes(key)) expRow[colMapping[key]] = row[colMapping[key]] || ""; }
+        // Audit fields
+        expRow["Audit Status"] = auditEntry.audited ? "Audited" : "Pending";
+        expRow["Discrepancy Found"] = (!isClaimClean(auditEntry.findings) && auditEntry.audited) ? "Yes" : "No";
+        expRow["Discrepancy Details"] = auditEntry.findings ? auditEntry.findings.join("; ") : "";
+        expRow["Optional Remark"] = auditEntry.optional_remark || "";
+        expRow["POD Number"] = auditEntry.pod_number || "";
+        expRow["Missing Part Name"] = auditEntry.missing_part_name || "";
+        expRow["Audit Time"] = auditEntry.timestamp ? new Date(auditEntry.timestamp).toLocaleString() : "";
+        expRow["Auditor"] = "Aashish Giri H";
+        return expRow;
     }
 
     function generateExportData(sessionData, filter) {
@@ -1540,23 +1551,92 @@ window.addEventListener('DOMContentLoaded', () => {
                 btn.disabled = true;
 
                 try {
-                    const { jsPDF } = window.jspdf; const doc = new jsPDF('l', 'mm', 'a4');
-                    doc.setFontSize(14); doc.text(`Warranty Audit Report - ${scope === 'master' ? 'Master' : fileName}`, 14, 15);
-                    doc.setFontSize(10); doc.text(`Generated: ${new Date().toLocaleString()} | Filter: ${filter} | Auditor: Aashish Giri H`, 14, 22);
-                    doc.setTextColor(0,0,0);
-                    doc.setFontSize(12); doc.text('Amount Summary:', 14, 30);
-                    doc.setFontSize(10);
-                    const totalClaims = tAud + tPen;
-                    doc.text(`Total Claims Amount: ${fmtAmt(totalClaims)}`, 14, 38);
-                    doc.text(`Audited Amount: ${fmtAmt(tAud)}`, 14, 44);
-                    doc.text(`Unclear Amount: ${fmtAmt(tUnc)}`, 14, 50);
-                    doc.text(`Pending Amount: ${fmtAmt(tPen)}`, 14, 56);
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF('l', 'mm', 'a4');
+                    const pageW = doc.internal.pageSize.getWidth();
+                    const now = new Date().toLocaleString();
+                    const periodLabel = scope === 'master' ? 'All Periods (Master)' : (dbIndex[scope] ? dbIndex[scope].month : scope);
+                    const totalClaims = combinedClear.length + combinedUnclear.length;
+                    const tTotal = tAud + tPen;
 
-                    let startY = 66; let headers = combinedClear.length > 0 ? Object.keys(combinedClear[0]) : Object.keys(combinedUnclear[0]);
-                    const pdfOptions = { styles: { fontSize: 6, cellPadding: 2, overflow: 'linebreak' }, columnStyles: { text: { cellWidth: 'wrap' } }, margin: { left: 14, right: 14 } };
+                    // ── Header Bar ──
+                    doc.setFillColor(30, 41, 59);
+                    doc.rect(0, 0, pageW, 28, 'F');
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFontSize(16); doc.setFont(undefined, 'bold');
+                    doc.text('WARRANTY AUDIT REPORT', 14, 11);
+                    doc.setFontSize(8); doc.setFont(undefined, 'normal');
+                    doc.text(`Period: ${periodLabel}`, 14, 18);
+                    doc.text(`Generated: ${now}`, 14, 23);
+                    doc.setFontSize(8);
+                    doc.text(`Auditor: Aashish Giri H`, pageW - 14, 18, { align: 'right' });
+                    doc.text(`Filter: ${filter}  |  Total Claims: ${totalClaims}`, pageW - 14, 23, { align: 'right' });
 
-                    if(combinedClear.length > 0) { doc.setFontSize(12); doc.setTextColor(0, 150, 0); doc.text("CLEAR CLAIMS", 14, startY); doc.autoTable({ startY: startY + 5, head: [headers], body: combinedClear.map(r => Object.values(r)), styles: pdfOptions.styles, headStyles: { fillColor: [34, 139, 34] }, margin: pdfOptions.margin }); startY = doc.lastAutoTable.finalY + 15; }
-                    if(combinedUnclear.length > 0) { doc.setFontSize(12); doc.setTextColor(200, 0, 0); doc.text("UNCLEAR / PENDING CLAIMS", 14, startY); doc.autoTable({ startY: startY + 5, head: [headers], body: combinedUnclear.map(r => Object.values(r)), styles: pdfOptions.styles, headStyles: { fillColor: [204, 0, 0] }, margin: pdfOptions.margin }); }
+                    // ── Amount Summary Cards ──
+                    doc.setTextColor(30, 41, 59);
+                    const cardY = 34; const cardH = 22; const cardW = (pageW - 28 - 12) / 4; const cardX = [14, 14 + cardW + 4, 14 + (cardW + 4) * 2, 14 + (cardW + 4) * 3];
+                    const cards = [
+                        { label: 'TOTAL AMOUNT', value: fmtAmt(tTotal), color: [30,41,59], text: [255,255,255] },
+                        { label: 'AUDITED AMOUNT', value: fmtAmt(tAud), color: [16,185,129], text: [255,255,255] },
+                        { label: 'UNCLEAR AMOUNT', value: fmtAmt(tUnc), color: [245,158,11], text: [255,255,255] },
+                        { label: 'PENDING AMOUNT', value: fmtAmt(tPen), color: [100,116,139], text: [255,255,255] },
+                    ];
+                    cards.forEach((c, i) => {
+                        doc.setFillColor(...c.color);
+                        doc.roundedRect(cardX[i], cardY, cardW, cardH, 2, 2, 'F');
+                        doc.setTextColor(...c.text);
+                        doc.setFontSize(7); doc.setFont(undefined, 'normal');
+                        doc.text(c.label, cardX[i] + cardW / 2, cardY + 7, { align: 'center' });
+                        doc.setFontSize(11); doc.setFont(undefined, 'bold');
+                        doc.text(c.value, cardX[i] + cardW / 2, cardY + 16, { align: 'center' });
+                    });
+
+                    // ── Claim Count Row ──
+                    doc.setTextColor(30,41,59); doc.setFont(undefined,'normal'); doc.setFontSize(8);
+                    const clrCount = combinedClear.length; const uncCount = combinedUnclear.length;
+                    doc.text(`✓ Clean Claims: ${clrCount}   ✗ Unclear/Pending Claims: ${uncCount}   Total: ${totalClaims}`, 14, cardY + cardH + 7);
+
+                    let startY = cardY + cardH + 14;
+                    const headers = combinedClear.length > 0 ? Object.keys(combinedClear[0]) : Object.keys(combinedUnclear[0]);
+                    const tableStyles = { fontSize: 5.5, cellPadding: 1.5, overflow: 'linebreak', lineColor: [203,213,225], lineWidth: 0.1 };
+                    const tableHeadStyles = { fontSize: 6, fontStyle: 'bold', halign: 'center', cellPadding: 2 };
+
+                    if(combinedClear.length > 0) {
+                        doc.setFontSize(10); doc.setFont(undefined,'bold'); doc.setTextColor(16,185,129);
+                        doc.text(`✓ CLEAR CLAIMS  (${combinedClear.length})`, 14, startY);
+                        doc.autoTable({
+                            startY: startY + 4,
+                            head: [headers],
+                            body: combinedClear.map(r => Object.values(r)),
+                            styles: tableStyles,
+                            headStyles: { ...tableHeadStyles, fillColor: [16,185,129], textColor: 255 },
+                            alternateRowStyles: { fillColor: [240,253,244] },
+                            margin: { left: 14, right: 14 }
+                        });
+                        startY = doc.lastAutoTable.finalY + 12;
+                    }
+                    if(combinedUnclear.length > 0) {
+                        doc.setFontSize(10); doc.setFont(undefined,'bold'); doc.setTextColor(245,158,11);
+                        doc.text(`✗ UNCLEAR / PENDING CLAIMS  (${combinedUnclear.length})`, 14, startY);
+                        doc.autoTable({
+                            startY: startY + 4,
+                            head: [headers],
+                            body: combinedUnclear.map(r => Object.values(r)),
+                            styles: tableStyles,
+                            headStyles: { ...tableHeadStyles, fillColor: [220,38,38], textColor: 255 },
+                            alternateRowStyles: { fillColor: [255,251,235] },
+                            margin: { left: 14, right: 14 }
+                        });
+                    }
+
+                    // ── Footer on every page ──
+                    const pageCount = doc.getNumberOfPages();
+                    for(let i = 1; i <= pageCount; i++) {
+                        doc.setPage(i);
+                        doc.setFontSize(7); doc.setFont(undefined,'normal'); doc.setTextColor(148,163,184);
+                        doc.text(`Warranty Self Auditor  |  Aashish Giri H  |  Page ${i} of ${pageCount}`, pageW / 2, doc.internal.pageSize.getHeight() - 5, { align: 'center' });
+                    }
+
                     doc.save(fileName + ".pdf");
                 } catch (e) {
                     showAppAlert("Failed: " + e.message);
@@ -2124,4 +2204,4 @@ window.addEventListener('DOMContentLoaded', () => {
     };
 </script>
 </body>
-</html>
+</html>m
