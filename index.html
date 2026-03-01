@@ -674,7 +674,8 @@
 
     // --- AMOUNT HELPERS ---
     function parseAmt(val) { const cleaned = String(val).replace(/[^\d.-]/g, ''); const v = parseFloat(cleaned); return isNaN(v) ? 0 : v; }
-    function fmtAmt(val) { const num = parseAmt(val); return '₹' + num.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
+    function fmtAmt(val) { const num = Math.round(parseAmt(val)); return '₹' + num.toLocaleString('en-IN'); }
+    function pdfAmt(val) { const num = Math.round(parseAmt(val)); return 'Rs. ' + num.toLocaleString('en-IN'); }
 
     // --- KEYBOARD TOGGLE HELPER ---
     function toggleKeyboardMode(inputId, btn) {
@@ -1537,7 +1538,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 
                 // Add Amount Summaries at Top
                 aoa.push(["AUDIT AMOUNT SUMMARY"]);
-                aoa.push(["Total Amt Audited:", fmtAmt(tAud), "Total Amt Unclear:", fmtAmt(tUnc), "Total Amt Pending:", fmtAmt(tPen)]);
+                aoa.push(["Total Amt Audited:", Math.round(tAud), "Total Amt Unclear:", Math.round(tUnc), "Total Amt Pending:", Math.round(tPen)]);
                 aoa.push([]);
 
                 if (combinedClear.length > 0) { aoa.push([`CLEAR CLAIMS`]); aoa.push(headers); combinedClear.forEach(r => aoa.push(Object.values(r))); }
@@ -1576,10 +1577,10 @@ window.addEventListener('DOMContentLoaded', () => {
                     doc.setTextColor(30, 41, 59);
                     const cardY = 34; const cardH = 22; const cardW = (pageW - 28 - 12) / 4; const cardX = [14, 14 + cardW + 4, 14 + (cardW + 4) * 2, 14 + (cardW + 4) * 3];
                     const cards = [
-                        { label: 'TOTAL AMOUNT', value: fmtAmt(tTotal), color: [30,41,59], text: [255,255,255] },
-                        { label: 'AUDITED AMOUNT', value: fmtAmt(tAud), color: [16,185,129], text: [255,255,255] },
-                        { label: 'UNCLEAR AMOUNT', value: fmtAmt(tUnc), color: [245,158,11], text: [255,255,255] },
-                        { label: 'PENDING AMOUNT', value: fmtAmt(tPen), color: [100,116,139], text: [255,255,255] },
+                        { label: 'TOTAL AMOUNT', value: pdfAmt(tTotal), color: [30,41,59], text: [255,255,255] },
+                        { label: 'AUDITED AMOUNT', value: pdfAmt(tAud), color: [16,185,129], text: [255,255,255] },
+                        { label: 'UNCLEAR AMOUNT', value: pdfAmt(tUnc), color: [245,158,11], text: [255,255,255] },
+                        { label: 'PENDING AMOUNT', value: pdfAmt(tPen), color: [100,116,139], text: [255,255,255] },
                     ];
                     cards.forEach((c, i) => {
                         doc.setFillColor(...c.color);
@@ -1594,9 +1595,17 @@ window.addEventListener('DOMContentLoaded', () => {
                     // ── Claim Count Row ──
                     doc.setTextColor(30,41,59); doc.setFont(undefined,'normal'); doc.setFontSize(8);
                     const clrCount = combinedClear.length; const uncCount = combinedUnclear.length;
-                    doc.text(`✓ Clean Claims: ${clrCount}   ✗ Unclear/Pending Claims: ${uncCount}   Total: ${totalClaims}`, 14, cardY + cardH + 7);
+                    doc.text(`Clean: ${clrCount}   Unclear/Pending: ${uncCount}   Total: ${totalClaims}`, 14, cardY + cardH + 7);
 
+                    // Audit finalization remark (if any)
                     let startY = cardY + cardH + 14;
+                    const scopeRemark = scope !== 'master' && dbIndex[scope] && dbIndex[scope].audit_remark ? dbIndex[scope].audit_remark : null;
+                    if(scopeRemark) {
+                        doc.setFontSize(8); doc.setFont(undefined,'italic'); doc.setTextColor(99,102,241);
+                        doc.text(`Auditor Remark: "${scopeRemark}"`, 14, startY);
+                        startY += 7;
+                        doc.setFont(undefined,'normal');
+                    }
                     const headers = combinedClear.length > 0 ? Object.keys(combinedClear[0]) : Object.keys(combinedUnclear[0]);
                     const tableStyles = { fontSize: 5.5, cellPadding: 1.5, overflow: 'linebreak', lineColor: [203,213,225], lineWidth: 0.1 };
                     const tableHeadStyles = { fontSize: 6, fontStyle: 'bold', halign: 'center', cellPadding: 2 };
@@ -2204,4 +2213,4 @@ window.addEventListener('DOMContentLoaded', () => {
     };
 </script>
 </body>
-</html>m
+</html>
