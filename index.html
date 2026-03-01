@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warranty Self Auditor</title>
+    <title>Warranty Auditor</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     
     <style>
         /* --- THEME VARIABLES & COLOR SCHEMES --- */
@@ -34,7 +35,51 @@
         
         /* Header & Typography */
         .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
-        .app-title { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px; background: linear-gradient(135deg, var(--accent), var(--success)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin:0; }
+        .app-title { 
+            font-size: 1.25rem; font-weight: 900; letter-spacing: -0.5px; margin:0;
+            display: inline-flex; align-items: center; gap: 10px;
+            position: relative;
+        }
+        .app-title-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 40%, #0f172a 100%);
+            border: 1px solid rgba(59,130,246,0.4);
+            border-radius: 10px;
+            padding: 6px 14px 6px 10px;
+            position: relative; overflow: hidden;
+            box-shadow: 0 0 0 1px rgba(59,130,246,0.1), 0 4px 16px rgba(0,0,0,0.3);
+        }
+        [data-theme="dark"] .app-title-badge {
+            background: linear-gradient(135deg, #18181b 0%, #27272a 40%, #18181b 100%);
+            border-color: rgba(99,102,241,0.5);
+        }
+        .app-title-badge::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.08) 50%, transparent 70%);
+            background-size: 200% 100%;
+            animation: shimmerSlide 3s ease-in-out infinite;
+        }
+        @keyframes shimmerSlide { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+        .app-title-icon {
+            width: 20px; height: 20px; flex-shrink: 0;
+            stroke: url(#iconGrad); stroke-width: 2; fill: none;
+            stroke-linecap: round; stroke-linejoin: round;
+            filter: drop-shadow(0 0 4px rgba(99,102,241,0.6));
+        }
+        .app-title-text {
+            background: linear-gradient(135deg, #60a5fa, #a78bfa, #34d399, #60a5fa);
+            background-size: 300% 100%;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            animation: titleColorFlow 5s ease infinite;
+            font-size: 1.1rem; font-weight: 900; letter-spacing: 0.3px; white-space: nowrap;
+        }
+        .app-title-dot {
+            width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+            background: #10b981; box-shadow: 0 0 6px #10b981;
+            animation: pulseDot 2s ease-in-out infinite;
+        }
+        @keyframes pulseDot { 0%,100%{opacity:1; transform:scale(1)} 50%{opacity:0.5; transform:scale(0.7)} }
+        @keyframes titleColorFlow { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
         h2, h3 { font-weight: 700; margin-bottom: 8px; letter-spacing: -0.3px; }
         p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px; line-height: 1.5; }
         label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 8px; color: var(--text-main); }
@@ -54,19 +99,19 @@
 
         /* Theme Toggle Animation */
         .theme-toggle { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; transition: 0.3s; }
-        .upload-shortcut { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
+        .upload-shortcut { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; overflow: visible; }
         .upload-shortcut:hover { border-color: var(--success); transform: scale(1.05); }
-        .upload-shortcut svg { width: 18px; height: 18px; stroke: var(--text-main); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: 0.3s; }
+        .upload-shortcut svg { width: 16px; height: 16px; stroke: var(--text-main); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: 0.3s; overflow: visible; }
         .upload-shortcut:hover svg { stroke: var(--success); }
-        @keyframes arrow-up { 0%,100%{transform:translateY(0);opacity:1} 40%{transform:translateY(-5px);opacity:0.4} 70%{transform:translateY(2px);opacity:1} }
-        @keyframes arrow-down { 0%,100%{transform:translateY(0);opacity:1} 40%{transform:translateY(5px);opacity:0.4} 70%{transform:translateY(-2px);opacity:1} }
+        @keyframes arrow-up { 0%,100%{transform:translateY(0);opacity:1} 40%{transform:translateY(-4px);opacity:0.4} 70%{transform:translateY(1px);opacity:1} }
+        @keyframes arrow-down { 0%,100%{transform:translateY(0);opacity:1} 40%{transform:translateY(4px);opacity:0.4} 70%{transform:translateY(-1px);opacity:1} }
         @keyframes btn-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.13)} }
         .upload-shortcut.syncing { border-color: var(--success); }
         .upload-shortcut.syncing svg { animation: arrow-up 0.8s ease-in-out infinite; stroke: var(--success); }
         .upload-shortcut.done { animation: btn-pulse 0.4s ease; border-color: var(--success); }
-        .restore-shortcut { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
+        .restore-shortcut { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; overflow: visible; }
         .restore-shortcut:hover { border-color: var(--accent); transform: scale(1.05); }
-        .restore-shortcut svg { width: 18px; height: 18px; stroke: var(--text-main); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: 0.3s; }
+        .restore-shortcut svg { width: 16px; height: 16px; stroke: var(--text-main); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: 0.3s; overflow: visible; }
         .restore-shortcut:hover svg { stroke: var(--accent); }
         .restore-shortcut.loading { border-color: var(--accent); }
         .restore-shortcut.loading svg { animation: arrow-down 0.8s ease-in-out infinite; stroke: var(--accent); }
@@ -95,6 +140,24 @@
         .custom-select-wrapper.open .custom-options { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0); }
         .custom-option { padding: 12px 16px; font-size: 0.9rem; cursor: pointer; transition: background-color 0.1s; border-bottom: 1px solid var(--bg-base); }
         .custom-option:last-child { border-bottom: none; }
+        
+        /* Modern File Upload */
+        .file-upload-wrapper { position: relative; width: 100%; margin-bottom: 16px; }
+        .file-upload-wrapper input[type="file"] { position: absolute; opacity: 0; width: 0; height: 0; }
+        .file-upload-btn { display: flex; align-items: center; justify-content: center; gap: 10px; background: var(--surface); border: 2px dashed var(--border); border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.3s; color: var(--text-main); font-weight: 600; font-size: 0.9rem; }
+        .file-upload-btn:hover { border-color: var(--accent); background: var(--bg-base); transform: translateY(-2px); }
+        .file-upload-btn svg { width: 24px; height: 24px; stroke: var(--accent); stroke-width: 2; fill: none; }
+        .file-card { display: flex; align-items: center; gap: 12px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(16, 185, 129, 0.1)); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; animation: slideIn 0.3s ease; }
+        .file-card-icon { width: 40px; height: 40px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .file-card-icon svg { width: 20px; height: 20px; stroke: white; stroke-width: 2; fill: none; }
+        .file-card-info { flex: 1; min-width: 0; }
+        .file-card-name { font-weight: 700; font-size: 0.9rem; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .file-card-size { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+        .file-card-remove { cursor: pointer; padding: 6px; border-radius: 6px; transition: 0.2s; background: rgba(239, 68, 68, 0.1); }
+        .file-card-remove:hover { background: var(--danger); }
+        .file-card-remove svg { width: 18px; height: 18px; stroke: var(--danger); stroke-width: 2; fill: none; }
+        .file-card-remove:hover svg { stroke: white; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         
         /* Highlight for selected option */
         .custom-option:hover { background-color: var(--bg-base); color: var(--accent); }
@@ -133,11 +196,13 @@
         .stat-card.active-filter { opacity: 1; transform: scale(1.02); box-shadow: 0 12px 20px -5px rgba(0,0,0,0.1); }
         .stat-value { font-size: 2rem; font-weight: 800; margin-bottom: 6px; }
         .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;}
+        /* Claim count cards are bigger */
+        .stat-card.claim-card { padding: 24px 16px; }
+        .stat-card.claim-card .stat-value { font-size: 2.6rem; margin-bottom: 8px; }
+        .stat-card.claim-card .stat-label { font-size: 0.8rem; }
 
         /* App Footer */
-        .app-footer { text-align: center; padding: 40px 16px 20px; margin-top: auto; max-width: 600px; margin-left: auto; margin-right: auto; }
-        .about-title { font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .about-text { font-size: 0.75rem; color: var(--text-muted); line-height: 1.6; }
+        .app-footer { padding: 24px 0 32px; margin-top: auto; max-width: 650px; margin-left: auto; margin-right: auto; width: 100%; }
 
         /* Tables */
         .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); -webkit-overflow-scrolling: touch; width: 100%; box-shadow: var(--shadow); }
@@ -217,7 +282,14 @@
     </div>
 
     <div class="app-header">
-        <h1 class="app-title">Warranty Self Auditor</h1>
+        <h1 class="app-title">
+            <svg width="0" height="0" style="position:absolute;"><defs><linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#60a5fa"/><stop offset="100%" stop-color="#a78bfa"/></linearGradient></defs></svg>
+            <div class="app-title-badge">
+                <svg class="app-title-icon" viewBox="0 0 24 24"><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V7L12 2z"/><path d="M9 12l2 2 4-4"/></svg>
+                <span class="app-title-text">Warranty Auditor</span>
+                <span class="app-title-dot"></span>
+            </div>
+        </h1>
         <div style="display:flex;gap:8px;align-items:center;">
         <button id="header-upload-btn" class="upload-shortcut" onclick="headerUploadNow()" title="Upload to GitHub Cloud">
             <svg viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
@@ -280,12 +352,65 @@
         </div>
 
         <footer class="app-footer">
-            <div class="about-title">Warranty Self Auditor</div>
-            <div class="about-text">
-                A highly optimized, completely offline client-side architecture for rapid warranty claims auditing. 
-                Features military-grade local encryption, auto-assigned discrepancies, seamless cross-platform backup restoration, and strict PDF/Excel formatted reporting.
-                <br><br>
-                <span style="font-weight: 700; color: var(--text-main);">Made By Aashish Giri H</span>
+            <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow);">
+
+                <!-- Header row -->
+                <div style="padding:20px 20px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:14px;">
+                    <div style="width:40px;height:40px;background:var(--primary);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <svg style="width:20px;height:20px;stroke:var(--primary-text);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V7L12 2z"/><path d="M9 12l2 2 4-4"/></svg>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="font-size:0.95rem;font-weight:800;color:var(--text-main);letter-spacing:-0.2px;">Warranty Auditor</div>
+                        <div style="font-size:0.68rem;color:var(--text-muted);margin-top:1px;text-transform:uppercase;letter-spacing:0.5px;">Professional Claims Audit Suite</div>
+                    </div>
+                    <div style="background:var(--bg-base);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:0.65rem;font-weight:700;color:var(--text-muted);letter-spacing:0.3px;">v3.0</div>
+                </div>
+
+                <!-- Feature grid -->
+                <div style="padding:16px 20px; border-bottom:1px solid var(--border);">
+                    <div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Capabilities</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;">
+                            <svg style="width:13px;height:13px;stroke:var(--accent);fill:none;stroke-width:2.5;flex-shrink:0;" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            <span style="font-size:0.7rem;font-weight:600;color:var(--text-main);">AES-256 Encryption</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;">
+                            <svg style="width:13px;height:13px;stroke:var(--success);fill:none;stroke-width:2.5;flex-shrink:0;" viewBox="0 0 24 24"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/><path d="M8 2v16M16 6v16"/></svg>
+                            <span style="font-size:0.7rem;font-weight:600;color:var(--text-main);">100% Offline</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;">
+                            <svg style="width:13px;height:13px;stroke:var(--text-muted);fill:none;stroke-width:2.5;flex-shrink:0;" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+                            <span style="font-size:0.7rem;font-weight:600;color:var(--text-main);">Cloud Backup</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;">
+                            <svg style="width:13px;height:13px;stroke:var(--warning);fill:none;stroke-width:2.5;flex-shrink:0;" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            <span style="font-size:0.7rem;font-weight:600;color:var(--text-main);">PDF &amp; Excel Export</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;">
+                            <svg style="width:13px;height:13px;stroke:var(--danger);fill:none;stroke-width:2.5;flex-shrink:0;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            <span style="font-size:0.7rem;font-weight:600;color:var(--text-main);">Auto Discrepancy</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;">
+                            <svg style="width:13px;height:13px;stroke:var(--text-muted);fill:none;stroke-width:2.5;flex-shrink:0;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+                            <span style="font-size:0.7rem;font-weight:600;color:var(--text-main);">Light &amp; Dark Mode</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Creator row -->
+                <div style="padding:14px 20px;display:flex;align-items:center;gap:12px;">
+                    <div style="width:32px;height:32px;background:var(--bg-base);border:1px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <svg style="width:15px;height:15px;stroke:var(--text-muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                    <div>
+                        <div style="font-size:0.78rem;font-weight:700;color:var(--text-main);">Aashish Giri H</div>
+                        <div style="font-size:0.65rem;color:var(--text-muted);">Developer &middot; Warranty Audit Specialist</div>
+                    </div>
+                    <div style="margin-left:auto;">
+                        <div style="width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 6px var(--success);animation:pulseDot 2s ease-in-out infinite;"></div>
+                    </div>
+                </div>
+
             </div>
         </footer>
     </div>
@@ -293,7 +418,7 @@
     <div id="screen-dashboard" class="screen">
         <div class="flex-between" style="margin-bottom: 12px;">
             <h3 style="margin:0;">Dashboard</h3>
-            <button class="btn" style="width:auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')">Menu</button>
+            <button class="btn" style="width:auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')">☰ Main Menu</button>
         </div>
         
         <div class="legend-hint">
@@ -311,17 +436,17 @@
 
         <div id="dash-content-area" style="display:none; animation: slideFadeUp 0.3s ease;">
             <div class="grid-2" style="margin-bottom: 8px;">
-                <div class="stat-card active-filter" id="dash-card-all" style="border-top: 4px solid var(--accent);" onclick="setDashFilter('all')">
+                <div class="stat-card claim-card active-filter" id="dash-card-all" style="border-top: 4px solid var(--accent);" onclick="setDashFilter('all')">
                     <div class="stat-value" id="dash-total">0</div><div class="stat-label">Total Claims</div>
                 </div>
-                <div class="stat-card" id="dash-card-clean" style="border-top: 4px solid var(--success);" onclick="setDashFilter('clean')">
-                    <div class="stat-value" id="dash-clean" style="color:var(--success)">0</div><div class="stat-label">Total Clean</div>
+                <div class="stat-card claim-card" id="dash-card-clean" style="border-top: 4px solid var(--success);" onclick="setDashFilter('clean')">
+                    <div class="stat-value" id="dash-clean" style="color:var(--success)">0</div><div class="stat-label">Total Claims Clean</div>
                 </div>
-                <div class="stat-card" id="dash-card-unclear" style="border-top: 4px solid var(--warning);" onclick="setDashFilter('unclear')">
-                    <div class="stat-value" id="dash-unclear" style="color:var(--warning)">0</div><div class="stat-label">Total Unclear</div>
+                <div class="stat-card claim-card" id="dash-card-unclear" style="border-top: 4px solid var(--warning);" onclick="setDashFilter('unclear')">
+                    <div class="stat-value" id="dash-unclear" style="color:var(--warning)">0</div><div class="stat-label">Total Claims Unclear</div>
                 </div>
-                <div class="stat-card" id="dash-card-pending" style="border-top: 4px solid var(--text-muted);" onclick="setDashFilter('pending')">
-                    <div class="stat-value" id="dash-pending">0</div><div class="stat-label">Total Pending</div>
+                <div class="stat-card claim-card" id="dash-card-pending" style="border-top: 4px solid var(--text-muted);" onclick="setDashFilter('pending')">
+                    <div class="stat-value" id="dash-pending">0</div><div class="stat-label">Total Claims Pending</div>
                 </div>
             </div>
 
@@ -348,7 +473,14 @@
 
             <div class="table-wrap">
                 <table id="dash-table">
-                    <thead><tr><th>Claim No</th><th>Status</th><th>R/O No</th><th>Type</th><th>Causal Part</th><th>Part Desc</th><th>Prod Date</th><th>Amount</th><th>Findings</th><th>Remarks</th></tr></thead>
+                    <thead><tr>
+                        <th style="cursor:pointer;" onclick="dashSortTable(0)">Claim No ↕</th>
+                        <th style="cursor:pointer;" onclick="dashSortTable(1)">Status ↕</th>
+                        <th>R/O No</th><th>Type</th><th>Causal Part</th><th>Part Desc</th>
+                        <th style="cursor:pointer;" onclick="dashSortTable(6)">Prod Date ↕</th>
+                        <th style="cursor:pointer;" onclick="dashSortTable(7)">Amount ↕</th>
+                        <th>Findings</th><th>Remarks</th>
+                    </tr></thead>
                     <tbody id="dash-tbody"></tbody>
                 </table>
             </div>
@@ -364,7 +496,7 @@
     <div id="screen-settings" class="screen">
         <div class="flex-between" style="margin-bottom: 16px;">
             <h3 style="margin:0;">Custom Discrepancy Codes</h3>
-            <button class="btn" style="width:auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')">Menu</button>
+            <button class="btn" style="width:auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')">☰ Main Menu</button>
         </div>
         <div class="card">
             <p>Add your own codes for the audit dropdown. (e.g. Code: 9, Desc: Labour Mismatch)</p>
@@ -393,8 +525,11 @@
         </div>
     </div>
     <div id="screen-security" class="screen">
+        <div class="flex-between" style="margin-bottom: 12px; max-width: 440px; margin-left: auto; margin-right: auto; width: 100%;">
+            <h3 style="margin:0;">Security Settings</h3>
+            <button class="btn" style="width:auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')">&#9776; Main Menu</button>
+        </div>
         <div class="card" style="max-width: 440px; margin: 0 auto; width: 100%;">
-            <h3>Security Settings</h3>
             <p>Configure AES-256 local encryption locks for application access and archived data.</p>
             
             <div style="background: var(--bg-base); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px;">
@@ -415,13 +550,16 @@
                 <p style="font-size:0.75rem; margin:10px 0 0 0; color:var(--text-muted);">Requires Master Password to open or delete Finalized Audits.</p>
             </div>
 
-            <button class="btn" onclick="showScreen('screen-menu')">Return to Menu</button>
+            <button class="btn" onclick="showScreen('screen-menu')" style="display:none;"></button>
         </div>
     </div>
 
     <div id="screen-backup" class="screen">
+        <div class="flex-between" style="margin-bottom: 12px; max-width: 440px; margin-left: auto; margin-right: auto; width: 100%;">
+            <h3 style="margin:0;">Backup &amp; Restore</h3>
+            <button class="btn" style="width:auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')">&#9776; Main Menu</button>
+        </div>
         <div class="card" style="max-width: 440px; margin: 0 auto; width: 100%;">
-            <h3>Backup & Restore</h3>
             <p>Universally transfer your entire database across any PC or Phone without data loss.</p>
             
             <button class="btn primary" style="margin-bottom: 24px; padding: 14px;" onclick="backupDatabase()">
@@ -430,7 +568,14 @@
             <hr style="border:none; border-top:1px solid var(--border); margin-bottom: 24px;">
             <label>Restore Database</label>
             <p style="font-size:0.75rem; color:var(--danger); margin-bottom: 12px; font-weight:600;">Warning: This will overwrite current data.</p>
-            <input type="file" id="restore-file" class="input" accept=".json" onchange="restoreDatabase(event)">
+            <div class="file-upload-wrapper">
+                <input type="file" id="restore-file" accept=".json" onchange="handleFileSelect(event, 'restore'); restoreDatabase(event);">
+                <label for="restore-file" class="file-upload-btn">
+                    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    <span>Browse File</span>
+                </label>
+            </div>
+            <div id="restore-file-card" style="display: none;"></div>
 
             <!-- ══════════ GITHUB GIST CLOUD SYNC ══════════ -->
             <hr style="border:none; border-top:1px solid var(--border); margin: 24px 0;">
@@ -500,9 +645,9 @@
                 </div>
 
                 <div class="grid-2" style="gap:8px; margin-bottom:8px;">
-                    <button class="btn primary" onclick="syncToGist(true)" style="margin:0;">
+                    <button class="btn" onclick="syncToGist(true)" style="margin:0; background:var(--success); color:white; border-color:var(--success);">
                         <svg style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
-                        Upload Now
+                        Backup Now
                     </button>
                     <button class="btn" onclick="restoreFromGist()" style="margin:0;">
                         <svg style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><polyline points="8 8 12 12 16 8"/><line x1="12" y1="12" x2="12" y2="3"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
@@ -510,15 +655,87 @@
                     </button>
                 </div>
                 <div class="grid-2" style="gap:8px; margin-top:8px;">
-                    <button class="btn danger" onclick="disconnectGist()" style="margin:0; padding:8px;">Disconnect GitHub</button>
-                    <button class="btn danger" onclick="deleteGistFile()" style="margin:0; padding:8px; opacity:0.85;">
-                        <svg style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-right:4px;" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>Delete Cloud File
+                    <button class="btn" onclick="disconnectGist()" style="margin:0; padding:10px 16px; background:var(--surface); border:1px solid var(--warning); color:var(--warning); font-weight:600;">
+                        <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-right:4px;" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        Disconnect GitHub
+                    </button>
+                    <button class="btn" onclick="deleteGistFile()" style="margin:0; padding:10px 16px; background:var(--surface); border:1px solid var(--danger); color:var(--danger); font-weight:600;">
+                        <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-right:4px;" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                        Delete Cloud File
                     </button>
                 </div>
             </div>
             <!-- ══════════════════════════════════════════════ -->
 
-            <button class="btn" style="margin-top: 16px;" onclick="showScreen('screen-menu')">Return to Menu</button>
+            <!-- ══════════ GOOGLE DRIVE CLOUD SYNC ══════════ -->
+            <hr style="border:none; border-top:1px solid var(--border); margin: 24px 0;">
+            
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                <!-- Google Drive logo (official colors) -->
+                <svg style="width:22px;height:22px;flex-shrink:0;" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                    <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                    <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
+                    <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+                    <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                    <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                    <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+                </svg>
+                <h3 style="margin:0; font-size:1rem;">Google Drive Sync</h3>
+                <span id="gdrive-status-dot" style="margin-left:auto; font-size:0.75rem; font-weight:700; padding:3px 10px; border-radius:20px; background:rgba(100,116,139,0.1); color:var(--text-muted);">Not Connected</span>
+            </div>
+            <p style="font-size:0.75rem; margin-bottom:12px;">Save your backup to <b>Google Drive</b> — your personal cloud, accessible from any device. Requires a Google account.</p>
+
+            <div id="gdrive-setup-section">
+                <div style="background:rgba(66,133,244,0.08); border:1px solid rgba(66,133,244,0.25); border-radius:8px; padding:10px 12px; margin-bottom:14px; font-size:0.72rem; color:#4285f4; line-height:1.6;">
+                    🔐 <b>How it works:</b> Click "Sign in with Google" — a Google popup opens to authorize access. Your backup is stored privately in your Google Drive. No one else can see or access it.
+                </div>
+                <button class="btn" onclick="connectGoogleDrive()" style="margin-bottom:8px; background:white; color:#1f2937; border:1px solid #dadce0; font-weight:700; gap:10px;">
+                    <svg style="width:18px;height:18px;flex-shrink:0;" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>
+                    Sign in with Google
+                </button>
+            </div>
+
+            <div id="gdrive-connected-section" style="display:none;">
+                <!-- Account info -->
+                <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); border-radius:10px; padding:14px; margin-bottom:12px; font-size:0.8rem;">
+                    <div style="font-weight:700; color:var(--success); margin-bottom:4px;">✅ Connected to Google Drive</div>
+                    <div style="color:var(--text-muted);" id="gdrive-info-text">Loading account info...</div>
+                </div>
+
+                <!-- Cloud backup status card — shows what's on Drive -->
+                <div id="gdrive-cloud-status-card" style="background:var(--bg-base); border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                        <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);">☁️ Cloud Backup Status</div>
+                        <button onclick="checkGdriveBackupStatus()" id="gdrive-refresh-btn" style="background:none;border:none;cursor:pointer;font-size:0.68rem;color:var(--accent);font-weight:700;padding:0;">↻ Refresh</button>
+                    </div>
+                    <div id="gdrive-cloud-status-body">
+                        <div style="color:var(--text-muted); font-size:0.78rem;">Checking Drive...</div>
+                    </div>
+                </div>
+
+                <!-- Action buttons -->
+                <div class="grid-2" style="gap:8px; margin-bottom:8px;">
+                    <button class="btn" id="gdrive-backup-btn" onclick="uploadToGoogleDrive()" style="margin:0; background:#4285f4; color:white; border-color:#4285f4; font-weight:700;">
+                        <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+                        Backup to Drive
+                    </button>
+                    <button class="btn" id="gdrive-restore-btn" onclick="restoreFromGoogleDrive()" style="margin:0; font-weight:700;">
+                        <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><polyline points="8 8 12 12 16 8"/><line x1="12" y1="12" x2="12" y2="3"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+                        Restore from Drive
+                    </button>
+                </div>
+                <!-- New device hint -->
+                <div id="gdrive-new-device-hint" style="display:none; background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.25); border-radius:8px; padding:10px 12px; margin-bottom:10px; font-size:0.72rem; color:var(--accent); line-height:1.6;">
+                    📱 <b>New Device Detected:</b> No local data found. A backup exists on Drive from <span id="gdrive-hint-date" style="font-weight:700;"></span>. Click <b>"Restore from Drive"</b> to load your data.
+                </div>
+                <button class="btn" onclick="disconnectGoogleDrive()" style="margin:0; padding:10px 16px; background:var(--surface); border:1px solid var(--warning); color:var(--warning); font-weight:600;">
+                    <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-right:4px;" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    Disconnect Google Drive
+                </button>
+            </div>
+            <!-- ══════════════════════════════════════════════ -->
+
+            <button class="btn" style="margin-top: 16px; display:none;"></button>
         </div>
     </div>
 
@@ -530,7 +747,14 @@
                 <div><label>To Date</label><input type="date" id="audit-to" class="input" style="cursor:pointer;" /></div>
             </div>
             <label>Source Excel File</label>
-            <input type="file" id="audit-file" class="input" accept=".xlsx, .xls">
+            <div class="file-upload-wrapper">
+                <input type="file" id="audit-file" accept=".xlsx, .xls" onchange="handleFileSelect(event, 'audit')">
+                <label for="audit-file" class="file-upload-btn">
+                    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    <span>Browse File</span>
+                </label>
+            </div>
+            <div id="audit-file-card" style="display: none;"></div>
             <div class="grid-2" style="margin-top: 12px;">
                 <button class="btn primary" style="margin:0;" onclick="startNewAudit()">Load Data</button>
                 <button class="btn" style="margin:0;" onclick="showScreen('screen-menu')">Cancel</button>
@@ -584,7 +808,7 @@
     <div id="screen-archive" class="screen">
         <div class="flex-between" style="margin-bottom: 12px;">
             <h3 id="archive-title" style="margin:0;">Archive</h3>
-            <button class="btn" style="width: auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')">Menu</button>
+            <button class="btn" style="width: auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')">☰ Main Menu</button>
         </div>
 
         <div class="legend-hint">
@@ -601,8 +825,11 @@
     </div>
 
     <div id="screen-reports" class="screen">
+        <div class="flex-between" style="margin-bottom: 12px; max-width: 440px; margin-left: auto; margin-right: auto; width: 100%;">
+            <h3 style="margin:0;">Reports Export</h3>
+            <button class="btn" style="width:auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')">&#9776; Main Menu</button>
+        </div>
         <div class="card" style="max-width: 440px; margin: 0 auto; width: 100%;">
-            <h3>Reports Export</h3>
             <p>Generate highly structured, styled documentation including Amount Summaries.</p>
             
             <label>Select Audit Scope</label>
@@ -627,7 +854,7 @@
                 <button class="btn primary" style="margin:0;" onclick="executeExport('excel')"><svg style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:inline-block;vertical-align:middle;margin-right:6px;" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2.5M8 17h5M13 13l2 4 2-4"/></svg><span style="vertical-align:middle;">Export Excel</span></button>
                 <button class="btn" style="margin:0; background-color:#ef4444; color:#ffffff; border-color:#ef4444;" onmouseover="this.style.backgroundColor='#dc2626';this.style.borderColor='#dc2626';" onmouseout="this.style.backgroundColor='#ef4444';this.style.borderColor='#ef4444';" onclick="executeExport('pdf')"><svg style="width:16px;height:16px;stroke:#ffffff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:inline-block;vertical-align:middle;margin-right:6px;" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><rect x="8" y="13" width="4" height="4" rx="1"/><line x1="16" y1="13" x2="16" y2="17"/><line x1="14" y1="15" x2="18" y2="15"/></svg><span style="vertical-align:middle;">Export PDF</span></button>
             </div>
-            <button class="btn" style="margin-top: 16px;" onclick="showScreen('screen-menu')">Back to Menu</button>
+            <button class="btn" style="margin-top: 16px; display:none;"></button>
         </div>
     </div>
 
@@ -779,6 +1006,40 @@
         // Show optional remark for all non-clean statuses
         const isClean = (val === '0' || (DISCREPANCY_TYPES[val] && (DISCREPANCY_TYPES[val].includes('None Found') || DISCREPANCY_TYPES[val].includes('[CLN]'))));
         if(remarkBox) remarkBox.style.display = 'block';
+    }
+
+    function handleFileSelect(event, type) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const cardId = type + '-file-card';
+        const cardElement = document.getElementById(cardId);
+        const fileSize = (file.size / 1024).toFixed(2) + ' KB';
+        if (file.size > 1024 * 1024) fileSize = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+        
+        cardElement.innerHTML = `
+            <div class="file-card">
+                <div class="file-card-icon">
+                    <svg viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+                </div>
+                <div class="file-card-info">
+                    <div class="file-card-name">${file.name}</div>
+                    <div class="file-card-size">${fileSize}</div>
+                </div>
+                <div class="file-card-remove" onclick="clearFileSelect('${type}')">
+                    <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </div>
+            </div>
+        `;
+        cardElement.style.display = 'block';
+    }
+    
+    function clearFileSelect(type) {
+        const inputId = type + '-file';
+        const cardId = type + '-file-card';
+        document.getElementById(inputId).value = '';
+        document.getElementById(cardId).style.display = 'none';
+        document.getElementById(cardId).innerHTML = '';
     }
 
     function highlightError(el) {
@@ -1109,14 +1370,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('dash-amount-stats').innerHTML = `
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
-                <div class="stat-card" style="border-top: 2px solid var(--accent); padding: 12px; min-width: 0;">
-                    <div class="stat-value" style="font-size:1.1rem; margin-bottom:2px;">${fmtAmt(amtAudited)}</div><div class="stat-label" style="font-size:0.65rem;">Amt Audited</div>
+                <div class="stat-card" style="border-top: 2px solid var(--accent); padding: 12px; min-width: 0; cursor:pointer;" onclick="setDashFilter('all')" title="Show All Claims">
+                    <div class="stat-value" style="font-size:1.1rem; margin-bottom:2px;">${fmtAmt(amtAudited)}</div><div class="stat-label" style="font-size:0.65rem;">Total Claim Amount Audited</div>
                 </div>
-                <div class="stat-card" style="border-top: 2px solid var(--warning); padding: 12px; min-width: 0;">
-                    <div class="stat-value" style="font-size:1.1rem; color:var(--warning); margin-bottom:2px;">${fmtAmt(amtUnclear)}</div><div class="stat-label" style="font-size:0.65rem;">Amt Unclear</div>
+                <div class="stat-card" style="border-top: 2px solid var(--warning); padding: 12px; min-width: 0; cursor:pointer;" onclick="setDashFilter('unclear')" title="Show Unclear Claims">
+                    <div class="stat-value" style="font-size:1.1rem; color:var(--warning); margin-bottom:2px;">${fmtAmt(amtUnclear)}</div><div class="stat-label" style="font-size:0.65rem;">Total Claim Amount Unclear</div>
                 </div>
-                <div class="stat-card" style="border-top: 2px solid var(--text-muted); padding: 12px; min-width: 0;">
-                    <div class="stat-value" style="font-size:1.1rem; margin-bottom:2px;">${fmtAmt(amtPending)}</div><div class="stat-label" style="font-size:0.65rem;">Amt Pending</div>
+                <div class="stat-card" style="border-top: 2px solid var(--text-muted); padding: 12px; min-width: 0; cursor:pointer;" onclick="setDashFilter('pending')" title="Show Pending Claims">
+                    <div class="stat-value" style="font-size:1.1rem; margin-bottom:2px;">${fmtAmt(amtPending)}</div><div class="stat-label" style="font-size:0.65rem;">Total Claim Amount Pending</div>
                 </div>
             </div>
         `;
@@ -1134,6 +1395,30 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleDashSearch() { applyDashFilters(); }
+
+    let dashSortCol = -1; let dashSortAsc = true;
+    function dashSortTable(colIdx) {
+        if(dashSortCol === colIdx) { dashSortAsc = !dashSortAsc; } else { dashSortCol = colIdx; dashSortAsc = true; }
+        const colKeys = [dashColMap.claim_no, null, dashColMap.ro_no, dashColMap.claim_type, dashColMap.causal_part, dashColMap.part_desc, dashColMap.prod_date, dashColMap.amount];
+        
+        dashFilteredData.sort((a, b) => {
+            let va, vb;
+            if(colIdx === 1) { // Status
+                const ea = dashAuditData[a[dashColMap.claim_no]] || {}; const eb = dashAuditData[b[dashColMap.claim_no]] || {};
+                const statusOrder = s => { if(s.audited && isClaimClean(s.findings)) return 1; if(s.audited) return 2; return 3; };
+                va = statusOrder(ea); vb = statusOrder(eb);
+            } else {
+                const key = colKeys[colIdx]; if(!key) return 0;
+                va = a[key] || ''; vb = b[key] || '';
+                if(colIdx === 7) { va = parseFloat(va)||0; vb = parseFloat(vb)||0; }
+            }
+            if(va < vb) return dashSortAsc ? -1 : 1;
+            if(va > vb) return dashSortAsc ? 1 : -1;
+            return 0;
+        });
+        dashCurrentPage = 1;
+        renderDashTable();
+    }
 
     function applyDashFilters() {
         const q = document.getElementById('dash-search').value.toUpperCase();
@@ -1315,29 +1600,29 @@ window.addEventListener('DOMContentLoaded', () => {
         
         const html = `
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px;">
-                <div class="stat-card ws-filter-btn ${workspaceCurrentFilter === 'all' ? 'active-filter' : ''}" id="ws-filter-all" onclick="setWorkspaceFilter('all')" style="border-top: 3px solid var(--accent); padding: 10px; cursor: pointer; min-width: 0;">
-                    <div class="stat-value" style="font-size:1.1rem; margin-bottom:2px;">${currentData.length}</div><div class="stat-label" style="font-size:0.6rem;">All</div>
+                <div class="stat-card claim-card ws-filter-btn ${workspaceCurrentFilter === 'all' ? 'active-filter' : ''}" id="ws-filter-all" onclick="setWorkspaceFilter('all')" style="border-top: 3px solid var(--accent); padding: 14px; cursor: pointer; min-width: 0;">
+                    <div class="stat-value" style="font-size:1.5rem; margin-bottom:2px;">${currentData.length}</div><div class="stat-label" style="font-size:0.65rem;">Total Claims</div>
                 </div>
-                <div class="stat-card ws-filter-btn ${workspaceCurrentFilter === 'clean' ? 'active-filter' : ''}" id="ws-filter-clean" onclick="setWorkspaceFilter('clean')" style="border-top: 3px solid var(--success); padding: 10px; cursor: pointer; min-width: 0;">
-                    <div class="stat-value" style="font-size:1.1rem; color:var(--success); margin-bottom:2px;">${clear}</div><div class="stat-label" style="font-size:0.6rem;">Clean</div>
+                <div class="stat-card claim-card ws-filter-btn ${workspaceCurrentFilter === 'clean' ? 'active-filter' : ''}" id="ws-filter-clean" onclick="setWorkspaceFilter('clean')" style="border-top: 3px solid var(--success); padding: 14px; cursor: pointer; min-width: 0;">
+                    <div class="stat-value" style="font-size:1.5rem; color:var(--success); margin-bottom:2px;">${clear}</div><div class="stat-label" style="font-size:0.65rem;">Claims Clean</div>
                 </div>
-                <div class="stat-card ws-filter-btn ${workspaceCurrentFilter === 'unclear' ? 'active-filter' : ''}" id="ws-filter-unclear" onclick="setWorkspaceFilter('unclear')" style="border-top: 3px solid var(--warning); padding: 10px; cursor: pointer; min-width: 0;">
-                    <div class="stat-value" style="font-size:1.1rem; color:var(--warning); margin-bottom:2px;">${audited - clear}</div><div class="stat-label" style="font-size:0.6rem;">Unclear</div>
+                <div class="stat-card claim-card ws-filter-btn ${workspaceCurrentFilter === 'unclear' ? 'active-filter' : ''}" id="ws-filter-unclear" onclick="setWorkspaceFilter('unclear')" style="border-top: 3px solid var(--warning); padding: 14px; cursor: pointer; min-width: 0;">
+                    <div class="stat-value" style="font-size:1.5rem; color:var(--warning); margin-bottom:2px;">${audited - clear}</div><div class="stat-label" style="font-size:0.65rem;">Claims Unclear</div>
                 </div>
-                <div class="stat-card ws-filter-btn ${workspaceCurrentFilter === 'pending' ? 'active-filter' : ''}" id="ws-filter-pending" onclick="setWorkspaceFilter('pending')" style="border-top: 3px solid var(--text-muted); padding: 10px; cursor: pointer; min-width: 0;">
-                    <div class="stat-value" style="font-size:1.1rem; margin-bottom:2px;">${currentData.length - audited}</div><div class="stat-label" style="font-size:0.6rem;">Pending</div>
+                <div class="stat-card claim-card ws-filter-btn ${workspaceCurrentFilter === 'pending' ? 'active-filter' : ''}" id="ws-filter-pending" onclick="setWorkspaceFilter('pending')" style="border-top: 3px solid var(--text-muted); padding: 14px; cursor: pointer; min-width: 0;">
+                    <div class="stat-value" style="font-size:1.5rem; margin-bottom:2px;">${currentData.length - audited}</div><div class="stat-label" style="font-size:0.65rem;">Claims Pending</div>
                 </div>
             </div>
             
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
-                <div class="stat-card" style="border-top: 2px solid var(--accent); padding: 12px; min-width: 0;">
-                    <div class="stat-value" style="font-size:1rem; margin-bottom:2px;">${fmtAmt(amtAudited)}</div><div class="stat-label" style="font-size:0.6rem;">Amt Audited</div>
+                <div class="stat-card" style="border-top: 2px solid var(--accent); padding: 12px; min-width: 0; cursor:pointer;" onclick="setWorkspaceFilter('all')" title="Show All Claims">
+                    <div class="stat-value" style="font-size:1rem; margin-bottom:2px;">${fmtAmt(amtAudited)}</div><div class="stat-label" style="font-size:0.6rem;">Total Claim Amt Audited</div>
                 </div>
-                <div class="stat-card" style="border-top: 2px solid var(--warning); padding: 12px; min-width: 0;">
-                    <div class="stat-value" style="font-size:1rem; color:var(--warning); margin-bottom:2px;">${fmtAmt(amtUnclear)}</div><div class="stat-label" style="font-size:0.6rem;">Amt Unclear</div>
+                <div class="stat-card" style="border-top: 2px solid var(--warning); padding: 12px; min-width: 0; cursor:pointer;" onclick="setWorkspaceFilter('unclear')" title="Show Unclear Claims">
+                    <div class="stat-value" style="font-size:1rem; color:var(--warning); margin-bottom:2px;">${fmtAmt(amtUnclear)}</div><div class="stat-label" style="font-size:0.6rem;">Total Claim Amt Unclear</div>
                 </div>
-                <div class="stat-card" style="border-top: 2px solid var(--text-muted); padding: 12px; min-width: 0;">
-                    <div class="stat-value" style="font-size:1rem; margin-bottom:2px;">${fmtAmt(amtPending)}</div><div class="stat-label" style="font-size:0.6rem;">Amt Pending</div>
+                <div class="stat-card" style="border-top: 2px solid var(--text-muted); padding: 12px; min-width: 0; cursor:pointer;" onclick="setWorkspaceFilter('pending')" title="Show Pending Claims">
+                    <div class="stat-value" style="font-size:1rem; margin-bottom:2px;">${fmtAmt(amtPending)}</div><div class="stat-label" style="font-size:0.6rem;">Total Claim Amt Pending</div>
                 </div>
             </div>
         `;
@@ -1794,8 +2079,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 [0,2,4,6].forEach((c,i) => {
                     const lAddr = XLSX.utils.encode_cell({r:4,c});
                     const vAddr = XLSX.utils.encode_cell({r:5,c});
-                    if(ws[lAddr]) ws[lAddr].s = {...amtLabelStyle, fill:{fgColor:{rgb:amtColors[i]}}};
-                    if(ws[vAddr]) ws[vAddr].s = {...amtValStyle,   fill:{fgColor:{rgb:amtColors[i]}}};
+                    if(ws[lAddr]) ws[lAddr].s = {...amtLabelStyle, fill:{fgColor:{rgb:amtColors[i]}}, border:thinBorder};
+                    if(ws[vAddr]) ws[vAddr].s = {...amtValStyle,   fill:{fgColor:{rgb:amtColors[i]}}, border:thinBorder};
                 });
 
                 // Style data sections
@@ -1820,7 +2105,7 @@ window.addEventListener('DOMContentLoaded', () => {
                         const altFill = isUrgent ? 'FECACA' : (isClr ? (ri%2===0?'F0FDF4':'DCFCE7') : (ri%2===0?'FFFBEB':'FEF3C7'));
                         for(let c=0;c<headers.length;c++){
                             const dAddr=XLSX.utils.encode_cell({r:curRow,c});
-                            if(ws[dAddr]) ws[dAddr].s={font:{sz:8,bold:isUrgent},fill:{fgColor:{rgb:altFill}},border:thinBorder,alignment:{vertical:'center',wrapText:true}};
+                            if(ws[dAddr]) ws[dAddr].s={font:{sz:8,bold:isUrgent},fill:{fgColor:{rgb:altFill}},border:thinBorder,alignment:{horizontal:'center',vertical:'center',wrapText:true}};
                         }
                         ws['!rows'][curRow]={hpt:15};
                         curRow++;
@@ -1938,7 +2223,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     for(let i = 1; i <= pageCount; i++) {
                         doc.setPage(i);
                         doc.setFontSize(7); doc.setFont(undefined,'normal'); doc.setTextColor(148,163,184);
-                        doc.text(`Warranty Self Auditor  |  Aashish Giri H  |  Page ${i} of ${pageCount}`, pageW / 2, doc.internal.pageSize.getHeight() - 5, { align: 'center' });
+                        doc.text(`Warranty Auditor  |  Aashish Giri H  |  Page ${i} of ${pageCount}`, pageW / 2, doc.internal.pageSize.getHeight() - 5, { align: 'center' });
                     }
 
                     doc.save(fileName + ".pdf");
@@ -2506,6 +2791,307 @@ window.addEventListener('DOMContentLoaded', () => {
             renderDashChart();
         }
     };
+
+    // ══════════════════════════════════════════════════════════════
+    // GOOGLE DRIVE CLOUD BACKUP & RESTORE — SMART CROSS-DEVICE
+    // ══════════════════════════════════════════════════════════════
+    const GDRIVE_CLIENT_ID = '740711070362-b0vjh0kgouuc3s27b7b8o136icj16d55.apps.googleusercontent.com';
+    const GDRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+    const GDRIVE_BACKUP_FILENAME = 'warranty_auditor_backup.json';
+
+    let _gdriveToken = null;
+    let _gdriveTokenExpiry = 0;
+    let _gdriveCloudInfo = null; // cached cloud backup info {fileId, savedAt, hasData}
+
+    function isGdriveConnected() { return !!localStorage.getItem('gdrive_connected'); }
+    function isGdriveTokenValid() { return _gdriveToken && Date.now() < _gdriveTokenExpiry - 60000; }
+
+    // ── Get OAuth token (silent if possible, popup if needed) ──
+    async function getGdriveToken(forcePrompt = false) {
+        if (!forcePrompt && isGdriveTokenValid()) return _gdriveToken;
+        return new Promise((resolve) => {
+            try {
+                const client = google.accounts.oauth2.initTokenClient({
+                    client_id: GDRIVE_CLIENT_ID,
+                    scope: GDRIVE_SCOPE,
+                    callback: (resp) => {
+                        if (resp.error || !resp.access_token) { resolve(null); return; }
+                        _gdriveToken = resp.access_token;
+                        _gdriveTokenExpiry = Date.now() + (resp.expires_in * 1000);
+                        resolve(_gdriveToken);
+                    },
+                    error_callback: () => resolve(null)
+                });
+                client.requestAccessToken({ prompt: forcePrompt ? 'select_account' : '' });
+            } catch(e) { resolve(null); }
+        });
+    }
+
+    // ── Search Drive for existing backup file ──
+    async function findGdriveBackupFile(tok) {
+        const r = await fetch(
+            `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${GDRIVE_BACKUP_FILENAME}'&fields=files(id,name,modifiedTime,size)&orderBy=modifiedTime+desc`,
+            { headers: { 'Authorization': 'Bearer ' + tok } }
+        );
+        if (!r.ok) throw new Error('Could not search Drive.');
+        const d = await r.json();
+        return d.files && d.files.length > 0 ? d.files[0] : null;
+    }
+
+    // ── Connect — sign in + immediately check cloud state ──
+    async function connectGoogleDrive() {
+        showLoader(true);
+        try {
+            const tok = await getGdriveToken(true);
+            if (!tok) { showLoader(false); return showAppAlert("Google Sign-In cancelled or failed."); }
+
+            // Get user info
+            const ur = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { 'Authorization': 'Bearer ' + tok } });
+            if (!ur.ok) throw new Error("Could not verify Google account.");
+            const user = await ur.json();
+
+            localStorage.setItem('gdrive_connected', 'true');
+            localStorage.setItem('gdrive_user_email', user.email || '');
+            localStorage.setItem('gdrive_user_name', user.name || '');
+
+            showLoader(false);
+            initGdriveUI();
+            // Auto check what's on cloud after connecting
+            await checkGdriveBackupStatus();
+        } catch(e) {
+            showLoader(false);
+            showAppAlert("Connection Failed: " + e.message);
+        }
+    }
+
+    // ── Check what exists on Drive & update status card ──
+    async function checkGdriveBackupStatus() {
+        const statusBody = document.getElementById('gdrive-cloud-status-body');
+        const hintBox = document.getElementById('gdrive-new-device-hint');
+        const hintDate = document.getElementById('gdrive-hint-date');
+        const restoreBtn = document.getElementById('gdrive-restore-btn');
+        if (!statusBody) return;
+
+        statusBody.innerHTML = '<div style="color:var(--text-muted);font-size:0.78rem;">🔍 Checking Drive...</div>';
+
+        try {
+            const tok = await getGdriveToken();
+            if (!tok) { statusBody.innerHTML = '<div style="color:var(--danger);font-size:0.78rem;">⚠️ Session expired. Reconnect to check.</div>'; return; }
+
+            const file = await findGdriveBackupFile(tok);
+            _gdriveCloudInfo = file;
+
+            if (file) {
+                // Cloud backup exists — show details
+                const modDate = new Date(file.modifiedTime);
+                const dateStr = modDate.toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+                const sizeKB = file.size ? (file.size / 1024).toFixed(1) + ' KB' : '';
+                const savedKey = 'gdrive_last_sync';
+                localStorage.setItem(savedKey, dateStr);
+
+                statusBody.innerHTML = `
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                        <span style="font-size:1.1rem;">✅</span>
+                        <div>
+                            <div style="font-size:0.8rem;font-weight:700;color:var(--text-main);">Backup found on Drive</div>
+                            <div style="font-size:0.7rem;color:var(--text-muted);">Saved: <b>${dateStr}</b>${sizeKB ? ' · ' + sizeKB : ''}</div>
+                        </div>
+                    </div>`;
+
+                // Check if local data exists
+                const localKeys = await localforage.keys();
+                const hasLocalData = localKeys.some(k => k.startsWith('audit_'));
+                if (!hasLocalData) {
+                    // New device — no local data, show hint
+                    if (hintBox) hintBox.style.display = 'block';
+                    if (hintDate) hintDate.innerText = dateStr;
+                    // Highlight restore button
+                    if (restoreBtn) {
+                        restoreBtn.style.background = '#10b981';
+                        restoreBtn.style.borderColor = '#10b981';
+                        restoreBtn.style.color = 'white';
+                        restoreBtn.innerHTML = restoreBtn.innerHTML.replace('Restore from Drive', '⬇ Restore from Drive');
+                    }
+                } else {
+                    if (hintBox) hintBox.style.display = 'none';
+                }
+            } else {
+                // No backup on Drive
+                statusBody.innerHTML = `
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:1.1rem;">📭</span>
+                        <div>
+                            <div style="font-size:0.8rem;font-weight:700;color:var(--text-main);">No backup on Drive yet</div>
+                            <div style="font-size:0.7rem;color:var(--text-muted);">Click <b>"Backup to Drive"</b> from your main device first.</div>
+                        </div>
+                    </div>`;
+                if (hintBox) hintBox.style.display = 'none';
+                // Disable restore if no cloud file
+                if (restoreBtn) {
+                    restoreBtn.disabled = true;
+                    restoreBtn.style.opacity = '0.4';
+                    restoreBtn.title = 'No backup found on Drive. Upload first.';
+                }
+            }
+        } catch(e) {
+            statusBody.innerHTML = `<div style="color:var(--danger);font-size:0.78rem;">⚠️ Error checking Drive: ${e.message}</div>`;
+        }
+    }
+
+    // ── Backup to Drive ──
+    async function uploadToGoogleDrive() {
+        if (!isGdriveConnected()) return showAppAlert("Not connected to Google Drive.");
+        showLoader(true);
+        try {
+            const tok = await getGdriveToken();
+            if (!tok) { showLoader(false); return showAppAlert("Google session expired. Please reconnect."); }
+
+            // Build full backup payload
+            let bk = {};
+            const ks = await localforage.keys();
+            for (let k of ks) bk[k] = await localforage.getItem(k);
+            bk['_secConfig'] = localStorage.getItem('auditor_sec') || '{}';
+            bk['_theme'] = localStorage.getItem('auditor_theme') || 'light';
+            bk['_customCodes'] = localStorage.getItem('auditor_custom_codes') || '{}';
+            bk['_savedAt'] = new Date().toISOString(); // timestamp inside backup
+
+            const content = JSON.stringify(bk);
+            const ds = new Date().toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+            // Check if file already exists — update vs create
+            const existingFile = _gdriveCloudInfo || await findGdriveBackupFile(tok);
+            let uploadRes;
+
+            if (existingFile) {
+                // PATCH — update existing file content
+                uploadRes = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${existingFile.id}?uploadType=media`, {
+                    method: 'PATCH',
+                    headers: { 'Authorization': 'Bearer ' + tok, 'Content-Type': 'application/json' },
+                    body: content
+                });
+            } else {
+                // POST — create new file in appDataFolder (hidden, private)
+                const form = new FormData();
+                form.append('metadata', new Blob([JSON.stringify({ name: GDRIVE_BACKUP_FILENAME, parents: ['appDataFolder'] })], { type: 'application/json' }));
+                form.append('file', new Blob([content], { type: 'application/json' }));
+                uploadRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                    method: 'POST', headers: { 'Authorization': 'Bearer ' + tok }, body: form
+                });
+            }
+
+            if (!uploadRes.ok) { const err = await uploadRes.json(); throw new Error(err.error?.message || 'Upload failed'); }
+            const uploaded = await uploadRes.json();
+            localStorage.setItem('gdrive_file_id', uploaded.id || existingFile?.id);
+            localStorage.setItem('gdrive_last_sync', ds);
+            _gdriveCloudInfo = null; // reset cache so next check is fresh
+
+            showLoader(false);
+            await checkGdriveBackupStatus(); // refresh status card
+            showToast(`✅ Backup saved to Google Drive! ${ds}`, 'success', 4000);
+        } catch(e) {
+            showLoader(false);
+            showAppAlert("Upload Failed: " + e.message);
+        }
+    }
+
+    // ── Restore from Drive — with pre-checks ──
+    async function restoreFromGoogleDrive() {
+        if (!isGdriveConnected()) return showAppAlert("Not connected to Google Drive.");
+
+        // Check cloud first if we don't have cached info
+        if (!_gdriveCloudInfo) {
+            showLoader(true);
+            try {
+                const tok = await getGdriveToken();
+                if (!tok) { showLoader(false); return showAppAlert("Google session expired. Please reconnect."); }
+                _gdriveCloudInfo = await findGdriveBackupFile(tok);
+                showLoader(false);
+            } catch(e) { showLoader(false); return showAppAlert("Could not check Drive: " + e.message); }
+        }
+
+        if (!_gdriveCloudInfo) {
+            return showAppAlert("❌ No backup found on Google Drive.\n\nGo to your main device → Backup & Restore → Google Drive → 'Backup to Drive' first.");
+        }
+
+        // Show what will be restored
+        const modDate = new Date(_gdriveCloudInfo.modifiedTime);
+        const dateStr = modDate.toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+        showAppConfirm(
+            `Restore from Google Drive?\n\n📅 Backup saved: ${dateStr}\n\n⚠️ This will OVERWRITE all local data on this device.`,
+            async () => {
+                showLoader(true);
+                try {
+                    const tok = await getGdriveToken();
+                    if (!tok) { showLoader(false); return showAppAlert("Google session expired."); }
+
+                    const dlRes = await fetch(`https://www.googleapis.com/drive/v3/files/${_gdriveCloudInfo.id}?alt=media`, {
+                        headers: { 'Authorization': 'Bearer ' + tok }
+                    });
+                    if (!dlRes.ok) throw new Error("Could not download backup.");
+                    const data = JSON.parse(await dlRes.text());
+
+                    // Restore all data
+                    await localforage.clear();
+                    for (let k in data) {
+                        if (k === '_secConfig') localStorage.setItem('auditor_sec', data[k]);
+                        else if (k === '_theme') { localStorage.setItem('auditor_theme', data[k]); applyTheme(data[k]); }
+                        else if (k === '_customCodes') localStorage.setItem('auditor_custom_codes', data[k]);
+                        else if (k === '_savedAt' || k === '_autosync') { /* skip internal meta */ }
+                        else await localforage.setItem(k, data[k]);
+                    }
+                    // Keep gdrive connection on this device
+                    localStorage.setItem('gdrive_connected', 'true');
+                    showLoader(false);
+                    showAppAlert(`✅ Restore Successful!\n\nData from ${dateStr} has been loaded. App will reload.`);
+                    setTimeout(() => window.location.reload(), 2000);
+                } catch(e) {
+                    showLoader(false);
+                    showAppAlert("Restore Failed: " + e.message);
+                }
+            }
+        );
+    }
+
+    function disconnectGoogleDrive() {
+        showAppConfirm("Disconnect Google Drive?\n\nYour cloud backup stays safe. Only this device's connection is removed.", () => {
+            ['gdrive_connected', 'gdrive_user_email', 'gdrive_user_name', 'gdrive_file_id', 'gdrive_last_sync'].forEach(k => localStorage.removeItem(k));
+            _gdriveToken = null; _gdriveTokenExpiry = 0; _gdriveCloudInfo = null;
+            initGdriveUI();
+            showAppAlert("Disconnected from Google Drive.");
+        });
+    }
+
+    function initGdriveUI() {
+        const setup = document.getElementById('gdrive-setup-section');
+        const conn = document.getElementById('gdrive-connected-section');
+        const dot = document.getElementById('gdrive-status-dot');
+        if (!setup || !conn || !dot) return;
+
+        if (isGdriveConnected()) {
+            setup.style.display = 'none';
+            conn.style.display = 'block';
+            dot.innerText = 'Connected';
+            dot.style.background = 'rgba(16,185,129,0.1)';
+            dot.style.color = 'var(--success)';
+            const email = localStorage.getItem('gdrive_user_email') || '';
+            const name = localStorage.getItem('gdrive_user_name') || '';
+            const infoEl = document.getElementById('gdrive-info-text');
+            if (infoEl) infoEl.innerHTML = `Signed in as: <b>${name}</b><br><span style="font-family:monospace;color:var(--accent);font-size:0.78rem;">${email}</span>`;
+            // Auto-check cloud status every time this screen opens
+            setTimeout(checkGdriveBackupStatus, 300);
+        } else {
+            setup.style.display = 'block';
+            conn.style.display = 'none';
+            dot.innerText = 'Not Connected';
+            dot.style.background = 'rgba(100,116,139,0.1)';
+            dot.style.color = 'var(--text-muted)';
+        }
+    }
+
+    const _oSSv3 = showScreen;
+    showScreen = function(id) { _oSSv3(id); if (id === 'screen-backup') setTimeout(initGdriveUI, 80); };
+    setTimeout(initGdriveUI, 900);
 </script>
 </body>
 </html>
