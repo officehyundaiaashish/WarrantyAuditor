@@ -2866,38 +2866,73 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    async function headerUploadNow() {
+    // ── Header shortcut: show minimal method picker then act ──
+    function showMethodPicker(action) {
+        const hasGithub = !!localStorage.getItem('gist_token_enc');
+        const hasFirebase = !!window._fbUser;
+
+        // Build available options
+        const options = [];
+        if (hasFirebase) options.push({ label: '☁️ Firebase', key: 'firebase' });
+        if (hasGithub)   options.push({ label: '🐙 GitHub',   key: 'github'   });
+
+        if (options.length === 0) {
+            showAppAlert("No cloud connected.\nGo to Backup & Restore to connect.");
+            return;
+        }
+
+        // If only one method available — act directly, no picker needed
+        if (options.length === 1) {
+            action === 'backup' ? _doHeaderBackup(options[0].key) : _doHeaderRestore(options[0].key);
+            return;
+        }
+
+        // Show minimal picker overlay
+        const existing = document.getElementById('method-picker-overlay');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'method-picker-overlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;background:var(--modal-overlay);backdrop-filter:blur(4px);';
+        overlay.innerHTML = `
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;min-width:220px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.3);">
+                <div style="font-size:0.8rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">${action === 'backup' ? '⬆ Backup to' : '⬇ Restore from'}</div>
+                ${options.map(o => `
+                <button onclick="document.getElementById('method-picker-overlay').remove(); ${action === 'backup' ? '_doHeaderBackup' : '_doHeaderRestore'}('${o.key}')"
+                    style="display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);border-radius:10px;background:var(--bg-base);cursor:pointer;font-size:0.88rem;font-weight:700;color:var(--text-main);transition:all 0.15s;">
+                    ${o.label}
+                </button>`).join('')}
+                <button onclick="document.getElementById('method-picker-overlay').remove()"
+                    style="width:100%;padding:8px;border:none;background:none;cursor:pointer;font-size:0.78rem;color:var(--text-muted);">Cancel</button>
+            </div>`;
+        overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+        document.body.appendChild(overlay);
+    }
+
+    async function _doHeaderBackup(method) {
         const btn = document.getElementById('header-upload-btn');
-        if (!localStorage.getItem('gist_token_enc')) { showAppAlert("Not connected to GitHub. Go to Backup & Restore to connect."); return; }
         btn.classList.add('syncing');
         try {
-            await syncToGist(false);
+            if (method === 'github') {
+                await syncToGist(false);
+            } else {
+                await uploadToGoogleDrive();
+            }
             btn.classList.remove('syncing');
             btn.classList.add('done');
-            showToast('Uploaded to GitHub Cloud! ' + new Date().toLocaleString(), 'success', 3000);
             setTimeout(() => btn.classList.remove('done'), 600);
         } catch(e) {
             btn.classList.remove('syncing');
-            showToast('Upload failed: ' + e.message, 'danger', 4000);
+            showToast('Backup failed: ' + e.message, 'danger', 4000);
         }
     }
 
-    // Update header buttons visibility based on connection state
-    function updateHeaderUploadBtn() {
-        const connected = !!localStorage.getItem('gist_token_enc');
-        const up = document.getElementById('header-upload-btn');
-        if (up) { up.style.opacity = connected ? '1' : '0.35'; up.title = connected ? 'Upload to GitHub Cloud' : 'Not connected to GitHub'; }
-        const re = document.getElementById('header-restore-btn');
-        if (re) { re.style.opacity = connected ? '1' : '0.35'; re.title = connected ? 'Restore from GitHub Cloud' : 'Not connected to GitHub'; }
-    }
-
-    async function headerRestoreNow() {
+    async function _doHeaderRestore(method) {
         const btn = document.getElementById('header-restore-btn');
-        if (!localStorage.getItem('gist_token_enc')) { showAppAlert("Not connected to GitHub. Go to Backup & Restore to connect."); return; }
-        showAppConfirm("Restore from GitHub Cloud?\n\nThis will OVERWRITE all local data.", async () => {
-            btn.classList.add('loading');
-            const tok = await getDecryptedToken(); if (!tok) { btn.classList.remove('loading'); return; }
-            try {
+        btn.classList.add('loading');
+        try {
+            if (method === 'github') {
+                const tok = await getDecryptedToken(); if (!tok) { btn.classList.remove('loading'); return; }
                 let gid = localStorage.getItem('gist_id');
                 if (!gid) {
                     let page = 1, found = false;
@@ -2916,17 +2951,34 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (!r.ok) throw new Error('Could not fetch backup.');
                 const j = await r.json(), ct = j.files['auditor_backup.json']?.content;
                 if (!ct) throw new Error("Backup file not found.");
-                const data = JSON.parse(ct); await localforage.clear();
-                for (let k in data) { if (k === '_secConfig') localStorage.setItem('auditor_sec', data[k]); else if (k === '_autosync') localStorage.setItem('gist_autosync', data[k]); else if (k === '_theme') { localStorage.setItem('auditor_theme', data[k]); applyTheme(data[k]); } else if (k === '_customCodes') { localStorage.setItem('auditor_custom_codes', data[k]); } else await localforage.setItem(k, data[k]); }
-                localStorage.setItem('gist_id', gid);
-                btn.classList.remove('loading'); btn.classList.add('done');
-                showToast('Restore Successful! Reloading...', 'success', 3000);
-                setTimeout(() => window.location.reload(), 2000);
-            } catch(e) {
+                showAppConfirm("Restore from GitHub?\n\nThis will OVERWRITE all local data.", async () => {
+                    const data = JSON.parse(ct); await localforage.clear();
+                    for (let k in data) { if (k === '_secConfig') localStorage.setItem('auditor_sec', data[k]); else if (k === '_autosync') localStorage.setItem('gist_autosync', data[k]); else if (k === '_theme') { localStorage.setItem('auditor_theme', data[k]); applyTheme(data[k]); } else if (k === '_customCodes') { localStorage.setItem('auditor_custom_codes', data[k]); } else await localforage.setItem(k, data[k]); }
+                    localStorage.setItem('gist_id', gid);
+                    btn.classList.remove('loading'); btn.classList.add('done');
+                    showToast('Restore Successful! Reloading...', 'success', 3000);
+                    setTimeout(() => window.location.reload(), 2000);
+                });
+            } else {
                 btn.classList.remove('loading');
-                showToast('Restore failed: ' + e.message, 'danger', 4000);
+                await restoreFromGoogleDrive();
             }
-        });
+        } catch(e) {
+            btn.classList.remove('loading');
+            showToast('Restore failed: ' + e.message, 'danger', 4000);
+        }
+    }
+
+    async function headerUploadNow() { showMethodPicker('backup'); }
+    async function headerRestoreNow() { showMethodPicker('restore'); }
+
+    // Update header buttons visibility based on connection state
+    function updateHeaderUploadBtn() {
+        const connected = !!localStorage.getItem('gist_token_enc') || !!window._fbUser;
+        const up = document.getElementById('header-upload-btn');
+        if (up) { up.style.opacity = connected ? '1' : '0.35'; up.title = 'Backup to Cloud'; }
+        const re = document.getElementById('header-restore-btn');
+        if (re) { re.style.opacity = connected ? '1' : '0.35'; re.title = 'Restore from Cloud'; }
     }
 
     function initGistUI(){
