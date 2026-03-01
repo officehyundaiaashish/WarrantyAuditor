@@ -58,15 +58,19 @@
         .upload-shortcut:hover { border-color: var(--success); transform: scale(1.05); }
         .upload-shortcut svg { width: 18px; height: 18px; stroke: var(--text-main); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: 0.3s; }
         .upload-shortcut:hover svg { stroke: var(--success); }
-        .upload-shortcut.syncing svg { animation: spin 1s linear infinite; stroke: var(--accent); }
-        @keyframes upload-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.12)} }
-        .upload-shortcut.done { animation: upload-pulse 0.4s ease; border-color: var(--success); }
+        @keyframes arrow-up { 0%,100%{transform:translateY(0);opacity:1} 40%{transform:translateY(-5px);opacity:0.4} 70%{transform:translateY(2px);opacity:1} }
+        @keyframes arrow-down { 0%,100%{transform:translateY(0);opacity:1} 40%{transform:translateY(5px);opacity:0.4} 70%{transform:translateY(-2px);opacity:1} }
+        @keyframes btn-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.13)} }
+        .upload-shortcut.syncing { border-color: var(--success); }
+        .upload-shortcut.syncing svg { animation: arrow-up 0.8s ease-in-out infinite; stroke: var(--success); }
+        .upload-shortcut.done { animation: btn-pulse 0.4s ease; border-color: var(--success); }
         .restore-shortcut { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
         .restore-shortcut:hover { border-color: var(--accent); transform: scale(1.05); }
         .restore-shortcut svg { width: 18px; height: 18px; stroke: var(--text-main); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: 0.3s; }
         .restore-shortcut:hover svg { stroke: var(--accent); }
-        .restore-shortcut.loading svg { animation: spin 1s linear infinite; stroke: var(--accent); }
-        .restore-shortcut.done { animation: upload-pulse 0.4s ease; border-color: var(--accent); }
+        .restore-shortcut.loading { border-color: var(--accent); }
+        .restore-shortcut.loading svg { animation: arrow-down 0.8s ease-in-out infinite; stroke: var(--accent); }
+        .restore-shortcut.done { animation: btn-pulse 0.4s ease; border-color: var(--accent); }
         .theme-toggle:hover { border-color: var(--accent); transform: scale(1.05); }
         .theme-toggle svg { position: absolute; width: 20px; height: 20px; transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55); stroke: var(--text-main); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
         body[data-theme="dark"] .icon-sun { transform: translateY(30px) rotate(90deg); opacity: 0; }
@@ -1079,7 +1083,7 @@ window.addEventListener('DOMContentLoaded', () => {
             let statusHtml = '<span class="status-pending">Pen</span>'; if (isClear) statusHtml = '<span class="status-clear">Cln</span>'; else if (entry.audited) statusHtml = `<span class="status-unclear">Unc</span>`;
             
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${claimNo}</td><td>${statusHtml}</td><td>${row[dashColMap.ro_no] || '-'}</td><td>${row[dashColMap.claim_type] || '-'}</td><td>${row[dashColMap.causal_part] || '-'}</td><td>${row[dashColMap.amount] || '-'}</td><td style="color:var(--text-muted);">${(entry.findings||[]).join('; ')}</td>`;
+            tr.innerHTML = `<td>${claimNo}</td><td>${statusHtml}</td><td>${row[dashColMap.ro_no] || '-'}</td><td>${row[dashColMap.claim_type] || '-'}</td><td>${row[dashColMap.causal_part] || '-'}</td><td style="color:var(--text-muted); max-width:120px; overflow:hidden; text-overflow:ellipsis;">${row[dashColMap.part_desc] || '-'}</td><td>${row[dashColMap.amount] || '-'}</td><td style="color:var(--text-muted);">${(entry.findings||[]).join('; ')}</td>`;
             frag.appendChild(tr);
         }); tbody.appendChild(frag);
 
