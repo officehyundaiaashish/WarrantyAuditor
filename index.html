@@ -145,7 +145,7 @@
         
         /* Abbreviations Hint - Top Global Position */
         .legend-hint { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; align-items: center; padding: 12px; background: var(--bg-base); border-radius: 8px; margin-bottom: 16px; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); border: 1px solid var(--border); }
-        .legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+        .legend-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 4px; box-shadow: 0 0 0 1.5px rgba(255,255,255,0.15); }
 
         /* Modals */
         .modal-backdrop { position: fixed; inset: 0; background-color: var(--modal-overlay); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; backdrop-filter: blur(5px); }
@@ -256,9 +256,9 @@
         </div>
         
         <div class="legend-hint">
-            <span><span class="legend-dot" style="background:var(--success)"></span> <b>Cln</b> = Clean (No Discrepancy)</span>
-            <span><span class="legend-dot" style="background:var(--warning)"></span> <b>Unc</b> = Unclear (Discrepancy Found)</span>
-            <span><span class="legend-dot" style="background:var(--text-muted)"></span> <b>Pen</b> = Pending (Not Audited)</span>
+            <span><span class="legend-dot" style="background:#10b981;"></span> <b>Cln</b> = Clean (No Discrepancy)</span>
+            <span><span class="legend-dot" style="background:#f59e0b;"></span> <b>Unc</b> = Unclear (Discrepancy Found)</span>
+            <span><span class="legend-dot" style="background:#94a3b8;"></span> <b>Pen</b> = Pending (Not Audited)</span>
         </div>
 
         <label>Select Audit Period</label>
@@ -502,9 +502,9 @@
         </div>
 
         <div class="legend-hint">
-            <span><span class="legend-dot" style="background:var(--success)"></span> <b>Cln</b> = Clean</span>
-            <span><span class="legend-dot" style="background:var(--warning)"></span> <b>Unc</b> = Unclear</span>
-            <span><span class="legend-dot" style="background:var(--text-muted)"></span> <b>Pen</b> = Pending</span>
+            <span><span class="legend-dot" style="background:#10b981;"></span> <b>Cln</b> = Clean</span>
+            <span><span class="legend-dot" style="background:#f59e0b;"></span> <b>Unc</b> = Unclear</span>
+            <span><span class="legend-dot" style="background:#94a3b8;"></span> <b>Pen</b> = Pending</span>
         </div>
 
         <div id="workspace-stats" style="margin-bottom: 16px;"></div>
@@ -536,8 +536,8 @@
         </div>
 
         <div class="legend-hint">
-            <span><span class="legend-dot" style="background:var(--success)"></span> <b>Fin</b> = Finalized Audit</span>
-            <span><span class="legend-dot" style="background:var(--warning)"></span> <b>Drf</b> = Ongoing Draft</span>
+            <span><span class="legend-dot" style="background:#10b981;"></span> <b>Fin</b> = Finalized Audit</span>
+            <span><span class="legend-dot" style="background:#f59e0b;"></span> <b>Drf</b> = Ongoing Draft</span>
         </div>
 
         <div class="table-wrap" style="margin-bottom: 20px;">
@@ -828,6 +828,7 @@ window.addEventListener('DOMContentLoaded', () => {
             let backupObj = {}; const keys = await localforage.keys();
             for (let k of keys) { backupObj[k] = await localforage.getItem(k); }
             backupObj['_secConfig'] = localStorage.getItem('auditor_sec') || "{}";
+            backupObj['_autosync'] = localStorage.getItem('gist_autosync') || 'false';
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupObj));
             const dlAnchorElem = document.createElement('a'); dlAnchorElem.setAttribute("href", dataStr);
             dlAnchorElem.setAttribute("download", `WarrantyAuditor_Backup_${new Date().toISOString().split('T')[0]}.json`);
@@ -842,7 +843,7 @@ window.addEventListener('DOMContentLoaded', () => {
             reader.onload = async (e) => {
                 try {
                     const data = JSON.parse(e.target.result); await localforage.clear();
-                    for (let key in data) { if (key === '_secConfig') { localStorage.setItem('auditor_sec', data[key]); } else { await localforage.setItem(key, data[key]); } }
+                    for (let key in data) { if (key === '_secConfig') { localStorage.setItem('auditor_sec', data[key]); } else if (key === '_autosync') { localStorage.setItem('gist_autosync', data[key]); } else { await localforage.setItem(key, data[key]); } }
                     showLoader(false); showAppAlert("Database Restored Successfully! App will reload."); setTimeout(() => window.location.reload(), 2000);
                 } catch(err) { showLoader(false); showAppAlert("Restore failed. Invalid backup."); document.getElementById('restore-file').value = ''; }
             }; reader.readAsText(file);
@@ -1620,7 +1621,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const tok=await getDecryptedToken();
             if(!tok){return;}
             let bk={};const ks=await localforage.keys();for(let k of ks)bk[k]=await localforage.getItem(k);
-            bk['_secConfig']=localStorage.getItem('auditor_sec')||'{}';
+            bk['_secConfig']=localStorage.getItem('auditor_sec')||'{}';bk['_autosync']=localStorage.getItem('gist_autosync')||'false';
             const gid=localStorage.getItem('gist_id'),ds=new Date().toLocaleString();
             const res=await fetch(gid?'https://api.github.com/gists/'+gid:'https://api.github.com/gists',{method:gid?'PATCH':'POST',headers:{'Authorization':'token '+tok,'Content-Type':'application/json'},body:JSON.stringify({description:'WA Auto-Backup['+trigger+'] '+ds,public:false,files:{'auditor_backup.json':{content:JSON.stringify(bk)}}})});
             bumpRate();
@@ -1677,7 +1678,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const tok=await getDecryptedToken();if(!tok)return;
         if(alert)showLoader(true);
         try{
-            let bk={};const ks=await localforage.keys();for(let k of ks)bk[k]=await localforage.getItem(k);bk['_secConfig']=localStorage.getItem('auditor_sec')||'{}';
+            let bk={};const ks=await localforage.keys();for(let k of ks)bk[k]=await localforage.getItem(k);bk['_secConfig']=localStorage.getItem('auditor_sec')||'{}';bk['_autosync']=localStorage.getItem('gist_autosync')||'false';
             const gid=localStorage.getItem('gist_id'),ds=new Date().toLocaleString();
             const res=await fetch(gid?'https://api.github.com/gists/'+gid:'https://api.github.com/gists',{method:gid?'PATCH':'POST',headers:{'Authorization':'token '+tok,'Content-Type':'application/json'},body:JSON.stringify({description:'Warranty Auditor Backup '+ds,public:false,files:{'auditor_backup.json':{content:JSON.stringify(bk)}}})});
             bumpRate();
@@ -1714,7 +1715,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const j=await r.json(),ct=j.files['auditor_backup.json']?.content;
                 if(!ct)throw new Error("Backup file not found in Gist.");
                 const data=JSON.parse(ct);await localforage.clear();
-                for(let k in data){if(k==='_secConfig')localStorage.setItem('auditor_sec',data[k]);else await localforage.setItem(k,data[k]);}
+                for(let k in data){if(k==='_secConfig')localStorage.setItem('auditor_sec',data[k]);else if(k==='_autosync')localStorage.setItem('gist_autosync',data[k]);else await localforage.setItem(k,data[k]);}
                 localStorage.setItem('gist_id',gid);
                 showLoader(false);showAppAlert("Restore Successful! App will reload.");setTimeout(()=>window.location.reload(),2000);
             }catch(e){showLoader(false);showAppAlert("Restore Failed: "+e.message);}
