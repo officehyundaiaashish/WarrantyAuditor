@@ -765,7 +765,7 @@
     }
 
     // --- SMART KEYBOARD & DIALOG ENGINE ---
-    function closeDialog() { document.getElementById('app-dialog').classList.remove('active'); document.getElementById('dialog-input').value = ''; }
+    function closeDialog() { document.getElementById('app-dialog').classList.remove('active'); const di=document.getElementById('dialog-input'); di.value=''; di.style.cssText='text-align:center; letter-spacing:4px; font-size:1.2rem; margin:0; padding-right:44px; -webkit-text-security:disc; text-security:disc;'; }
     function showAppAlert(msg) { document.getElementById('dialog-msg').innerText = msg; document.getElementById('dialog-input-wrapper').style.display = 'none'; document.getElementById('dialog-btn-no').style.display = 'none'; document.getElementById('dialog-btn-yes').onclick = closeDialog; document.getElementById('app-dialog').classList.add('active'); }
     function showAppConfirm(msg, onYes) { document.getElementById('dialog-msg').innerText = msg; document.getElementById('dialog-input-wrapper').style.display = 'none'; document.getElementById('dialog-btn-no').style.display = 'block'; document.getElementById('dialog-btn-yes').onclick = () => { closeDialog(); if(onYes) onYes(); }; document.getElementById('dialog-btn-no').onclick = closeDialog; document.getElementById('app-dialog').classList.add('active'); }
 
@@ -1405,8 +1405,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const kbBtn = document.getElementById('kb-toggle');
             input.value = '';
             input.type = 'text';
-            input.style.webkitTextSecurity = 'none';
-            input.style.textSecurity = 'none';
+            input.style.cssText = 'text-align:left; letter-spacing:normal; font-size:0.95rem; margin:0; padding:10px 14px; -webkit-text-security:none; text-security:none;';
             input.setAttribute('inputmode', 'text');
             input.placeholder = 'e.g. Checked by Rajesh, Oct batch...';
             if(kbBtn) kbBtn.style.display = 'none';
@@ -1415,6 +1414,8 @@ window.addEventListener('DOMContentLoaded', () => {
             document.getElementById('dialog-btn-yes').onclick = () => {
                 const remark = input.value.trim();
                 closeDialog();
+                // Reset input style back to PIN style for next use
+                input.style.cssText = 'text-align:center; letter-spacing:4px; font-size:1.2rem; margin:0; padding-right:44px; -webkit-text-security:disc; text-security:disc;';
                 processFinalize(remark);
             };
             document.getElementById('app-dialog').classList.add('active');
@@ -1534,16 +1535,137 @@ window.addEventListener('DOMContentLoaded', () => {
             const fileName = scope === 'master' ? `Master_Audit_${Date.now()}` : `Audit_${scope}`;
 
             if(format === 'excel') {
-                let aoa = []; let headers = combinedClear.length > 0 ? Object.keys(combinedClear[0]) : Object.keys(combinedUnclear[0]);
-                
-                // Add Amount Summaries at Top
-                aoa.push(["AUDIT AMOUNT SUMMARY"]);
-                aoa.push(["Total Amt Audited:", Math.round(tAud), "Total Amt Unclear:", Math.round(tUnc), "Total Amt Pending:", Math.round(tPen)]);
-                aoa.push([]);
+                const wb = XLSX.utils.book_new();
+                const headers = combinedClear.length > 0 ? Object.keys(combinedClear[0]) : Object.keys(combinedUnclear[0]);
+                const periodLabel = scope === 'master' ? 'All Periods' : (dbIndex[scope] ? dbIndex[scope].month : scope);
+                const scopeRemark = scope !== 'master' && dbIndex[scope] && dbIndex[scope].audit_remark ? dbIndex[scope].audit_remark : '';
 
-                if (combinedClear.length > 0) { aoa.push([`CLEAR CLAIMS`]); aoa.push(headers); combinedClear.forEach(r => aoa.push(Object.values(r))); }
-                if (combinedUnclear.length > 0) { if(combinedClear.length > 0) aoa.push([]); aoa.push([`UNCLEAR / PENDING CLAIMS`]); aoa.push(headers); combinedUnclear.forEach(r => aoa.push(Object.values(r))); }
-                const ws = XLSX.utils.aoa_to_sheet(aoa); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Audit Report"); XLSX.writeFile(wb, fileName + ".xlsx");
+                // ── Helper: apply cell style ──
+                function cellStyle(ws, addr, s) { if(!ws[addr]) ws[addr]={v:'',t:'s'}; ws[addr].s = s; }
+                function setRow(ws, r, values, styles) {
+                    values.forEach((v, c) => {
+                        const addr = XLSX.utils.encode_cell({r, c});
+                        if(!ws[addr]) ws[addr] = {v: v ?? '', t: typeof v === 'number' ? 'n' : 's'};
+                        else { ws[addr].v = v ?? ''; ws[addr].t = typeof v === 'number' ? 'n' : 's'; }
+                        if(styles && styles[c]) ws[addr].s = styles[c];
+                    });
+                }
+
+                const darkBg = {fgColor:{rgb:'1E293B'}}; const greenBg = {fgColor:{rgb:'16A34A'}}; const amberBg = {fgColor:{rgb:'D97706'}};
+                const whiteTxt = {color:{rgb:'FFFFFF'}}; const boldWhite = {bold:true, color:{rgb:'FFFFFF'}};
+                const thinBorder = { top:{style:'thin',color:{rgb:'CBD5E1'}}, bottom:{style:'thin',color:{rgb:'CBD5E1'}}, left:{style:'thin',color:{rgb:'CBD5E1'}}, right:{style:'thin',color:{rgb:'CBD5E1'}} };
+                const thickBorderB = { top:{style:'thin',color:{rgb:'CBD5E1'}}, bottom:{style:'medium',color:{rgb:'64748B'}}, left:{style:'thin',color:{rgb:'CBD5E1'}}, right:{style:'thin',color:{rgb:'CBD5E1'}} };
+
+                const aoa = []; let r = 0;
+
+                // Row 0: Title
+                aoa.push([`WARRANTY AUDIT REPORT — ${periodLabel}`]);
+                // Row 1: Meta
+                aoa.push([`Generated: ${new Date().toLocaleString()}   |   Auditor: Aashish Giri H   |   Filter: ${filter}`]);
+                // Row 2: Remark (if any)
+                if(scopeRemark) aoa.push([`Auditor Remark: ${scopeRemark}`]); else aoa.push(['']);
+                // Row 3: blank
+                aoa.push(['']);
+                // Row 4: Amount summary labels
+                aoa.push(['TOTAL AMOUNT', '', 'AUDITED AMOUNT', '', 'UNCLEAR AMOUNT', '', 'PENDING AMOUNT', '']);
+                // Row 5: Amount values
+                aoa.push([Math.round(tAud + tPen), '', Math.round(tAud), '', Math.round(tUnc), '', Math.round(tPen), '']);
+                // Row 6: blank
+                aoa.push(['']);
+
+                let dataStartRow = aoa.length;
+
+                // Clear section
+                if(combinedClear.length > 0) {
+                    aoa.push([`✓ CLEAR CLAIMS (${combinedClear.length})`]);
+                    aoa.push(headers);
+                    combinedClear.forEach(row => aoa.push(Object.values(row)));
+                    aoa.push(['']);
+                }
+                // Unclear section
+                if(combinedUnclear.length > 0) {
+                    aoa.push([`✗ UNCLEAR / PENDING CLAIMS (${combinedUnclear.length})`]);
+                    aoa.push(headers);
+                    combinedUnclear.forEach(row => aoa.push(Object.values(row)));
+                }
+
+                const ws = XLSX.utils.aoa_to_sheet(aoa);
+                const numRows = aoa.length; const numCols = headers.length;
+                if(!ws['!ref']) ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:numRows-1,c:numCols-1}});
+
+                // Column widths — auto based on header length
+                ws['!cols'] = headers.map(h => ({ wch: Math.max(String(h).length + 4, 12) }));
+                ws['!cols'][0] = {wch: 16}; // Claim No
+
+                // Row heights
+                ws['!rows'] = [];
+                ws['!rows'][0] = {hpt: 28}; // Title
+                ws['!rows'][1] = {hpt: 18};
+                ws['!rows'][4] = {hpt: 20}; // Amount labels
+                ws['!rows'][5] = {hpt: 24}; // Amount values
+
+                // Style title row
+                const titleCell = XLSX.utils.encode_cell({r:0,c:0});
+                if(ws[titleCell]) ws[titleCell].s = {font:{bold:true, sz:14, color:{rgb:'FFFFFF'}}, fill:{fgColor:{rgb:'1E293B'}}, alignment:{horizontal:'left',vertical:'center'}};
+
+                // Style meta row
+                const metaCell = XLSX.utils.encode_cell({r:1,c:0});
+                if(ws[metaCell]) ws[metaCell].s = {font:{italic:true, sz:9, color:{rgb:'64748B'}}, fill:{fgColor:{rgb:'F8FAFC'}}};
+
+                // Style remark row
+                const remCell = XLSX.utils.encode_cell({r:2,c:0});
+                if(ws[remCell]) ws[remCell].s = {font:{italic:true, sz:9, color:{rgb:'6366F1'}}, fill:{fgColor:{rgb:'F8FAFC'}}};
+
+                // Style amount summary
+                const amtLabelStyle = {font:{bold:true, sz:9, color:{rgb:'FFFFFF'}}, alignment:{horizontal:'center',vertical:'center'}};
+                const amtValStyle   = {font:{bold:true, sz:13, color:{rgb:'FFFFFF'}}, alignment:{horizontal:'center',vertical:'center'}};
+                const amtColors = ['1E293B','16A34A','D97706','64748B'];
+                [0,2,4,6].forEach((c,i) => {
+                    const lAddr = XLSX.utils.encode_cell({r:4,c});
+                    const vAddr = XLSX.utils.encode_cell({r:5,c});
+                    if(ws[lAddr]) ws[lAddr].s = {...amtLabelStyle, fill:{fgColor:{rgb:amtColors[i]}}};
+                    if(ws[vAddr]) ws[vAddr].s = {...amtValStyle,   fill:{fgColor:{rgb:amtColors[i]}}};
+                });
+
+                // Style data sections
+                let curRow = dataStartRow;
+                const applySectionStyles = (sectionLabel, dataRows, isClr) => {
+                    // Section header
+                    const shAddr = XLSX.utils.encode_cell({r:curRow,c:0});
+                    if(ws[shAddr]) ws[shAddr].s = {font:{bold:true,sz:11,color:{rgb:'FFFFFF'}}, fill:{fgColor:{rgb: isClr ? '16A34A' : 'DC2626'}}, alignment:{horizontal:'left',vertical:'center'}};
+                    ws['!rows'][curRow] = {hpt:20};
+                    curRow++;
+                    // Column headers
+                    for(let c=0;c<headers.length;c++){
+                        const hAddr=XLSX.utils.encode_cell({r:curRow,c});
+                        if(ws[hAddr]) ws[hAddr].s={font:{bold:true,sz:8,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:isClr?'166534':'991B1B'}},border:thickBorderB,alignment:{horizontal:'center',vertical:'center',wrapText:true}};
+                    }
+                    ws['!rows'][curRow]={hpt:18};
+                    curRow++;
+                    // Data rows
+                    dataRows.forEach((row,ri) => {
+                        const altFill = isClr ? (ri%2===0?'F0FDF4':'DCFCE7') : (ri%2===0?'FFFBEB':'FEF3C7');
+                        for(let c=0;c<headers.length;c++){
+                            const dAddr=XLSX.utils.encode_cell({r:curRow,c});
+                            if(ws[dAddr]) ws[dAddr].s={font:{sz:8},fill:{fgColor:{rgb:altFill}},border:thinBorder,alignment:{vertical:'center',wrapText:true}};
+                        }
+                        ws['!rows'][curRow]={hpt:15};
+                        curRow++;
+                    });
+                    curRow++; // blank row
+                };
+
+                if(combinedClear.length > 0) applySectionStyles('clear', combinedClear, true);
+                if(combinedUnclear.length > 0) applySectionStyles('unclear', combinedUnclear, false);
+
+                // Merges for title and section headers
+                if(!ws['!merges']) ws['!merges'] = [];
+                ws['!merges'].push({s:{r:0,c:0},e:{r:0,c:numCols-1}});
+                ws['!merges'].push({s:{r:1,c:0},e:{r:1,c:numCols-1}});
+                ws['!merges'].push({s:{r:2,c:0},e:{r:2,c:numCols-1}});
+
+                XLSX.utils.book_append_sheet(wb, ws, "Audit Report");
+                XLSX.writeFile(wb, fileName + ".xlsx");
             } 
             else if (format === 'pdf') {
                 const btn = document.querySelector('button[onclick="executeExport(\'pdf\')"]');
