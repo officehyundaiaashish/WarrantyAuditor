@@ -9,7 +9,50 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAJZDURUl_Xh2FWjoVwGLZ4yuhVdFUZMHc",
+            authDomain: "warranty-auditor.firebaseapp.com",
+            projectId: "warranty-auditor",
+            storageBucket: "warranty-auditor.firebasestorage.app",
+            messagingSenderId: "972734980479",
+            appId: "1:972734980479:web:21cfbcf8a1d195f3fffa4a"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        // Expose globally
+        window._fbAuth = auth;
+        window._fbDb = db;
+        window._fbDoc = doc;
+        window._fbSetDoc = setDoc;
+        window._fbGetDoc = getDoc;
+        window._fbProvider = provider;
+        window._fbSignIn = signInWithPopup;
+        window._fbSignOut = signOut;
+
+        // Auth state — fires on EVERY page load/refresh SILENTLY
+        // No popup, no login page — Firebase restores session automatically
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window._fbUser = user;
+                localStorage.setItem('gdrive_connected', 'true');
+                localStorage.setItem('gdrive_user_email', user.email || '');
+                localStorage.setItem('gdrive_user_name', user.displayName || '');
+                if (typeof initGdriveUI === 'function') setTimeout(initGdriveUI, 100);
+            } else {
+                window._fbUser = null;
+            }
+        });
+    </script>
     
     <style>
         /* --- THEME VARIABLES & COLOR SCHEMES --- */
@@ -3388,161 +3431,37 @@ window.addEventListener('DOMContentLoaded', () => {
     };
 
     // ══════════════════════════════════════════════════════════════
-    // GOOGLE DRIVE CLOUD BACKUP & RESTORE — SMART CROSS-DEVICE
+    // FIREBASE FIRESTORE CLOUD BACKUP & RESTORE
+    // Replaces Google Drive — no token expiry, always logged in
     // ══════════════════════════════════════════════════════════════
-    const GDRIVE_CLIENT_ID = '509579480155-9hkhdlg2f1ntg3mejapurr411fgrvvud.apps.googleusercontent.com';
-    const GDRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata openid email profile';
-    const GDRIVE_BACKUP_FILENAME = 'warranty_auditor_backup.json';
 
-    let _gdriveToken = null;
-    let _gdriveTokenExpiry = 0;
-    let _gdriveCloudInfo = null; // cached cloud backup info {fileId, savedAt, hasData}
+    function isGdriveConnected() { return !!localStorage.getItem('gdrive_connected') && !!window._fbUser; }
 
-    function isGdriveConnected() { return !!localStorage.getItem('gdrive_connected'); }
-    function isGdriveTokenValid() { return _gdriveToken && Date.now() < _gdriveTokenExpiry - 60000; }
-
-    // ── Get OAuth token (silent if possible, popup if needed) ──
-    async function getGdriveToken(forcePrompt = false) {
-        // If valid token in memory, return immediately — no popup
-        if (isGdriveTokenValid()) return _gdriveToken;
-
-        // Silent re-auth: if user has connected before, Google quietly gives a new token
-        // No popup, no login page — exactly like Gmail/YouTube does on refresh
-        const hasConnectedBefore = !!localStorage.getItem('gdrive_connected');
-
-        return new Promise((resolve) => {
-            try {
-                const client = google.accounts.oauth2.initTokenClient({
-                    client_id: GDRIVE_CLIENT_ID,
-                    scope: GDRIVE_SCOPE,
-                    callback: (resp) => {
-                        if (resp.error || !resp.access_token) { resolve(null); return; }
-                        _gdriveToken = resp.access_token;
-                        _gdriveTokenExpiry = Date.now() + (resp.expires_in * 1000);
-                        resolve(_gdriveToken);
-                    },
-                    error_callback: () => resolve(null)
-                });
-
-                if (forcePrompt) {
-                    // User clicked "Sign in with Google" — show account chooser
-                    client.requestAccessToken({ prompt: 'select_account' });
-                } else if (hasConnectedBefore) {
-                    // Refresh/backup/restore — silent mode, no popup ever
-                    client.requestAccessToken({ prompt: '' });
-                } else {
-                    // Never connected before — don't do anything
-                    resolve(null);
-                }
-            } catch(e) { resolve(null); }
-        });
-    }
-
-    // ── Search Drive for ALL backup files (for limit management) ──
-    const GDRIVE_MAX_BACKUPS = 5; // max versions to keep
-    const GDRIVE_MIN_INTERVAL_MS = 5 * 60 * 1000; // 5 min min between backups
-
-    async function findAllGdriveBackupFiles(tok) {
-        const r = await fetch(
-            `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${GDRIVE_BACKUP_FILENAME}'&fields=files(id,name,modifiedTime,size)&orderBy=modifiedTime+desc&pageSize=20`,
-            { headers: { 'Authorization': 'Bearer ' + tok } }
-        );
-        if (!r.ok) throw new Error('Could not search Drive.');
-        const d = await r.json();
-        return d.files || [];
-    }
-
-    async function findGdriveBackupFile(tok) {
-        const files = await findAllGdriveBackupFiles(tok);
-        return files.length > 0 ? files[0] : null;
-    }
-
-    // Delete old backup files beyond limit
-    async function pruneOldGdriveBackups(tok) {
-        try {
-            const files = await findAllGdriveBackupFiles(tok);
-            if (files.length <= GDRIVE_MAX_BACKUPS) return;
-            // Delete oldest ones beyond limit
-            const toDelete = files.slice(GDRIVE_MAX_BACKUPS);
-            for (const f of toDelete) {
-                await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': 'Bearer ' + tok }
-                });
-            }
-            console.log(`Pruned ${toDelete.length} old backup(s) from Drive.`);
-        } catch(e) { console.warn('Prune failed:', e.message); }
-    }
-
-    // ── Connect — sign in + immediately check cloud state ──
-    // Owner identity verification (hash-protected, not human-readable)
-    const _ownerVerify = async (e) => (await sha256(e.toLowerCase().trim())) === '47f51db862f5e0714232e00b5669a3c152004576fac888a898c635be0f96cf91';
-
+    // Connect Google Drive — now uses Firebase Auth (one-time login, never expires)
     async function connectGoogleDrive() {
         showLoader(true);
         try {
-            const tok = await getGdriveToken(true);
-            if (!tok) { showLoader(false); return showAppAlert("Google Sign-In cancelled or failed."); }
-
-            // Get user info
-            const ur = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { 'Authorization': 'Bearer ' + tok } });
-            if (!ur.ok) throw new Error("Could not verify Google account.");
-            const user = await ur.json();
-
-            // Verify identity
-            const isOwner = await _ownerVerify(user.email || '');
-
-            if (!isOwner) {
-                // Non-owner must enter Client ID to proceed
+            if (!window._fbSignIn || !window._fbAuth || !window._fbProvider) {
                 showLoader(false);
-                showAppPrompt("Enter your Client ID to use Google Drive Sync:", false, async (clientId) => {
-                    if (!clientId || clientId.trim().length < 3) {
-                        return showAppAlert("Invalid Client ID. Access Denied.");
-                    }
-                    // Store with client ID tag
-                    localStorage.setItem('gdrive_connected', 'true');
-                    localStorage.setItem('gdrive_user_email', user.email || '');
-                    localStorage.setItem('gdrive_user_name', user.name || '');
-                    localStorage.setItem('gdrive_client_id', clientId.trim());
-                    initGdriveUI();
-                    await checkGdriveBackupStatus();
-                });
-                return;
+                return showAppAlert("Firebase not loaded yet. Please wait a moment and try again.");
             }
-
-            // Owner - direct access
+            const result = await window._fbSignIn(window._fbAuth, window._fbProvider);
+            window._fbUser = result.user;
             localStorage.setItem('gdrive_connected', 'true');
-            localStorage.setItem('gdrive_user_email', user.email || '');
-            localStorage.setItem('gdrive_user_name', user.name || '');
-
+            localStorage.setItem('gdrive_user_email', result.user.email || '');
+            localStorage.setItem('gdrive_user_name', result.user.displayName || '');
             showLoader(false);
             initGdriveUI();
-            // Auto check what's on cloud after connecting
             await checkGdriveBackupStatus();
         } catch(e) {
             showLoader(false);
-            // Store error so it doesn't get covered by dialog
-            localStorage.setItem('gdrive_last_error', e.message + ' | ' + (e.stack||'').split('\n')[0]);
-            // Show error in a non-dismissable way inside the UI
-            const statusBody = document.getElementById('gdrive-cloud-status-body');
-            if (statusBody) {
-                document.getElementById('gdrive-connected-section').style.display = 'none';
-                document.getElementById('gdrive-setup-section').style.display = '';
+            if (e.code !== 'auth/popup-closed-by-user') {
+                showAppAlert("Sign-In Failed: " + e.message);
             }
-            // Show error banner inside settings instead of popup
-            let errBanner = document.getElementById('gdrive-error-banner');
-            if (!errBanner) {
-                errBanner = document.createElement('div');
-                errBanner.id = 'gdrive-error-banner';
-                errBanner.style.cssText = 'background:rgba(239,68,68,0.08);border:1px solid var(--danger);border-radius:8px;padding:10px 12px;margin-top:8px;font-size:0.75rem;color:var(--danger);line-height:1.6;word-break:break-all;';
-                document.getElementById('gdrive-setup-section').appendChild(errBanner);
-            }
-            errBanner.innerHTML = '<b>Error:</b> ' + e.message;
-            errBanner.style.display = '';
         }
     }
 
-    // ── Check what exists on Drive & update status card ──
+    // Check what backup exists on Firestore
     async function checkGdriveBackupStatus() {
         const statusBody = document.getElementById('gdrive-cloud-status-body');
         const hintBox = document.getElementById('gdrive-new-device-hint');
@@ -3550,196 +3469,130 @@ window.addEventListener('DOMContentLoaded', () => {
         const restoreBtn = document.getElementById('gdrive-restore-btn');
         if (!statusBody) return;
 
-        statusBody.innerHTML = '<div style="color:var(--text-muted);font-size:0.78rem;">Checking Drive...</div>';
+        if (!window._fbUser) {
+            statusBody.innerHTML = '<div style="color:var(--text-muted);font-size:0.78rem;">Sign in to check cloud status.</div>';
+            return;
+        }
+
+        statusBody.innerHTML = '<div style="color:var(--text-muted);font-size:0.78rem;">Checking Firestore...</div>';
 
         try {
-            const tok = await getGdriveToken();
-            if (!tok) { statusBody.innerHTML = '<div style="color:var(--text-muted);font-size:0.78rem;">Click "Backup to Drive" or "Restore from Drive" to reconnect Google session.</div>'; return; }
+            const uid = window._fbUser.uid;
+            const docRef = window._fbDoc(window._fbDb, 'backups', uid);
+            const snap = await window._fbGetDoc(docRef);
 
-            const file = await findGdriveBackupFile(tok);
-            _gdriveCloudInfo = file;
-
-            if (file) {
-                // Cloud backup exists — show details
-                const modDate = new Date(file.modifiedTime);
-                const dateStr = modDate.toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
-                const sizeKB = file.size ? (file.size / 1024).toFixed(1) + ' KB' : '';
-                const savedKey = 'gdrive_last_sync';
-                localStorage.setItem(savedKey, dateStr);
+            if (snap.exists()) {
+                const data = snap.data();
+                const savedAt = data._savedAt ? new Date(data._savedAt).toLocaleString('en-IN', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : 'Unknown';
+                localStorage.setItem('gdrive_last_sync', savedAt);
 
                 statusBody.innerHTML = `
                     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
                         <svg style="width:18px;height:18px;stroke:var(--success);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                         <div>
-                            <div style="font-size:0.8rem;font-weight:700;color:var(--text-main);">Backup found on Drive</div>
-                            <div style="font-size:0.7rem;color:var(--text-muted);">Saved: <b>${dateStr}</b>${sizeKB ? ' · ' + sizeKB : ''}</div>
+                            <div style="font-size:0.8rem;font-weight:700;color:var(--text-main);">Backup found on Cloud</div>
+                            <div style="font-size:0.7rem;color:var(--text-muted);">Saved: <b>${savedAt}</b></div>
                         </div>
                     </div>`;
 
-                // Check if local data exists
                 const localKeys = await localforage.keys();
                 const hasLocalData = localKeys.some(k => k.startsWith('audit_'));
                 if (!hasLocalData) {
-                    // New device — no local data, show hint
                     if (hintBox) hintBox.style.display = 'block';
-                    if (hintDate) hintDate.innerText = dateStr;
-                    // Highlight restore button
-                    if (restoreBtn) {
-                        restoreBtn.style.background = '#10b981';
-                        restoreBtn.style.borderColor = '#10b981';
-                        restoreBtn.style.color = 'white';
-                        restoreBtn.innerHTML = restoreBtn.innerHTML.replace('Restore from Drive', 'Restore from Drive');
-                    }
+                    if (hintDate) hintDate.innerText = savedAt;
                 } else {
                     if (hintBox) hintBox.style.display = 'none';
                 }
+                if (restoreBtn) { restoreBtn.disabled = false; restoreBtn.style.opacity = '1'; }
             } else {
-                // No backup on Drive
                 statusBody.innerHTML = `
                     <div style="display:flex;align-items:center;gap:8px;">
                         <svg style="width:18px;height:18px;stroke:var(--text-muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
                         <div>
-                            <div style="font-size:0.8rem;font-weight:700;color:var(--text-main);">No backup on Drive yet</div>
-                            <div style="font-size:0.7rem;color:var(--text-muted);">Click <b>"Backup to Drive"</b> from your main device first.</div>
+                            <div style="font-size:0.8rem;font-weight:700;color:var(--text-main);">No backup on cloud yet</div>
+                            <div style="font-size:0.7rem;color:var(--text-muted);">Click <b>"Backup to Drive"</b> to save your data.</div>
                         </div>
                     </div>`;
                 if (hintBox) hintBox.style.display = 'none';
-                // Disable restore if no cloud file
-                if (restoreBtn) {
-                    restoreBtn.disabled = true;
-                    restoreBtn.style.opacity = '0.4';
-                    restoreBtn.title = 'No backup found on Drive. Upload first.';
-                }
+                if (restoreBtn) { restoreBtn.disabled = true; restoreBtn.style.opacity = '0.4'; }
             }
         } catch(e) {
-            statusBody.innerHTML = `<div style="color:var(--danger);font-size:0.78rem;">Error checking Drive: ${e.message}</div>`;
+            statusBody.innerHTML = `<div style="color:var(--danger);font-size:0.78rem;">Error: ${e.message}</div>`;
         }
     }
 
-    // ── Backup to Drive ──
+    // Backup to Firestore
     async function uploadToGoogleDrive() {
-        if (!isGdriveConnected()) return showAppAlert("Not connected to Google Drive.");
+        if (!window._fbUser) return showAppAlert("Please sign in with Google first.");
         showLoader(true);
         try {
-            const tok = await getGdriveToken();
-            if (!tok) { showLoader(false); return showAppAlert("Google session could not be refreshed. Please go to Backup & Restore and sign in again."); }
-
-            // Build full backup payload
             let bk = {};
             const ks = await localforage.keys();
             for (let k of ks) bk[k] = await localforage.getItem(k);
             bk['_secConfig'] = localStorage.getItem('auditor_sec') || '{}';
             bk['_theme'] = localStorage.getItem('auditor_theme') || 'light';
             bk['_customCodes'] = localStorage.getItem('auditor_custom_codes') || '{}';
-            bk['_savedAt'] = new Date().toISOString(); // timestamp inside backup
+            bk['_savedAt'] = new Date().toISOString();
 
-            const content = JSON.stringify(bk);
-            const ds = new Date().toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+            const uid = window._fbUser.uid;
+            const docRef = window._fbDoc(window._fbDb, 'backups', uid);
+            await window._fbSetDoc(docRef, bk);
 
-            // ── Throttle: prevent backup more than once per 5 mins ──
-            const lastBackupTime = parseInt(localStorage.getItem('gdrive_last_backup_ts') || '0');
-            if (Date.now() - lastBackupTime < GDRIVE_MIN_INTERVAL_MS) {
-                const minsLeft = Math.ceil((GDRIVE_MIN_INTERVAL_MS - (Date.now() - lastBackupTime)) / 60000);
-                showLoader(false);
-                return showAppAlert(`Please wait ${minsLeft} more minute(s) before backing up again.`);
-            }
-
-            // ── Always create new versioned file (not override) ──
-            const form = new FormData();
-            form.append('metadata', new Blob([JSON.stringify({
-                name: GDRIVE_BACKUP_FILENAME,
-                parents: ['appDataFolder'],
-                description: 'WA Backup ' + ds
-            })], { type: 'application/json' }));
-            form.append('file', new Blob([content], { type: 'application/json' }));
-            const uploadRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                method: 'POST', headers: { 'Authorization': 'Bearer ' + tok }, body: form
-            });
-
-            if (!uploadRes.ok) { const err = await uploadRes.json(); throw new Error(err.error?.message || 'Upload failed'); }
-            const uploaded = await uploadRes.json();
-            localStorage.setItem('gdrive_file_id', uploaded.id);
+            const ds = new Date().toLocaleString('en-IN', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
             localStorage.setItem('gdrive_last_sync', ds);
-            localStorage.setItem('gdrive_last_backup_ts', Date.now().toString());
-            _gdriveCloudInfo = null;
-
-            // ── Prune old backups beyond limit (keep latest 5) ──
-            await pruneOldGdriveBackups(tok);
-
             showLoader(false);
             await checkGdriveBackupStatus();
-            showToast(`Backup saved to Google Drive — ${ds}`, 'success', 4000);
+            showToast('Backup saved to Cloud — ' + ds, 'success', 4000);
         } catch(e) {
             showLoader(false);
-            showAppAlert("Upload Failed: " + e.message);
+            showAppAlert("Backup Failed: " + e.message);
         }
     }
 
-    // ── Restore from Drive — with pre-checks ──
+    // Restore from Firestore
     async function restoreFromGoogleDrive() {
-        if (!isGdriveConnected()) return showAppAlert("Not connected to Google Drive.");
+        if (!window._fbUser) return showAppAlert("Please sign in with Google first.");
 
-        // Check cloud first if we don't have cached info
-        if (!_gdriveCloudInfo) {
+        showAppConfirm("Restore from Cloud?\n\nThis will overwrite all local data on this device.", async () => {
             showLoader(true);
             try {
-                const tok = await getGdriveToken();
-                if (!tok) { showLoader(false); return showAppAlert("Google session expired. Please reconnect."); }
-                _gdriveCloudInfo = await findGdriveBackupFile(tok);
-                showLoader(false);
-            } catch(e) { showLoader(false); return showAppAlert("Could not check Drive: " + e.message); }
-        }
+                const uid = window._fbUser.uid;
+                const docRef = window._fbDoc(window._fbDb, 'backups', uid);
+                const snap = await window._fbGetDoc(docRef);
 
-        if (!_gdriveCloudInfo) {
-            return showAppAlert("No backup found on Google Drive. Upload from your main device first.");
-        }
-
-        // Show what will be restored
-        const modDate = new Date(_gdriveCloudInfo.modifiedTime);
-        const dateStr = modDate.toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
-
-        showAppConfirm(
-            `Restore from Google Drive?\n\nBackup date: ${dateStr}\n\nThis will overwrite all local data on this device.`,
-            async () => {
-                showLoader(true);
-                try {
-                    const tok = await getGdriveToken();
-                    if (!tok) { showLoader(false); return showAppAlert("Google session could not be refreshed. Please go to Backup & Restore and sign in again."); }
-
-                    const dlRes = await fetch(`https://www.googleapis.com/drive/v3/files/${_gdriveCloudInfo.id}?alt=media`, {
-                        headers: { 'Authorization': 'Bearer ' + tok }
-                    });
-                    if (!dlRes.ok) throw new Error("Could not download backup.");
-                    const data = JSON.parse(await dlRes.text());
-
-                    // Restore all data
-                    await localforage.clear();
-                    for (let k in data) {
-                        if (k === '_secConfig') localStorage.setItem('auditor_sec', data[k]);
-                        else if (k === '_theme') { localStorage.setItem('auditor_theme', data[k]); applyTheme(data[k]); }
-                        else if (k === '_customCodes') localStorage.setItem('auditor_custom_codes', data[k]);
-                        else if (k === '_savedAt' || k === '_autosync') { /* skip internal meta */ }
-                        else await localforage.setItem(k, data[k]);
-                    }
-                    // Keep gdrive connection on this device
-                    localStorage.setItem('gdrive_connected', 'true');
+                if (!snap.exists()) {
                     showLoader(false);
-                    showAppAlert(`Restore complete. Data from ${dateStr} has been loaded. Reloading...`);
-                    setTimeout(() => window.location.reload(), 2000);
-                } catch(e) {
-                    showLoader(false);
-                    showAppAlert("Restore Failed: " + e.message);
+                    return showAppAlert("No backup found on cloud. Please backup first.");
                 }
+
+                const data = snap.data();
+                await localforage.clear();
+                for (let k in data) {
+                    if (k === '_secConfig') localStorage.setItem('auditor_sec', data[k]);
+                    else if (k === '_theme') { localStorage.setItem('auditor_theme', data[k]); applyTheme(data[k]); }
+                    else if (k === '_customCodes') localStorage.setItem('auditor_custom_codes', data[k]);
+                    else if (k === '_savedAt') { /* skip */ }
+                    else await localforage.setItem(k, data[k]);
+                }
+                localStorage.setItem('gdrive_connected', 'true');
+                showLoader(false);
+                showAppAlert("Restore complete! Reloading...");
+                setTimeout(() => window.location.reload(), 2000);
+            } catch(e) {
+                showLoader(false);
+                showAppAlert("Restore Failed: " + e.message);
             }
-        );
+        });
     }
 
+    // Disconnect
     function disconnectGoogleDrive() {
-        showAppConfirm("Disconnect Google Drive?\n\nYour cloud backup stays safe. Only this device's connection is removed.", () => {
-            ['gdrive_connected', 'gdrive_user_email', 'gdrive_user_name', 'gdrive_file_id', 'gdrive_last_sync'].forEach(k => localStorage.removeItem(k));
-            _gdriveToken = null; _gdriveTokenExpiry = 0; _gdriveCloudInfo = null;
+        showAppConfirm("Disconnect Google account?\n\nYour cloud backup stays safe.", async () => {
+            ['gdrive_connected', 'gdrive_user_email', 'gdrive_user_name', 'gdrive_last_sync'].forEach(k => localStorage.removeItem(k));
+            if (window._fbAuth && window._fbSignOut) await window._fbSignOut(window._fbAuth);
+            window._fbUser = null;
             initGdriveUI();
-            showAppAlert("Disconnected from Google Drive.");
+            showAppAlert("Disconnected.");
         });
     }
 
@@ -3749,7 +3602,9 @@ window.addEventListener('DOMContentLoaded', () => {
         const dot = document.getElementById('gdrive-status-dot');
         if (!setup || !conn || !dot) return;
 
-        if (isGdriveConnected()) {
+        const isLoggedIn = !!window._fbUser;
+
+        if (isLoggedIn) {
             setup.style.display = 'none';
             conn.style.display = 'block';
             dot.innerText = 'Connected';
@@ -3759,7 +3614,6 @@ window.addEventListener('DOMContentLoaded', () => {
             const name = localStorage.getItem('gdrive_user_name') || '';
             const infoEl = document.getElementById('gdrive-info-text');
             if (infoEl) infoEl.innerHTML = `Signed in as: <b>${name}</b><br><span style="font-family:monospace;color:var(--accent);font-size:0.78rem;">${email}</span>`;
-            // Auto-check cloud status every time this screen opens
             setTimeout(checkGdriveBackupStatus, 300);
         } else {
             setup.style.display = 'block';
