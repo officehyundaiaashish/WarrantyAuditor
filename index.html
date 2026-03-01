@@ -54,6 +54,13 @@
 
         /* Theme Toggle Animation */
         .theme-toggle { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; transition: 0.3s; }
+        .upload-shortcut { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
+        .upload-shortcut:hover { border-color: var(--success); transform: scale(1.05); }
+        .upload-shortcut svg { width: 18px; height: 18px; stroke: var(--text-main); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: 0.3s; }
+        .upload-shortcut:hover svg { stroke: var(--success); }
+        .upload-shortcut.syncing svg { animation: spin 1s linear infinite; stroke: var(--accent); }
+        @keyframes upload-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.12)} }
+        .upload-shortcut.done { animation: upload-pulse 0.4s ease; border-color: var(--success); }
         .theme-toggle:hover { border-color: var(--accent); transform: scale(1.05); }
         .theme-toggle svg { position: absolute; width: 20px; height: 20px; transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55); stroke: var(--text-main); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
         body[data-theme="dark"] .icon-sun { transform: translateY(30px) rotate(90deg); opacity: 0; }
@@ -190,10 +197,15 @@
 
     <div class="app-header">
         <h1 class="app-title">Warranty Self Auditor</h1>
+        <div style="display:flex;gap:8px;align-items:center;">
+        <button id="header-upload-btn" class="upload-shortcut" onclick="headerUploadNow()" title="Upload to GitHub Cloud">
+            <svg viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+        </button>
         <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
             <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
             <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
         </button>
+        </div>
     </div>
 
     <div id="screen-menu" class="screen active">
@@ -444,7 +456,7 @@
                         ⚠️ <b>GitHub Rate Limit Warning:</b> GitHub allows <b>5,000 API requests/hour</b> per account. Auto-sync uses ~3 requests per sync. With 10-min intervals = ~18 requests/hour — well within limits. However if multiple devices or apps also use the same token, requests add up. You can always turn this OFF and sync manually.
                     </div>
                     <div id="autosync-triggers" style="display:none; margin-top:10px; font-size:0.72rem; color:var(--text-muted); line-height:1.8;">
-                        Auto-syncs on: <b>Audit Finalize</b> · <b>Tab close / crash</b> · <b>Every 10 minutes</b>
+                        Auto-syncs on: <b>Audit Finalize</b> · <b>Tab close / crash</b> · <b>Every 2 minutes</b>
                     </div>
                 </div>
 
@@ -1654,10 +1666,10 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     let _syncTimer=null,_syncing=false,_syncPending=false;
-    const SYNC_INTERVAL=10*60*1000;
+    const SYNC_INTERVAL=2*60*1000;
     function isAutoSyncOn(){return localStorage.getItem('gist_autosync')==='true';}
     function toggleAutoSync(){const n=!isAutoSyncOn();localStorage.setItem('gist_autosync',n?'true':'false');n?startSyncTimer():stopSyncTimer();updateSyncUI();if(n){const w=document.getElementById('autosync-warning');if(w)w.style.display='block';}}
-    function startSyncTimer(){stopSyncTimer();_syncTimer=setInterval(()=>silentAutoSync('10min'),SYNC_INTERVAL);}
+    function startSyncTimer(){stopSyncTimer();_syncTimer=setInterval(()=>silentAutoSync('2min'),SYNC_INTERVAL);}
     function stopSyncTimer(){if(_syncTimer){clearInterval(_syncTimer);_syncTimer=null;}}
 
     function updateSyncUI(){
@@ -1665,7 +1677,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(!btn)return;
         const st=document.getElementById('autosync-status-text'),tr=document.getElementById('autosync-triggers'),wa=document.getElementById('autosync-warning');
         if(en){btn.innerText='ON';btn.style.cssText='padding:6px 14px;border-radius:20px;font-size:0.78rem;font-weight:700;cursor:pointer;background:rgba(16,185,129,0.15);color:var(--success);border:1px solid rgba(16,185,129,0.4);';const ls=localStorage.getItem('gist_last_sync');if(st)st.innerText=ls?'Last sync: '+ls:'Active — not synced yet';if(tr)tr.style.display='block';if(wa)wa.style.display='block';}
-        else{btn.innerText='OFF';btn.style.cssText='padding:6px 14px;border-radius:20px;font-size:0.78rem;font-weight:700;cursor:pointer;background:var(--surface);color:var(--text-muted);border:1px solid var(--border);';if(st)st.innerText='Enable to auto-backup on finalize, close & every 10 min';if(tr)tr.style.display='none';if(wa)wa.style.display='none';}
+        else{btn.innerText='OFF';btn.style.cssText='padding:6px 14px;border-radius:20px;font-size:0.78rem;font-weight:700;cursor:pointer;background:var(--surface);color:var(--text-muted);border:1px solid var(--border);';if(st)st.innerText='Enable to auto-backup on finalize, close & every 2 min';if(tr)tr.style.display='none';if(wa)wa.style.display='none';}
         updateLastSyncCard();
     }
 
@@ -1706,6 +1718,31 @@ window.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('beforeunload',()=>{if(isAutoSyncOn()&&localStorage.getItem('gist_token_enc'))localStorage.setItem('gist_dirty_flag','true');});
     document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&isAutoSyncOn())silentAutoSync('hidden');});
 
+    async function headerUploadNow() {
+        const btn = document.getElementById('header-upload-btn');
+        if (!localStorage.getItem('gist_token_enc')) { showAppAlert("Not connected to GitHub. Go to Backup & Restore to connect."); return; }
+        btn.classList.add('syncing');
+        try {
+            await syncToGist(false);
+            btn.classList.remove('syncing');
+            btn.classList.add('done');
+            showToast('Uploaded to GitHub Cloud! ' + new Date().toLocaleString(), 'success', 3000);
+            setTimeout(() => btn.classList.remove('done'), 600);
+        } catch(e) {
+            btn.classList.remove('syncing');
+            showToast('Upload failed: ' + e.message, 'danger', 4000);
+        }
+    }
+
+    // Update upload btn visibility based on connection state
+    function updateHeaderUploadBtn() {
+        const btn = document.getElementById('header-upload-btn');
+        if (!btn) return;
+        const connected = !!localStorage.getItem('gist_token_enc');
+        btn.style.opacity = connected ? '1' : '0.35';
+        btn.title = connected ? 'Upload to GitHub Cloud' : 'Not connected to GitHub';
+    }
+
     function initGistUI(){
         const hasEnc=!!localStorage.getItem('gist_token_enc'),gid=localStorage.getItem('gist_id');
         const setup=document.getElementById('gist-setup-section'),conn=document.getElementById('gist-connected-section'),dot=document.getElementById('gist-status-dot');
@@ -1718,6 +1755,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }else{
             setup.style.display='block';conn.style.display='none';dot.innerText='Not Connected';dot.style.background='rgba(100,116,139,0.1)';dot.style.color='var(--text-muted)';stopSyncTimer();
         }
+        updateHeaderUploadBtn();
     }
 
     const _oSS=showScreen;
@@ -1821,7 +1859,7 @@ window.addEventListener('DOMContentLoaded', () => {
     finalizeAuditFlow=async function(){await _oFA();if(isAutoSyncOn()&&localStorage.getItem('gist_token_enc'))setTimeout(()=>silentAutoSync('finalize'),1500);};
 
     setTimeout(()=>{
-        if(isAutoSyncOn()&&localStorage.getItem('gist_token_enc')){startSyncTimer();const d=getRateData();if(d.c>=RATE_WARN)checkRate(d.c);}
+        if(isAutoSyncOn()&&localStorage.getItem('gist_token_enc')){startSyncTimer();const d=getRateData();if(d.c>=RATE_WARN)checkRate(d.c);}updateHeaderUploadBtn();
     },800);
 
 
@@ -1840,12 +1878,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 else { document.getElementById('dialog-btn-yes').click(); }
             }
             if (e.key === 'Enter') {
-                const inputWrap = document.getElementById('dialog-input-wrapper');
-                const inputVisible = inputWrap && inputWrap.style.display !== 'none';
-                if (!inputVisible) { // Only auto-confirm if no text input shown
-                    e.preventDefault();
-                    document.getElementById('dialog-btn-yes').click();
-                }
+                e.preventDefault();
+                // Always trigger confirm button — works for both plain confirm and password prompt
+                document.getElementById('dialog-btn-yes').click();
             }
             return;
         }
