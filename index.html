@@ -600,6 +600,7 @@
                         <div class="custom-option" data-value="6">Part Packing Missing</div>
                         <div class="custom-option" data-value="7">Related Part Missing to Causal or Affected Part Missing</div>
                         <div class="custom-option" data-value="8">Part is Not Defective</div>
+                        <div class="custom-option" data-value="9">Part is Damaged</div>
                     </div>
                 </div>
 
@@ -608,7 +609,7 @@
                     <input type="text" id="modal-extra-text" class="input" placeholder="...">
                 </div>
 
-                <div id="modal-remark-box" style="display:none; animation: slideFadeUp 0.2s ease;">
+                <div id="modal-remark-box" style="display:block; animation: slideFadeUp 0.2s ease;">
                     <label>Optional Remark</label>
                     <input type="text" id="modal-remark" class="input" placeholder="Add a remark (optional)...">
                 </div>
@@ -709,7 +710,7 @@
         else { extraBox.style.display = 'none'; input.value = ''; }
         // Show optional remark for all non-clean statuses
         const isClean = (val === '0' || (DISCREPANCY_TYPES[val] && (DISCREPANCY_TYPES[val].includes('None Found') || DISCREPANCY_TYPES[val].includes('[CLN]'))));
-        if(remarkBox) remarkBox.style.display = isClean ? 'none' : 'block';
+        if(remarkBox) remarkBox.style.display = 'block';
     }
 
     function highlightError(el) {
@@ -873,7 +874,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // Active Workspace State
     let workspaceCurrentFilter = 'all';
 
-    const DEFAULT_DISCREPANCIES = { "0": "None Found", "1": "Part is clean (Sent HMIL Suspense)", "3": "Part is Missing", "4": "Part Batch Code Mismatch", "5": "Part Not Tagged", "6": "Part Packing Missing", "7": "Related Part Missing to Causal or Affected Part Missing", "8": "Part is Not Defective" };
+    const DEFAULT_DISCREPANCIES = { "0": "None Found", "1": "Part is clean (Sent HMIL Suspense)", "3": "Part is Missing", "4": "Part Batch Code Mismatch", "5": "Part Not Tagged", "6": "Part Packing Missing", "7": "Related Part Missing to Causal or Affected Part Missing", "8": "Part is Not Defective", "9": "Part is Damaged" };
     let DISCREPANCY_TYPES = JSON.parse(localStorage.getItem('auditor_custom_codes')) || DEFAULT_DISCREPANCIES;
 
     function isClaimClean(findings) { if (!findings || findings.length === 0) return true; return findings[0].includes("None Found") || findings[0].includes("Sent HMIL Suspense") || findings[0].includes("[CLN]"); }
@@ -1218,7 +1219,7 @@ window.addEventListener('DOMContentLoaded', () => {
         document.getElementById('btn-prev').disabled = currentPage === 1; document.getElementById('btn-next').disabled = currentPage === maxPage;
     }
 
-    function closeModal() { document.getElementById('audit-modal').classList.remove('active'); const r=document.getElementById('modal-remark'); if(r) r.value=''; const rb=document.getElementById('modal-remark-box'); if(rb) rb.style.display='none'; }
+    function closeModal() { document.getElementById('audit-modal').classList.remove('active'); const r=document.getElementById('modal-remark'); if(r) r.value=''; const rb=document.getElementById('modal-remark-box'); if(rb) rb.style.display='block'; }
 
     function openAuditModal(filteredIndex) {
         activeClaimRowIndex = filteredIndex; const row = currentFilteredData[filteredIndex];
@@ -1266,7 +1267,7 @@ window.addEventListener('DOMContentLoaded', () => {
             remarkInput.value = (entry && entry.optional_remark) ? entry.optional_remark : '';
             const discVal = document.getElementById('modal-discrepancy').value;
             const isClean = (discVal === '0' || (DISCREPANCY_TYPES[discVal] && (DISCREPANCY_TYPES[discVal].includes('None Found') || DISCREPANCY_TYPES[discVal].includes('[CLN]'))));
-            remarkBox.style.display = isClean ? 'none' : 'block';
+            remarkBox.style.display = 'block';
         }
         document.getElementById('audit-modal').classList.add('active');
     }
