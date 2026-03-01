@@ -796,7 +796,7 @@
     }
 
     // --- SMART KEYBOARD & DIALOG ENGINE ---
-    function closeDialog() { document.getElementById('app-dialog').classList.remove('active'); const di=document.getElementById('dialog-input'); di.value=''; di.style.cssText='text-align:center; letter-spacing:4px; font-size:1.2rem; margin:0; padding-right:44px; -webkit-text-security:disc; text-security:disc;'; }
+    function closeDialog() { document.getElementById('app-dialog').classList.remove('active'); const di=document.getElementById('dialog-input'); di.value=''; di.style.cssText='text-align:center; letter-spacing:4px; font-size:1.2rem; margin:0; padding-right:44px; -webkit-text-security:disc; text-security:disc;'; di.placeholder='••••••••'; di.setAttribute('inputmode', 'numeric'); }
     function showAppAlert(msg) { document.getElementById('dialog-msg').innerText = msg; document.getElementById('dialog-input-wrapper').style.display = 'none'; document.getElementById('dialog-btn-no').style.display = 'none'; document.getElementById('dialog-btn-yes').onclick = closeDialog; document.getElementById('app-dialog').classList.add('active'); }
     function showAppConfirm(msg, onYes) { document.getElementById('dialog-msg').innerText = msg; document.getElementById('dialog-input-wrapper').style.display = 'none'; document.getElementById('dialog-btn-no').style.display = 'block'; document.getElementById('dialog-btn-yes').onclick = () => { closeDialog(); if(onYes) onYes(); }; document.getElementById('dialog-btn-no').onclick = closeDialog; document.getElementById('app-dialog').classList.add('active'); }
 
@@ -806,6 +806,7 @@
         
         input.type = 'text'; input.style.webkitTextSecurity = isPassword ? 'disc' : 'none'; input.style.textSecurity = isPassword ? 'disc' : 'none'; input.setAttribute('autocomplete', 'off'); input.setAttribute('data-lpignore', 'true'); input.setAttribute('data-form-type', 'other');
         input.inputMode = 'numeric'; kbBtn.innerText = '🔢'; kbBtn.style.background = 'var(--bg-base)';
+        input.placeholder = isPassword ? '••••••••' : '';
         
         inputWrap.style.display = 'block'; input.value = '';
         document.getElementById('dialog-btn-no').style.display = disableCancel ? 'none' : 'block';
@@ -1572,7 +1573,7 @@ window.addEventListener('DOMContentLoaded', () => {
             input.type = 'text';
             input.style.cssText = 'text-align:left; letter-spacing:normal; font-size:0.95rem; margin:0; padding:10px 14px; -webkit-text-security:none; text-security:none;';
             input.setAttribute('inputmode', 'text');
-            input.placeholder = 'e.g. Checked by Rajesh, Oct batch...';
+            input.placeholder = 'Optional remark for this audit...';
             if(kbBtn) kbBtn.style.display = 'none';
             document.getElementById('dialog-btn-no').style.display = 'block';
             document.getElementById('dialog-btn-no').onclick = closeDialog;
@@ -1581,6 +1582,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 closeDialog();
                 // Reset input style back to PIN style for next use
                 input.style.cssText = 'text-align:center; letter-spacing:4px; font-size:1.2rem; margin:0; padding-right:44px; -webkit-text-security:disc; text-security:disc;';
+                input.placeholder = '••••••••';
+                input.setAttribute('inputmode', 'numeric');
                 processFinalize(remark);
             };
             document.getElementById('app-dialog').classList.add('active');
