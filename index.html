@@ -3403,10 +3403,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ── Get OAuth token (silent if possible, popup if needed) ──
     async function getGdriveToken(forcePrompt = false) {
-        // If valid token in memory, return it
-        if (!forcePrompt && isGdriveTokenValid()) return _gdriveToken;
-        // NEVER auto-trigger OAuth popup — only when user explicitly clicks a button
-        if (!forcePrompt) return null;
+        // If valid token in memory, return immediately — no popup
+        if (isGdriveTokenValid()) return _gdriveToken;
+
+        // Silent re-auth: if user has connected before, Google quietly gives a new token
+        // No popup, no login page — exactly like Gmail/YouTube does on refresh
+        const hasConnectedBefore = !!localStorage.getItem('gdrive_connected');
+
         return new Promise((resolve) => {
             try {
                 const client = google.accounts.oauth2.initTokenClient({
@@ -3420,7 +3423,17 @@ window.addEventListener('DOMContentLoaded', () => {
                     },
                     error_callback: () => resolve(null)
                 });
-                client.requestAccessToken({ prompt: forcePrompt ? 'select_account' : '' });
+
+                if (forcePrompt) {
+                    // User clicked "Sign in with Google" — show account chooser
+                    client.requestAccessToken({ prompt: 'select_account' });
+                } else if (hasConnectedBefore) {
+                    // Refresh/backup/restore — silent mode, no popup ever
+                    client.requestAccessToken({ prompt: '' });
+                } else {
+                    // Never connected before — don't do anything
+                    resolve(null);
+                }
             } catch(e) { resolve(null); }
         });
     }
@@ -3608,8 +3621,8 @@ window.addEventListener('DOMContentLoaded', () => {
         if (!isGdriveConnected()) return showAppAlert("Not connected to Google Drive.");
         showLoader(true);
         try {
-            const tok = await getGdriveToken(true);
-            if (!tok) { showLoader(false); return showAppAlert("Google session expired. Please reconnect."); }
+            const tok = await getGdriveToken();
+            if (!tok) { showLoader(false); return showAppAlert("Google session could not be refreshed. Please go to Backup & Restore and sign in again."); }
 
             // Build full backup payload
             let bk = {};
@@ -3691,7 +3704,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 showLoader(true);
                 try {
                     const tok = await getGdriveToken();
-                    if (!tok) { showLoader(false); return showAppAlert("Google session expired."); }
+                    if (!tok) { showLoader(false); return showAppAlert("Google session could not be refreshed. Please go to Backup & Restore and sign in again."); }
 
                     const dlRes = await fetch(`https://www.googleapis.com/drive/v3/files/${_gdriveCloudInfo.id}?alt=media`, {
                         headers: { 'Authorization': 'Bearer ' + tok }
