@@ -34,52 +34,114 @@
         .card { background-color: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; margin-bottom: 16px; transition: all 0.3s ease; }
         
         /* Header & Typography */
-        .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
-        .app-title { 
-            font-size: 1.25rem; font-weight: 900; letter-spacing: -0.5px; margin:0;
-            display: inline-flex; align-items: center; gap: 10px;
-            position: relative;
+        .app-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 24px; padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        .app-title {
+            margin: 0; display: inline-flex; align-items: center;
         }
         .app-title-badge {
             display: inline-flex; align-items: center; gap: 8px;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 40%, #0f172a 100%);
-            border: 1px solid rgba(59,130,246,0.4);
-            border-radius: 10px;
-            padding: 6px 14px 6px 10px;
-            position: relative; overflow: hidden;
-            box-shadow: 0 0 0 1px rgba(59,130,246,0.1), 0 4px 16px rgba(0,0,0,0.3);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            height: 36px;
+            padding: 0 12px 0 10px;
+            position: relative;
+            box-shadow: none;
+            transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+            overflow: hidden;
+        }
+        .app-title-badge::after {
+            content: none;
+        }
+        .app-title-badge:hover {
+            border-color: var(--accent);
+            box-shadow: 0 2px 12px rgba(59,130,246,0.1);
+            transform: translateY(-1px);
         }
         [data-theme="dark"] .app-title-badge {
-            background: linear-gradient(135deg, #18181b 0%, #27272a 40%, #18181b 100%);
-            border-color: rgba(99,102,241,0.5);
+            background: var(--surface);
+            border-color: var(--border);
+            box-shadow: none;
         }
-        .app-title-badge::before {
-            content: ''; position: absolute; inset: 0;
-            background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.08) 50%, transparent 70%);
-            background-size: 200% 100%;
-            animation: shimmerSlide 3s ease-in-out infinite;
-        }
-        @keyframes shimmerSlide { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
         .app-title-icon {
-            width: 20px; height: 20px; flex-shrink: 0;
-            stroke: url(#iconGrad); stroke-width: 2; fill: none;
-            stroke-linecap: round; stroke-linejoin: round;
-            filter: drop-shadow(0 0 4px rgba(99,102,241,0.6));
+            height: 18px; width: auto; flex-shrink: 0;
+            display: block;
+            filter: none;
+            mix-blend-mode: multiply;
+            transition: filter 0.3s ease;
+            animation: logoBreath 3.5s ease-in-out infinite;
+        }
+        [data-theme="dark"] .app-title-icon {
+            filter: invert(1);
+            mix-blend-mode: screen;
+        }
+        @keyframes logoBreath {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.82; transform: scale(0.96); }
         }
         .app-title-text {
-            background: linear-gradient(135deg, #60a5fa, #a78bfa, #34d399, #60a5fa);
-            background-size: 300% 100%;
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-            animation: titleColorFlow 5s ease infinite;
-            font-size: 1.1rem; font-weight: 900; letter-spacing: 0.3px; white-space: nowrap;
+            font-size: 0.92rem; font-weight: 800;
+            letter-spacing: 0.5px; white-space: nowrap;
+            color: var(--text-main);
+            -webkit-text-fill-color: var(--text-main);
+            background: none;
         }
-        .app-title-dot {
-            width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
-            background: #10b981; box-shadow: 0 0 6px #10b981;
-            animation: pulseDot 2s ease-in-out infinite;
+
+        /* Header action buttons */
+        .header-action-btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            height: 36px; padding: 0 11px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 0.7rem; font-weight: 700;
+            letter-spacing: 0.3px;
+            transition: all 0.18s ease;
+            white-space: nowrap;
         }
-        @keyframes pulseDot { 0%,100%{opacity:1; transform:scale(1)} 50%{opacity:0.5; transform:scale(0.7)} }
-        @keyframes titleColorFlow { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+        .header-action-btn svg {
+            width: 13px; height: 13px;
+            stroke: currentColor; stroke-width: 2;
+            fill: none; stroke-linecap: round; stroke-linejoin: round;
+            flex-shrink: 0;
+        }
+        .header-action-btn:hover {
+            color: var(--text-main);
+            border-color: var(--text-muted);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.07);
+        }
+        .header-action-btn.upload-shortcut:hover { color: var(--success); border-color: rgba(16,185,129,0.5); background: rgba(16,185,129,0.05); }
+        .header-action-btn.restore-shortcut:hover { color: var(--accent); border-color: rgba(59,130,246,0.5); background: rgba(59,130,246,0.05); }
+        .btn-label { display: none; }
+        @media (min-width: 440px) { .btn-label { display: inline; } }
+        @keyframes arrow-up { 0%,100%{transform:translateY(0);opacity:1} 40%{transform:translateY(-3px);opacity:0.4} 70%{transform:translateY(1px);opacity:1} }
+        @keyframes arrow-down { 0%,100%{transform:translateY(0);opacity:1} 40%{transform:translateY(3px);opacity:0.4} 70%{transform:translateY(-1px);opacity:1} }
+        @keyframes btn-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.04)} }
+        .header-action-btn.syncing svg { animation: arrow-up 0.8s ease-in-out infinite; }
+        .header-action-btn.syncing { color: var(--success); border-color: rgba(16,185,129,0.4); }
+        .header-action-btn.loading svg { animation: arrow-down 0.8s ease-in-out infinite; }
+        .header-action-btn.loading { color: var(--accent); border-color: rgba(59,130,246,0.4); }
+        .header-action-btn.done { animation: btn-pulse 0.35s ease; }
+        .theme-toggle {
+            height: 36px; width: 36px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; transition: all 0.2s ease; position: relative;
+        }
+        .theme-toggle:hover { border-color: var(--text-muted); transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,0.07); }
+        .theme-toggle svg { position: absolute; width: 15px; height: 15px; transition: all 0.4s cubic-bezier(0.68,-0.55,0.27,1.55); stroke: var(--text-main); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+        body[data-theme="dark"] .icon-sun { transform: translateY(28px) rotate(90deg); opacity: 0; }
+        body:not([data-theme="dark"]) .icon-moon { transform: translateY(-28px) rotate(-90deg); opacity: 0; }
         h2, h3 { font-weight: 700; margin-bottom: 8px; letter-spacing: -0.3px; }
         p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px; line-height: 1.5; }
         label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 8px; color: var(--text-main); }
@@ -98,39 +160,81 @@
         .btn.danger:hover { background-color: var(--danger); color: white; border-color: var(--danger); }
 
         /* Theme Toggle Animation */
-        .theme-toggle { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; transition: 0.3s; }
-        .upload-shortcut { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; overflow: visible; }
-        .upload-shortcut:hover { border-color: var(--success); transform: scale(1.05); }
-        .upload-shortcut svg { width: 16px; height: 16px; stroke: var(--text-main); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: 0.3s; overflow: visible; }
-        .upload-shortcut:hover svg { stroke: var(--success); }
-        @keyframes arrow-up { 0%,100%{transform:translateY(0);opacity:1} 40%{transform:translateY(-4px);opacity:0.4} 70%{transform:translateY(1px);opacity:1} }
-        @keyframes arrow-down { 0%,100%{transform:translateY(0);opacity:1} 40%{transform:translateY(4px);opacity:0.4} 70%{transform:translateY(-1px);opacity:1} }
-        @keyframes btn-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.13)} }
-        .upload-shortcut.syncing { border-color: var(--success); }
-        .upload-shortcut.syncing svg { animation: arrow-up 0.8s ease-in-out infinite; stroke: var(--success); }
-        .upload-shortcut.done { animation: btn-pulse 0.4s ease; border-color: var(--success); }
-        .restore-shortcut { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; overflow: visible; }
-        .restore-shortcut:hover { border-color: var(--accent); transform: scale(1.05); }
-        .restore-shortcut svg { width: 16px; height: 16px; stroke: var(--text-main); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: 0.3s; overflow: visible; }
-        .restore-shortcut:hover svg { stroke: var(--accent); }
-        .restore-shortcut.loading { border-color: var(--accent); }
-        .restore-shortcut.loading svg { animation: arrow-down 0.8s ease-in-out infinite; stroke: var(--accent); }
-        .restore-shortcut.done { animation: btn-pulse 0.4s ease; border-color: var(--accent); }
-        .theme-toggle:hover { border-color: var(--accent); transform: scale(1.05); }
-        .theme-toggle svg { position: absolute; width: 20px; height: 20px; transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55); stroke: var(--text-main); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-        body[data-theme="dark"] .icon-sun { transform: translateY(30px) rotate(90deg); opacity: 0; }
         body:not([data-theme="dark"]) .icon-moon { transform: translateY(-30px) rotate(-90deg); opacity: 0; }
 
         /* Inputs */
         .input { width: 100%; background-color: var(--bg-base); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 0.95rem; margin-bottom: 16px; transition: all 0.3s ease; outline: none; color-scheme: inherit; }
         .input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
-        /* Date input icon fix for all themes */
-        input[type="date"] { color-scheme: light; }
-        [data-theme="dark"] input[type="date"] { color-scheme: dark; }
-        ::-webkit-calendar-picker-indicator { opacity: 0.7; cursor: pointer; }
-        ::-webkit-calendar-picker-indicator:hover { opacity: 1; }
-        [data-theme="dark"] ::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.85; cursor: pointer; }
-        [data-theme="dark"] ::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+        /* ── Custom Month-Year Picker ── */
+        .mp-wrapper { position: relative; }
+        .mp-display {
+            display: flex; align-items: center; gap: 8px;
+            background: var(--bg-base); border: 1px solid var(--border);
+            border-radius: 8px; padding: 11px 12px; cursor: pointer;
+            transition: all 0.2s ease; user-select: none;
+            color: var(--text-main);
+        }
+        .mp-display:hover { border-color: var(--accent); }
+        .mp-wrapper.open .mp-display {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+        }
+        .mp-cal-icon {
+            width: 15px; height: 15px; stroke: var(--accent);
+            fill: none; stroke-width: 2; stroke-linecap: round;
+            stroke-linejoin: round; flex-shrink: 0;
+        }
+        .mp-label { flex: 1; font-size: 0.88rem; font-weight: 600; transition: opacity 0.2s ease, transform 0.2s ease; }
+        .mp-label.placeholder { color: var(--text-muted); font-weight: 500; }
+        .mp-chevron {
+            width: 14px; height: 14px; stroke: var(--text-muted);
+            fill: none; stroke-width: 2; flex-shrink: 0;
+            transition: transform 0.25s cubic-bezier(0.16,1,0.3,1);
+        }
+        .mp-wrapper.open .mp-chevron { transform: rotate(180deg); }
+        .mp-dropdown {
+            position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 12px; z-index: 500; min-width: 200px;
+            box-shadow: 0 20px 40px -8px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.04);
+            opacity: 0; transform: translateY(-8px) scale(0.97);
+            pointer-events: none;
+            transition: opacity 0.22s cubic-bezier(0.16,1,0.3,1),
+                        transform 0.22s cubic-bezier(0.16,1,0.3,1);
+            overflow: hidden;
+        }
+        [data-theme="dark"] .mp-dropdown { box-shadow: 0 20px 40px -8px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06); }
+        .mp-wrapper.open .mp-dropdown { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+        .mp-year-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 14px 10px; border-bottom: 1px solid var(--border);
+        }
+        .mp-year-label { font-size: 0.92rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.3px; }
+        .mp-yr-btn {
+            width: 28px; height: 28px; border-radius: 6px;
+            border: 1px solid var(--border); background: var(--bg-base);
+            cursor: pointer; display: flex; align-items: center;
+            justify-content: center; transition: all 0.15s ease; color: var(--text-main);
+        }
+        .mp-yr-btn:hover { border-color: var(--accent); background: rgba(59,130,246,0.08); color: var(--accent); }
+        .mp-yr-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+        .mp-months { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 10px; }
+        .mp-month-btn {
+            border: 1px solid transparent; border-radius: 8px;
+            padding: 9px 4px; font-size: 0.78rem; font-weight: 600;
+            cursor: pointer; background: none; color: var(--text-muted);
+            transition: all 0.15s ease; text-align: center;
+            position: relative; overflow: hidden;
+        }
+        .mp-month-btn:hover { background: var(--bg-base); color: var(--text-main); border-color: var(--border); }
+        .mp-month-btn.current-month { border-color: rgba(59,130,246,0.4); color: var(--accent); font-weight: 700; }
+        .mp-month-btn.selected {
+            background: var(--primary); color: var(--primary-text);
+            border-color: var(--primary); font-weight: 800;
+            transform: scale(1.04);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+        }
+        .mp-month-btn.selected.current-month { background: var(--primary); color: var(--primary-text); border-color: var(--primary); }
 
         /* Custom Dropdown UI (In-App) */
         .custom-select-wrapper { position: relative; user-select: none; width: 100%; margin-bottom: 16px; }
@@ -162,9 +266,10 @@
         /* Highlight for selected option */
         .custom-option:hover { background-color: var(--bg-base); color: var(--accent); }
         .custom-option.selected { background-color: rgba(59, 130, 246, 0.1) !important; color: var(--accent) !important; font-weight: 800 !important; border-left: 4px solid var(--accent); }
+        .custom-option.kb-focus { background-color: var(--bg-base); color: var(--accent); border-left: 4px solid var(--accent); }
 
         /* TV Dropdown Clip Fix: Smart Relative Positioning pushes the modal taller instead of cutting off */
-        #wrap-modal-disc.open .custom-options { position: relative !important; margin-bottom: 16px; box-shadow: none !important; border-color: var(--accent); max-height: unset; z-index: 10; }
+        #wrap-modal-disc.open .custom-options { position: relative !important; margin-bottom: 16px; box-shadow: none !important; border-color: var(--accent); max-height: 220px; overflow-y: auto; -webkit-overflow-scrolling: touch; z-index: 10; }
 
         /* Screen Transitions */
         .screen { display: none; flex: 1; } 
@@ -191,7 +296,7 @@
         .notification-banner { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: var(--warning); padding: 14px 16px; border-radius: 8px; display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 0.85rem; margin: 0 auto 20px auto; max-width: 650px; width: 100%; display: none; cursor: pointer; animation: slideFadeUp 0.4s ease; }
 
         /* Dashboard & Stats */
-        .stat-card { background: var(--surface); border: 1px solid var(--border); padding: 20px; border-radius: 12px; text-align: center; box-shadow: var(--shadow); transition: all 0.2s ease; cursor: pointer; opacity: 0.65; }
+        .stat-card { background: var(--surface); border: 1px solid var(--border); padding: 20px; border-radius: 12px; text-align: center; box-shadow: var(--shadow); transition: all 0.2s ease; cursor: pointer; opacity: 0.85; }
         .stat-card:hover { transform: translateY(-2px); opacity: 1; }
         .stat-card.active-filter { opacity: 1; transform: scale(1.02); box-shadow: 0 12px 20px -5px rgba(0,0,0,0.1); }
         .stat-value { font-size: 2rem; font-weight: 800; margin-bottom: 6px; }
@@ -257,11 +362,185 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
         .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; background: var(--bg-base); border: 1px solid var(--border); }
+
+
+        /* Security toggle pill */
+        .sec-toggle-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .sec-toggle-pill {
+            position: relative; width: 44px; height: 24px; border-radius: 12px;
+            background: var(--border); border: none; cursor: pointer;
+            transition: background 0.25s ease; flex-shrink: 0; padding: 0;
+        }
+        .sec-toggle-pill.on { background: var(--success); }
+        .sec-toggle-pill::after {
+            content: ''; position: absolute; top: 3px; left: 3px;
+            width: 18px; height: 18px; border-radius: 50%;
+            background: white; transition: transform 0.25s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .sec-toggle-pill.on::after { transform: translateX(20px); }
+
+        /* ── PC / TV ENHANCEMENTS ── */
+
+        /* 21. Max-width 900px centered container */
+        body { max-width: 1400px; margin-left: auto; margin-right: auto; }
+        .app-header { max-width: 900px; margin-left: auto; margin-right: auto; width: 100%; }
+
+        @media (min-width: 900px) {
+            body { padding: 24px 32px; }
+
+            /* 28. Larger click targets on large viewport */
+            .menu-card { padding: 32px 16px; font-size: 0.9rem; }
+            .menu-icon { width: 38px; height: 38px; }
+            .btn { padding: 13px 18px; font-size: 0.88rem; }
+            th, td { padding: 9px 14px; }
+
+            /* 29. Font scale increase */
+            body { font-size: 15px; }
+        }
+
+        /* 25. Focus ring — visible on all interactive elements for Tab/TV nav */
+        :focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+            border-radius: 6px;
+        }
+        .menu-card:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 3px;
+            border-radius: var(--radius);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 20px -5px rgba(0,0,0,0.1);
+            color: var(--accent);
+        }
+        .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        tr:focus-visible td { background-color: var(--bg-base); outline: 2px solid var(--accent); }
+
+        /* 23. Row hover tooltip */
+        tr { position: relative; }
+
+        /* 22. Two-column layout on wide screens: table + side panel */
+        @media (min-width: 1100px) {
+            #screen-workspace, #screen-dashboard {
+                /* will be handled via JS class toggle when modal opens */
+            }
+            .wide-layout-wrapper {
+                display: grid;
+                grid-template-columns: 1fr 420px;
+                gap: 24px;
+                align-items: start;
+            }
+            .wide-layout-wrapper .wide-left { min-width: 0; }
+            .wide-layout-wrapper .wide-right { position: sticky; top: 16px; }
+            /* Side panel audit modal */
+            #audit-modal.side-panel {
+                position: static;
+                background: none;
+                backdrop-filter: none;
+                pointer-events: auto;
+                opacity: 1;
+                display: block;
+            }
+            #audit-modal.side-panel .modal-dialog {
+                margin: 0;
+                max-width: 100%;
+                transform: none;
+                border: 1px solid var(--border);
+                box-shadow: var(--shadow);
+                max-height: none;
+            }
+        }
+
+        /* 20/24. Shortcut help overlay */
+        #shortcut-overlay {
+            position: fixed; inset: 0; background: var(--modal-overlay);
+            z-index: 2000; display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+            backdrop-filter: blur(4px);
+        }
+        #shortcut-overlay.active { opacity: 1; pointer-events: auto; }
+        #shortcut-overlay .so-dialog {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 16px; padding: 28px; width: 100%; max-width: 520px;
+            margin: 16px; max-height: 85vh; overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3);
+        }
+        .so-title { font-size: 1rem; font-weight: 800; margin-bottom: 20px; color: var(--text-main); display: flex; justify-content: space-between; align-items: center; }
+        .so-section { margin-bottom: 18px; }
+        .so-section-title { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 10px; }
+        .so-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 0.82rem; }
+        .so-row:last-child { border-bottom: none; }
+        .so-keys { display: flex; gap: 4px; }
+        .so-key { background: var(--bg-base); border: 1px solid var(--border); border-radius: 5px; padding: 2px 8px; font-size: 0.72rem; font-weight: 700; font-family: monospace; color: var(--text-main); white-space: nowrap; }
+        .so-desc { color: var(--text-muted); }
+
+        /* Tooltip on table rows */
+        .row-tooltip {
+            position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+            background: var(--primary); color: var(--primary-text);
+            padding: 3px 8px; border-radius: 6px; font-size: 0.68rem; font-weight: 700;
+            white-space: nowrap; pointer-events: none; opacity: 0;
+            transition: opacity 0.15s; z-index: 10;
+        }
+        tr:hover .row-tooltip { opacity: 1; }
     </style>
 </head>
 <body>
 
     <div id="loader"><div class="spinner"></div><span>Processing...</span></div>
+
+    <!-- Shortcut Help Overlay (#20) -->
+    <div id="shortcut-overlay" onclick="closeShortcutOverlay(event)">
+        <div class="so-dialog">
+            <div class="so-title">
+                Keyboard Shortcuts
+                <button onclick="toggleShortcutOverlay()" style="background:none;border:none;cursor:pointer;padding:4px;color:var(--text-muted);font-size:1.2rem;" title="Close">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+
+            <div class="so-section">
+                <div class="so-section-title">Navigation</div>
+                <div class="so-row"><span class="so-desc">Back to Main Menu</span><div class="so-keys"><span class="so-key">Esc</span></div></div>
+                <div class="so-row"><span class="so-desc">Exit Workspace (confirm)</span><div class="so-keys"><span class="so-key">Esc</span></div></div>
+                <div class="so-row"><span class="so-desc">This help overlay</span><div class="so-keys"><span class="so-key">?</span></div></div>
+            </div>
+
+            <div class="so-section">
+                <div class="so-section-title">Workspace</div>
+                <div class="so-row"><span class="so-desc">Type to search claims</span><div class="so-keys"><span class="so-key">0–9</span><span class="so-key">A–Z</span></div></div>
+                <div class="so-row"><span class="so-desc">Open first claim in list</span><div class="so-keys"><span class="so-key">Enter</span></div></div>
+                <div class="so-row"><span class="so-desc">Previous / Next page</span><div class="so-keys"><span class="so-key">←</span><span class="so-key">→</span></div></div>
+            </div>
+
+            <div class="so-section">
+                <div class="so-section-title">Dashboard</div>
+                <div class="so-row"><span class="so-desc">Type to search claims</span><div class="so-keys"><span class="so-key">0–9</span><span class="so-key">A–Z</span></div></div>
+                <div class="so-row"><span class="so-desc">Previous / Next page</span><div class="so-keys"><span class="so-key">←</span><span class="so-key">→</span></div></div>
+            </div>
+
+            <div class="so-section">
+                <div class="so-section-title">Audit Modal</div>
+                <div class="so-row"><span class="so-desc">Save entry</span><div class="so-keys"><span class="so-key">Enter</span></div></div>
+                <div class="so-row"><span class="so-desc">Close / cancel</span><div class="so-keys"><span class="so-key">Esc</span></div></div>
+                <div class="so-row"><span class="so-desc">Quick-select discrepancy</span><div class="so-keys"><span class="so-key">0–9</span></div></div>
+            </div>
+
+            <div class="so-section">
+                <div class="so-section-title">Dropdown</div>
+                <div class="so-row"><span class="so-desc">Navigate options</span><div class="so-keys"><span class="so-key">↑</span><span class="so-key">↓</span></div></div>
+                <div class="so-row"><span class="so-desc">Select focused option</span><div class="so-keys"><span class="so-key">Enter</span></div></div>
+                <div class="so-row"><span class="so-desc">Close dropdown</span><div class="so-keys"><span class="so-key">Esc</span></div></div>
+            </div>
+
+            <div class="so-section">
+                <div class="so-section-title">Menu Grid (TV / Tab)</div>
+                <div class="so-row"><span class="so-desc">Navigate cards</span><div class="so-keys"><span class="so-key">↑</span><span class="so-key">↓</span><span class="so-key">←</span><span class="so-key">→</span></div></div>
+                <div class="so-row"><span class="so-desc">Open selected card</span><div class="so-keys"><span class="so-key">Enter</span><span class="so-key">Space</span></div></div>
+                <div class="so-row"><span class="so-desc">Tab through all elements</span><div class="so-keys"><span class="so-key">Tab</span></div></div>
+            </div>
+        </div>
+    </div>
 
     <div id="app-dialog" class="modal-backdrop">
         <div class="modal-dialog" style="max-width: 340px;">
@@ -270,7 +549,7 @@
                 
                 <div id="dialog-input-wrapper" style="position:relative; display:none; margin-bottom: 16px;" autocomplete="off">
                     <input type="text" id="dialog-input" inputmode="numeric" class="input" style="text-align:center; letter-spacing: 4px; font-size: 1.2rem; margin:0; padding-right: 44px; -webkit-text-security: disc; text-security: disc;" placeholder="••••••••" autocomplete="off" data-lpignore="true" data-form-type="other" spellcheck="false" autocorrect="off" autocapitalize="off">
-                    <button id="kb-toggle" onclick="toggleKeyboardMode('dialog-input', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:var(--bg-base); border:1px solid var(--border); border-radius:6px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-muted); transition:0.2s;" title="Toggle Keyboard">🔢</button>
+                    <button id="kb-toggle" onclick="toggleKeyboardMode('dialog-input', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:var(--bg-base); border:1px solid var(--border); border-radius:6px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-muted); transition:0.2s;" title="Toggle Keyboard"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></button>
                 </div>
 
                 <div style="display:flex; gap:12px; justify-content:center; margin-top: 12px;">
@@ -283,24 +562,25 @@
 
     <div class="app-header">
         <h1 class="app-title">
-            <svg width="0" height="0" style="position:absolute;"><defs><linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#60a5fa"/><stop offset="100%" stop-color="#a78bfa"/></linearGradient></defs></svg>
             <div class="app-title-badge">
-                <svg class="app-title-icon" viewBox="0 0 24 24"><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V7L12 2z"/><path d="M9 12l2 2 4-4"/></svg>
+                <img class="app-title-icon" src="data:image/png;base64,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" alt="Hyundai">
                 <span class="app-title-text">Warranty Auditor</span>
-                <span class="app-title-dot"></span>
+
             </div>
         </h1>
-        <div style="display:flex;gap:8px;align-items:center;">
-        <button id="header-upload-btn" class="upload-shortcut" onclick="headerUploadNow()" title="Upload to GitHub Cloud">
-            <svg viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
-        </button>
-        <button id="header-restore-btn" class="restore-shortcut" onclick="headerRestoreNow()" title="Restore from GitHub Cloud">
-            <svg viewBox="0 0 24 24"><polyline points="8 8 12 12 16 8"/><line x1="12" y1="12" x2="12" y2="3"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
-        </button>
-        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
-            <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-            <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-        </button>
+        <div style="display:flex;gap:6px;align-items:center;">
+            <button id="header-upload-btn" class="header-action-btn upload-shortcut" onclick="headerUploadNow()" title="Upload to GitHub Cloud">
+                <svg viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+                <span class="btn-label">Backup</span>
+            </button>
+            <button id="header-restore-btn" class="header-action-btn restore-shortcut" onclick="headerRestoreNow()" title="Restore from GitHub Cloud">
+                <svg viewBox="0 0 24 24"><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/><polyline points="8 13 12 17 16 13"/><line x1="12" y1="17" x2="12" y2="9"/></svg>
+                <span class="btn-label">Restore</span>
+            </button>
+            <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
+                <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            </button>
         </div>
     </div>
 
@@ -317,100 +597,54 @@
         </div>
 
         <div class="menu-grid">
-            <div class="menu-card" onclick="showScreen('screen-new-audit')">
+            <div class="menu-card" tabindex="0" onclick="showScreen('screen-new-audit')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showScreen('screen-new-audit');}">
                 <svg class="menu-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
                 <span>New Audit</span>
             </div>
-            <div class="menu-card" onclick="openArchive(false)">
+            <div class="menu-card" tabindex="0" onclick="openArchive(false)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openArchive(false);}">
                 <svg class="menu-icon" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                 <span>Drafts</span>
             </div>
-            <div class="menu-card" onclick="openArchive(true)">
+            <div class="menu-card" tabindex="0" onclick="openArchive(true)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openArchive(true);}">
                 <svg class="menu-icon" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="9" y1="14" x2="15" y2="14"></line></svg>
                 <span>Previous Audits</span>
             </div>
-            <div class="menu-card" onclick="buildDashboard()">
+            <div class="menu-card" tabindex="0" onclick="buildDashboard()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();buildDashboard();}">
                 <svg class="menu-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
                 <span>Dashboard</span>
             </div>
-            <div class="menu-card" onclick="openReportingMenu()">
+            <div class="menu-card" tabindex="0" onclick="openReportingMenu()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openReportingMenu();}">
                 <svg class="menu-icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
                 <span>Reports Export</span>
             </div>
-            <div class="menu-card" onclick="showScreen('screen-backup')">
+            <div class="menu-card" tabindex="0" onclick="showScreen('screen-backup')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showScreen('screen-backup');}">
                 <svg class="menu-icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 <span>Backup & Restore</span>
             </div>
-            <div class="menu-card" onclick="showScreen('screen-security')">
+            <div class="menu-card" tabindex="0" onclick="showScreen('screen-security')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showScreen('screen-security');}">
                 <svg class="menu-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                 <span>Security Settings</span>
             </div>
-            <div class="menu-card" onclick="openSettingsScreen()">
+            <div class="menu-card" tabindex="0" onclick="openSettingsScreen()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSettingsScreen();}">
                 <svg class="menu-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                 <span>Custom Codes</span>
             </div>
         </div>
 
         <footer class="app-footer">
-            <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow);">
-
-                <!-- Header row -->
-                <div style="padding:20px 20px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:14px;">
-                    <div style="width:40px;height:40px;background:var(--primary);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <svg style="width:20px;height:20px;stroke:var(--primary-text);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V7L12 2z"/><path d="M9 12l2 2 4-4"/></svg>
-                    </div>
-                    <div style="flex:1;">
-                        <div style="font-size:0.95rem;font-weight:800;color:var(--text-main);letter-spacing:-0.2px;">Warranty Auditor</div>
-                        <div style="font-size:0.68rem;color:var(--text-muted);margin-top:1px;text-transform:uppercase;letter-spacing:0.5px;">Professional Claims Audit Suite</div>
-                    </div>
-                    <div style="background:var(--bg-base);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:0.65rem;font-weight:700;color:var(--text-muted);letter-spacing:0.3px;">v3.0</div>
-                </div>
-
-                <!-- Feature grid -->
-                <div style="padding:16px 20px; border-bottom:1px solid var(--border);">
-                    <div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Capabilities</div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-                        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;">
-                            <svg style="width:13px;height:13px;stroke:var(--accent);fill:none;stroke-width:2.5;flex-shrink:0;" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                            <span style="font-size:0.7rem;font-weight:600;color:var(--text-main);">AES-256 Encryption</span>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;">
-                            <svg style="width:13px;height:13px;stroke:var(--success);fill:none;stroke-width:2.5;flex-shrink:0;" viewBox="0 0 24 24"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/><path d="M8 2v16M16 6v16"/></svg>
-                            <span style="font-size:0.7rem;font-weight:600;color:var(--text-main);">100% Offline</span>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;">
-                            <svg style="width:13px;height:13px;stroke:var(--text-muted);fill:none;stroke-width:2.5;flex-shrink:0;" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
-                            <span style="font-size:0.7rem;font-weight:600;color:var(--text-main);">Cloud Backup</span>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;">
-                            <svg style="width:13px;height:13px;stroke:var(--warning);fill:none;stroke-width:2.5;flex-shrink:0;" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                            <span style="font-size:0.7rem;font-weight:600;color:var(--text-main);">PDF &amp; Excel Export</span>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;">
-                            <svg style="width:13px;height:13px;stroke:var(--danger);fill:none;stroke-width:2.5;flex-shrink:0;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                            <span style="font-size:0.7rem;font-weight:600;color:var(--text-main);">Auto Discrepancy</span>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;">
-                            <svg style="width:13px;height:13px;stroke:var(--text-muted);fill:none;stroke-width:2.5;flex-shrink:0;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
-                            <span style="font-size:0.7rem;font-weight:600;color:var(--text-main);">Light &amp; Dark Mode</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Creator row -->
-                <div style="padding:14px 20px;display:flex;align-items:center;gap:12px;">
-                    <div style="width:32px;height:32px;background:var(--bg-base);border:1px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <svg style="width:15px;height:15px;stroke:var(--text-muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow);">
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+                    <div style="width:36px;height:36px;background:var(--primary);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <svg style="width:18px;height:18px;stroke:var(--primary-text);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V7L12 2z"/><path d="M9 12l2 2 4-4"/></svg>
                     </div>
                     <div>
-                        <div style="font-size:0.78rem;font-weight:700;color:var(--text-main);">Aashish Giri H</div>
-                        <div style="font-size:0.65rem;color:var(--text-muted);">Developer &middot; Warranty Audit Specialist</div>
-                    </div>
-                    <div style="margin-left:auto;">
-                        <div style="width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 6px var(--success);animation:pulseDot 2s ease-in-out infinite;"></div>
+                        <div style="font-size:0.95rem;font-weight:800;color:var(--text-main);">Warranty Auditor</div>
+                        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:1px;">by Aashish Giri H</div>
                     </div>
                 </div>
-
+                <p style="font-size:0.78rem;color:var(--text-muted);line-height:1.65;margin:0;">
+                    A professional warranty claims audit tool built for dealership audit specialists. Supports Excel import, claim-by-claim auditing with discrepancy tagging, finalized reports with PDF &amp; Excel export, AES-256 local encryption, and cloud backup via GitHub Gist &amp; Google Drive — all fully offline-capable.
+                </p>
             </div>
         </footer>
     </div>
@@ -418,7 +652,7 @@
     <div id="screen-dashboard" class="screen">
         <div class="flex-between" style="margin-bottom: 12px;">
             <h3 style="margin:0;">Dashboard</h3>
-            <button class="btn" style="width:auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')">☰ Main Menu</button>
+            <button class="btn" style="width:auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg> Main Menu</button>
         </div>
         
         <div class="legend-hint">
@@ -468,7 +702,7 @@
             <div style="position:relative; margin-bottom:16px; width: 100%;">
                 <svg style="position:absolute; left:12px; top:50%; transform:translateY(-50%); width:20px; height:20px; stroke:var(--text-muted); stroke-width:2; fill:none; z-index:5;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 <input type="text" id="dash-search" inputmode="numeric" class="input" placeholder="Enter Claim Number..." oninput="handleDashSearch()" style="padding-left:40px; padding-right:44px; margin-bottom:0;">
-                <button onclick="toggleKeyboardMode('dash-search', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:var(--bg-base); border:1px solid var(--border); border-radius:6px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-muted); transition:0.2s;" title="Toggle Keyboard">🔢</button>
+                <button onclick="toggleKeyboardMode('dash-search', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:var(--bg-base); border:1px solid var(--border); border-radius:6px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-muted); transition:0.2s;" title="Toggle Keyboard"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></button>
             </div>
 
             <div class="table-wrap">
@@ -486,9 +720,9 @@
             </div>
             
             <div class="pagination">
-                <button class="btn" onclick="changeDashPage(-1)" id="dash-btn-prev">Previous</button>
+                <button class="btn" onclick="changeDashPage(-1)" id="dash-btn-prev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Previous</button>
                 <span id="dash-page-indicator" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700;">Page 1</span>
-                <button class="btn" onclick="changeDashPage(1)" id="dash-btn-next">Next</button>
+                <button class="btn" onclick="changeDashPage(1)" id="dash-btn-next">Next <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
             </div>
         </div>
     </div>
@@ -496,14 +730,14 @@
     <div id="screen-settings" class="screen">
         <div class="flex-between" style="margin-bottom: 16px;">
             <h3 style="margin:0;">Custom Discrepancy Codes</h3>
-            <button class="btn" style="width:auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')">☰ Main Menu</button>
+            <button class="btn" style="width:auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg> Main Menu</button>
         </div>
         <div class="card">
             <p>Add your own codes for the audit dropdown. (e.g. Code: 9, Desc: Labour Mismatch)</p>
             <div class="grid-2">
                 <div style="position:relative; width: 100%; margin-bottom: 16px;">
                     <input type="text" id="new-code-id" inputmode="numeric" class="input" placeholder="Enter Code Number" style="padding-right:44px; margin-bottom:0;">
-                    <button onclick="toggleKeyboardMode('new-code-id', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:var(--bg-base); border:1px solid var(--border); border-radius:6px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-muted); transition:0.2s;" title="Toggle Keyboard">🔢</button>
+                    <button onclick="toggleKeyboardMode('new-code-id', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:var(--bg-base); border:1px solid var(--border); border-radius:6px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-muted); transition:0.2s;" title="Toggle Keyboard"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></button>
                 </div>
                 <input type="text" id="new-code-desc" class="input" placeholder="Enter Description">
             </div>
@@ -527,26 +761,24 @@
     <div id="screen-security" class="screen">
         <div class="flex-between" style="margin-bottom: 12px; max-width: 440px; margin-left: auto; margin-right: auto; width: 100%;">
             <h3 style="margin:0;">Security Settings</h3>
-            <button class="btn" style="width:auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')">&#9776; Main Menu</button>
+            <button class="btn" style="width:auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg> Main Menu</button>
         </div>
         <div class="card" style="max-width: 440px; margin: 0 auto; width: 100%;">
-            <p>Configure AES-256 local encryption locks for application access and archived data.</p>
+            <p style="margin-bottom:16px;">Manage access control locks for the app and archived audits.</p>
             
             <div style="background: var(--bg-base); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+                <div class="sec-toggle-row">
                     <span style="font-weight:700;">App Launch Lock</span>
-                    <span id="app-sec-status" style="font-weight:800; font-size:0.85rem;">OFF</span>
+                    <button class="sec-toggle-pill" id="btn-toggle-app-sec" onclick="toggleSecurity('app')" title="Toggle App Lock"></button>
                 </div>
-                <button class="btn" id="btn-toggle-app-sec" onclick="toggleSecurity('app')">Enable App Lock</button>
                 <p style="font-size:0.75rem; margin:10px 0 0 0; color:var(--text-muted);">Requires Master Password upon opening the website.</p>
             </div>
 
             <div style="background: var(--bg-base); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 24px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+                <div class="sec-toggle-row">
                     <span style="font-weight:700;">Archive Protection</span>
-                    <span id="arc-sec-status" style="font-weight:800; font-size:0.85rem;">OFF</span>
+                    <button class="sec-toggle-pill" id="btn-toggle-arc-sec" onclick="toggleSecurity('archive')" title="Toggle Archive Lock"></button>
                 </div>
-                <button class="btn" id="btn-toggle-arc-sec" onclick="toggleSecurity('archive')">Enable Archive Lock</button>
                 <p style="font-size:0.75rem; margin:10px 0 0 0; color:var(--text-muted);">Requires Master Password to open or delete Finalized Audits.</p>
             </div>
 
@@ -557,10 +789,10 @@
     <div id="screen-backup" class="screen">
         <div class="flex-between" style="margin-bottom: 12px; max-width: 440px; margin-left: auto; margin-right: auto; width: 100%;">
             <h3 style="margin:0;">Backup &amp; Restore</h3>
-            <button class="btn" style="width:auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')">&#9776; Main Menu</button>
+            <button class="btn" style="width:auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg> Main Menu</button>
         </div>
         <div class="card" style="max-width: 440px; margin: 0 auto; width: 100%;">
-            <p>Universally transfer your entire database across any PC or Phone without data loss.</p>
+            <p style="margin-bottom:16px;">Export and restore a full local backup of all audit data.</p>
             
             <button class="btn primary" style="margin-bottom: 24px; padding: 14px;" onclick="backupDatabase()">
                 <svg class="menu-icon" style="width:18px;height:18px;" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download Full Backup
@@ -577,28 +809,27 @@
             </div>
             <div id="restore-file-card" style="display: none;"></div>
 
-            <!-- ══════════ GITHUB GIST CLOUD SYNC ══════════ -->
-            <hr style="border:none; border-top:1px solid var(--border); margin: 24px 0;">
-            
+        </div><!-- end local backup card -->
+
+        <!-- ══════════ GITHUB GIST CLOUD SYNC ══════════ -->
+        <div class="card" style="max-width: 440px; margin: 0 auto 16px auto; width: 100%;">
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
                 <svg style="width:22px;height:22px;fill:var(--text-main);flex-shrink:0;" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
                 <h3 style="margin:0; font-size:1rem;">GitHub Cloud Sync</h3>
                 <span id="gist-status-dot" style="margin-left:auto; font-size:0.75rem; font-weight:700; padding:3px 10px; border-radius:20px; background:rgba(100,116,139,0.1); color:var(--text-muted);">Not Connected</span>
             </div>
-            <p style="font-size:0.75rem; margin-bottom:12px;">Save your data to a <b>free private GitHub Gist</b> — accessible from any device. Requires a GitHub account.</p>
+            <p style="font-size:0.75rem; margin-bottom:12px;">Sync to a private GitHub Gist. Accessible from any device with your token.</p>
 
             <div id="gist-setup-section">
                 <label>GitHub Personal Access Token</label>
                 <div style="position:relative; margin-bottom:12px;">
                     <input type="text" id="gist-token-input" class="input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="margin-bottom:0; padding-right:44px; font-family:monospace; font-size:0.85rem; -webkit-text-security: disc; text-security: disc;" autocomplete="off" data-lpignore="true" data-form-type="other" spellcheck="false" autocorrect="off" autocapitalize="off">
-                    <button onclick="toggleGistTokenVisibility()" id="gist-token-eye" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:var(--bg-base);border:1px solid var(--border);border-radius:6px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted);font-size:16px;" title="Show/Hide Token">👁</button>
+                    <button onclick="toggleGistTokenVisibility()" id="gist-token-eye" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:var(--bg-base);border:1px solid var(--border);border-radius:6px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted);font-size:16px;" title="Show/Hide Token"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
                 </div>
                 <p style="font-size:0.7rem; color:var(--text-muted); margin-bottom:16px; line-height:1.6;">
                     <b>How to get token:</b> GitHub → Settings → Developer Settings → Personal Access Tokens → Tokens (classic) → Generate new token → Select <b>"gist"</b> scope only → Copy & paste here.
                 </p>
-                <div style="background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.25); border-radius:8px; padding:10px 12px; margin-bottom:14px; font-size:0.72rem; color:var(--accent); line-height:1.6;">
-                    🔐 <b>Zero-Knowledge Security:</b> Your token is encrypted with <b>AES-256-GCM</b> using a passphrase only you know. The raw token is <b>never stored</b> anywhere — not even in DevTools.
-                </div>
+                <p style="font-size:0.7rem; color:var(--text-muted); margin-bottom:14px;">Token is encrypted with AES-256-GCM. Raw value is never stored.</p>
                 <button class="btn primary" onclick="connectGist()" style="margin-bottom:8px;">
                     <svg style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                     Connect & Encrypt Token
@@ -607,7 +838,7 @@
 
             <div id="gist-connected-section" style="display:none;">
                 <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); border-radius:10px; padding:14px; margin-bottom:12px; font-size:0.8rem;">
-                    <div style="font-weight:700; color:var(--success); margin-bottom:4px;">✅ Connected to GitHub Gist</div>
+                    <div style="font-weight:700; color:var(--success); margin-bottom:4px;">Connected to GitHub Gist</div>
                     <div style="color:var(--text-muted);" id="gist-info-text">Gist ID: loading...</div>
                 </div>
                 <!-- LAST SYNC CARD -->
@@ -626,22 +857,22 @@
                 <div style="background:var(--bg-base); border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:14px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                         <div>
-                            <div style="font-weight:700; font-size:0.85rem;">⚡ Auto-Sync</div>
+                            <div style="font-weight:700; font-size:0.85rem;">Auto-Sync</div>
                             <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;" id="autosync-status-text">Loading...</div>
                         </div>
                         <button id="btn-autosync-toggle" onclick="toggleAutoSync()" style="padding:6px 14px; border-radius:20px; border:1px solid var(--border); background:var(--surface); font-size:0.78rem; font-weight:700; cursor:pointer; transition:all 0.2s; color:var(--text-muted);">OFF</button>
                     </div>
                     <!-- Rate limit warning -->
                     <div id="autosync-warning" style="display:none; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:8px; padding:10px; font-size:0.72rem; color:var(--warning); line-height:1.6;">
-                        ⚠️ <b>GitHub Rate Limit Warning:</b> GitHub allows <b>5,000 API requests/hour</b> per account. Auto-sync uses ~3 requests per sync. With 10-min intervals = ~18 requests/hour — well within limits. However if multiple devices or apps also use the same token, requests add up. You can always turn this OFF and sync manually.
+                        GitHub allows 5,000 API requests/hour. Auto-sync uses ~18/hour. Turn off if sharing token across multiple devices.
                     </div>
                     <div id="autosync-triggers" style="display:none; margin-top:10px; font-size:0.72rem; color:var(--text-muted); line-height:1.8;">
-                        Auto-syncs on: <b>Audit Finalize</b> · <b>Tab close / crash</b> · <b>Every 3 minutes</b>
+                        Triggers on: <b>Finalize</b> · <b>Tab close</b> · <b>Every 3 min</b>
                     </div>
                 </div>
 
                 <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
-                    <span id="gist-sync-indicator" style="display:none; font-size:0.75rem; color:var(--accent); font-weight:600; animation: pulse 1.5s infinite;">● Syncing...</span>
+                    <span id="gist-sync-indicator" style="display:none; font-size:0.75rem; color:var(--accent); font-weight:600; align-items:center; gap:6px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block;animation:pulse 1.2s ease-in-out infinite;"></span> Syncing...</span>
                 </div>
 
                 <div class="grid-2" style="gap:8px; margin-bottom:8px;">
@@ -665,11 +896,10 @@
                     </button>
                 </div>
             </div>
-            <!-- ══════════════════════════════════════════════ -->
+        </div><!-- end GitHub card -->
 
-            <!-- ══════════ GOOGLE DRIVE CLOUD SYNC ══════════ -->
-            <hr style="border:none; border-top:1px solid var(--border); margin: 24px 0;">
-            
+        <!-- ══════════ GOOGLE DRIVE CLOUD SYNC ══════════ -->
+        <div class="card" style="max-width: 440px; margin: 0 auto 16px auto; width: 100%;">
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
                 <!-- Google Drive logo (official colors) -->
                 <svg style="width:22px;height:22px;flex-shrink:0;" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
@@ -683,12 +913,10 @@
                 <h3 style="margin:0; font-size:1rem;">Google Drive Sync</h3>
                 <span id="gdrive-status-dot" style="margin-left:auto; font-size:0.75rem; font-weight:700; padding:3px 10px; border-radius:20px; background:rgba(100,116,139,0.1); color:var(--text-muted);">Not Connected</span>
             </div>
-            <p style="font-size:0.75rem; margin-bottom:12px;">Save your backup to <b>Google Drive</b> — your personal cloud, accessible from any device. Requires a Google account.</p>
+            <p style="font-size:0.75rem; margin-bottom:12px;">Sync backup to Google Drive. Accessible from any signed-in device.</p>
 
             <div id="gdrive-setup-section">
-                <div style="background:rgba(66,133,244,0.08); border:1px solid rgba(66,133,244,0.25); border-radius:8px; padding:10px 12px; margin-bottom:14px; font-size:0.72rem; color:#4285f4; line-height:1.6;">
-                    🔐 <b>How it works:</b> Click "Sign in with Google" — a Google popup opens to authorize access. Your backup is stored privately in your Google Drive. No one else can see or access it.
-                </div>
+                <p style="font-size:0.7rem; color:var(--text-muted); margin-bottom:14px;">Sign in to authorize access. Backup is stored privately in your Google Drive.</p>
                 <button class="btn" onclick="connectGoogleDrive()" style="margin-bottom:8px; background:white; color:#1f2937; border:1px solid #dadce0; font-weight:700; gap:10px;">
                     <svg style="width:18px;height:18px;flex-shrink:0;" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>
                     Sign in with Google
@@ -698,14 +926,14 @@
             <div id="gdrive-connected-section" style="display:none;">
                 <!-- Account info -->
                 <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); border-radius:10px; padding:14px; margin-bottom:12px; font-size:0.8rem;">
-                    <div style="font-weight:700; color:var(--success); margin-bottom:4px;">✅ Connected to Google Drive</div>
+                    <div style="font-weight:700; color:var(--success); margin-bottom:4px;">Connected to Google Drive</div>
                     <div style="color:var(--text-muted);" id="gdrive-info-text">Loading account info...</div>
                 </div>
 
                 <!-- Cloud backup status card — shows what's on Drive -->
                 <div id="gdrive-cloud-status-card" style="background:var(--bg-base); border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:14px;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
-                        <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);">☁️ Cloud Backup Status</div>
+                        <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);">Cloud Backup Status</div>
                         <button onclick="checkGdriveBackupStatus()" id="gdrive-refresh-btn" style="background:none;border:none;cursor:pointer;font-size:0.68rem;color:var(--accent);font-weight:700;padding:0;">↻ Refresh</button>
                     </div>
                     <div id="gdrive-cloud-status-body">
@@ -726,7 +954,7 @@
                 </div>
                 <!-- New device hint -->
                 <div id="gdrive-new-device-hint" style="display:none; background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.25); border-radius:8px; padding:10px 12px; margin-bottom:10px; font-size:0.72rem; color:var(--accent); line-height:1.6;">
-                    📱 <b>New Device Detected:</b> No local data found. A backup exists on Drive from <span id="gdrive-hint-date" style="font-weight:700;"></span>. Click <b>"Restore from Drive"</b> to load your data.
+                    <b>New Device:</b> No local data found. A backup exists from <span id="gdrive-hint-date" style="font-weight:700;"></span>. Click <b>Restore from Drive</b> to load.
                 </div>
                 <button class="btn" onclick="disconnectGoogleDrive()" style="margin:0; padding:10px 16px; background:var(--surface); border:1px solid var(--warning); color:var(--warning); font-weight:600;">
                     <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-right:4px;" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
@@ -734,17 +962,56 @@
                 </button>
             </div>
             <!-- ══════════════════════════════════════════════ -->
+        </div><!-- end Google Drive card -->
 
-            <button class="btn" style="margin-top: 16px; display:none;"></button>
-        </div>
     </div>
 
     <div id="screen-new-audit" class="screen">
         <div class="card" style="max-width: 440px; margin: 0 auto; width: 100%;">
             <h3>Setup Audit</h3>
-            <div class="grid-2">
-                <div><label>From Date</label><input type="date" id="audit-from" class="input" style="cursor:pointer;" /></div>
-                <div><label>To Date</label><input type="date" id="audit-to" class="input" style="cursor:pointer;" /></div>
+            <!-- Hidden inputs — retain YYYY-MM-DD for JS compatibility -->
+            <input type="hidden" id="audit-from">
+            <input type="hidden" id="audit-to">
+
+            <div class="grid-2" style="margin-bottom:16px;">
+                <!-- FROM picker -->
+                <div>
+                    <label>From</label>
+                    <div class="mp-wrapper" id="mp-from" data-target="audit-from">
+                        <div class="mp-display" onclick="toggleMonthPicker('mp-from')">
+                            <svg class="mp-cal-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            <span class="mp-label placeholder" id="mp-from-label">Select month</span>
+                            <svg class="mp-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                        </div>
+                        <div class="mp-dropdown" id="mp-from-dropdown">
+                            <div class="mp-year-row">
+                                <button type="button" class="mp-yr-btn" onclick="shiftYear('mp-from',-1)"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+                                <span class="mp-year-label" id="mp-from-year">2025</span>
+                                <button type="button" class="mp-yr-btn" onclick="shiftYear('mp-from',1)"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+                            </div>
+                            <div class="mp-months" id="mp-from-months"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- TO picker -->
+                <div>
+                    <label>To</label>
+                    <div class="mp-wrapper" id="mp-to" data-target="audit-to">
+                        <div class="mp-display" onclick="toggleMonthPicker('mp-to')">
+                            <svg class="mp-cal-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            <span class="mp-label placeholder" id="mp-to-label">Select month</span>
+                            <svg class="mp-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                        </div>
+                        <div class="mp-dropdown" id="mp-to-dropdown">
+                            <div class="mp-year-row">
+                                <button type="button" class="mp-yr-btn" onclick="shiftYear('mp-to',-1)"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+                                <span class="mp-year-label" id="mp-to-year">2025</span>
+                                <button type="button" class="mp-yr-btn" onclick="shiftYear('mp-to',1)"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+                            </div>
+                            <div class="mp-months" id="mp-to-months"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <label>Source Excel File</label>
             <div class="file-upload-wrapper">
@@ -788,7 +1055,7 @@
         <div style="position:relative; margin-bottom:16px; width: 100%;">
             <svg style="position:absolute; left:12px; top:50%; transform:translateY(-50%); width:20px; height:20px; stroke:var(--text-muted); stroke-width:2; fill:none; z-index:5;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             <input type="text" id="search-claim" inputmode="numeric" class="input" placeholder="Search Claim No..." oninput="handleSearch()" style="padding-left:40px; padding-right:44px; margin-bottom:0;">
-            <button onclick="toggleKeyboardMode('search-claim', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:var(--bg-base); border:1px solid var(--border); border-radius:6px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-muted); transition:0.2s;" title="Toggle Keyboard">🔢</button>
+            <button onclick="toggleKeyboardMode('search-claim', this)" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:var(--bg-base); border:1px solid var(--border); border-radius:6px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-muted); transition:0.2s;" title="Toggle Keyboard"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></button>
         </div>
 
         <div class="table-wrap">
@@ -799,16 +1066,16 @@
         </div>
 
         <div class="pagination">
-            <button class="btn" onclick="changePage(-1)" id="btn-prev">Previous</button>
+            <button class="btn" onclick="changePage(-1)" id="btn-prev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Previous</button>
             <span id="page-indicator" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700;">Page 1</span>
-            <button class="btn" onclick="changePage(1)" id="btn-next">Next</button>
+            <button class="btn" onclick="changePage(1)" id="btn-next">Next <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
         </div>
     </div>
 
     <div id="screen-archive" class="screen">
         <div class="flex-between" style="margin-bottom: 12px;">
             <h3 id="archive-title" style="margin:0;">Archive</h3>
-            <button class="btn" style="width: auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')">☰ Main Menu</button>
+            <button class="btn" style="width: auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg> Main Menu</button>
         </div>
 
         <div class="legend-hint">
@@ -827,10 +1094,10 @@
     <div id="screen-reports" class="screen">
         <div class="flex-between" style="margin-bottom: 12px; max-width: 440px; margin-left: auto; margin-right: auto; width: 100%;">
             <h3 style="margin:0;">Reports Export</h3>
-            <button class="btn" style="width:auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')">&#9776; Main Menu</button>
+            <button class="btn" style="width:auto; margin:0; padding: 8px 16px;" onclick="showScreen('screen-menu')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg> Main Menu</button>
         </div>
         <div class="card" style="max-width: 440px; margin: 0 auto; width: 100%;">
-            <p>Generate highly structured, styled documentation including Amount Summaries.</p>
+            <p style="margin-bottom:16px;">Export structured audit reports with amount summaries.</p>
             
             <label>Select Audit Scope</label>
             <div class="custom-select-wrapper" id="wrap-report-scope">
@@ -862,6 +1129,7 @@
         <div class="modal-dialog">
             <div class="modal-header">
                 <h3 id="modal-claim-no" style="margin:0; font-size: 1.25rem;">Claim No</h3>
+                <p id="modal-part-subtitle" style="margin:4px 0 0 0; font-size:0.75rem; color:var(--text-muted); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;"></p>
             </div>
             <div class="modal-body">
                 <div id="modal-all-details" class="all-details-grid"></div>
@@ -889,12 +1157,12 @@
                 </div>
 
                 <div id="modal-suspense-box" style="display:none; animation: slideFadeUp 0.2s ease; margin-bottom: 16px; padding: 16px; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px;">
-                    <label style="color: var(--danger); font-weight: 700; margin-bottom: 12px;">⚠️ Suspense(P) - Send to Technical Centre</label>
+                    <label style="color: var(--danger); font-weight: 700; margin-bottom: 12px;">Suspense(P) — Send to Technical Centre</label>
                     <div style="margin-bottom: 12px;">
                         <label style="font-size: 0.75rem; margin-bottom: 8px;">Part Sent Status</label>
                         <div class="grid-2" style="gap: 8px;">
-                            <button type="button" class="btn" id="suspense-done-btn" onclick="selectSuspenseStatus('done')" style="margin: 0;">✓ Done</button>
-                            <button type="button" class="btn" id="suspense-no-btn" onclick="selectSuspenseStatus('no')" style="margin: 0;">✗ Not Yet</button>
+                            <button type="button" class="btn" id="suspense-done-btn" onclick="selectSuspenseStatus('done')" style="margin: 0; min-height: 48px; font-size: 0.9rem;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Done</button>
+                            <button type="button" class="btn" id="suspense-no-btn" onclick="selectSuspenseStatus('no')" style="margin: 0; min-height: 48px; font-size: 0.9rem;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Not Yet</button>
                         </div>
                     </div>
                     <div id="suspense-pod-box" style="display: none;">
@@ -909,7 +1177,7 @@
                 </div>
 
                 <div class="grid-2" style="margin-top: 24px;">
-                    <button class="btn primary" style="margin:0;" onclick="saveClaimAudit()">Save Remark</button>
+                    <button class="btn primary" style="margin:0;" onclick="saveClaimAudit()">Save Entry</button>
                     <button class="btn" style="margin:0;" onclick="closeModal()">Cancel</button>
                 </div>
             </div>
@@ -938,8 +1206,8 @@
     // --- KEYBOARD TOGGLE HELPER ---
     function toggleKeyboardMode(inputId, btn) {
         const input = document.getElementById(inputId);
-        if(input.inputMode === 'numeric') { input.inputMode = 'text'; btn.innerText = '🔠'; btn.style.background = 'var(--surface)'; } 
-        else { input.inputMode = 'numeric'; btn.innerText = '🔢'; btn.style.background = 'var(--bg-base)'; }
+        if(input.inputMode === 'numeric') { input.inputMode = 'text'; btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>`; btn.style.background = 'var(--surface)'; } 
+        else { input.inputMode = 'numeric'; btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`; btn.style.background = 'var(--bg-base)'; }
         input.focus();
     }
 
@@ -1066,7 +1334,7 @@
         const inputWrap = document.getElementById('dialog-input-wrapper'); const input = document.getElementById('dialog-input'); const kbBtn = document.getElementById('kb-toggle');
         
         input.type = 'text'; input.style.webkitTextSecurity = isPassword ? 'disc' : 'none'; input.style.textSecurity = isPassword ? 'disc' : 'none'; input.setAttribute('autocomplete', 'off'); input.setAttribute('data-lpignore', 'true'); input.setAttribute('data-form-type', 'other');
-        input.inputMode = 'numeric'; kbBtn.innerText = '🔢'; kbBtn.style.background = 'var(--bg-base)';
+        input.inputMode = 'numeric'; kbBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`; kbBtn.style.background = 'var(--bg-base)';
         input.placeholder = isPassword ? '••••••••' : '';
         
         inputWrap.style.display = 'block'; input.value = '';
@@ -1090,13 +1358,11 @@
     async function sha256(message) { const msgBuffer = new TextEncoder().encode(message); const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer); return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join(''); }
 
     function updateSecurityUI() {
-        const appStatus = document.getElementById('app-sec-status'); const appBtn = document.getElementById('btn-toggle-app-sec');
-        if (secConfig.appLock) { appStatus.innerHTML = '<span style="color:var(--success)">ON</span>'; appBtn.innerText = "Disable App Lock"; appBtn.classList.replace('primary', 'danger'); } 
-        else { appStatus.innerHTML = '<span style="color:var(--danger)">OFF</span>'; appBtn.innerText = "Enable App Lock"; appBtn.classList.replace('danger', 'primary'); }
+        const appBtn = document.getElementById('btn-toggle-app-sec');
+        if (appBtn) { if (secConfig.appLock) appBtn.classList.add('on'); else appBtn.classList.remove('on'); }
 
-        const arcStatus = document.getElementById('arc-sec-status'); const arcBtn = document.getElementById('btn-toggle-arc-sec');
-        if (secConfig.protectArchive) { arcStatus.innerHTML = '<span style="color:var(--success)">ON</span>'; arcBtn.innerText = "Disable Archive Lock"; arcBtn.classList.replace('primary', 'danger'); } 
-        else { arcStatus.innerHTML = '<span style="color:var(--danger)">OFF</span>'; arcBtn.innerText = "Enable Archive Lock"; arcBtn.classList.replace('danger', 'primary'); }
+        const arcBtn = document.getElementById('btn-toggle-arc-sec');
+        if (arcBtn) { if (secConfig.protectArchive) arcBtn.classList.add('on'); else arcBtn.classList.remove('on'); }
     }
 
     function verifyPasswordFlow(onSuccess) {
@@ -1139,7 +1405,7 @@
     if(savedIndex) dbIndex = savedIndex;
     if (secConfig.appLock) {
         const enforceAppLock = () => {
-            showAppPrompt("🔒 Warranty Auditor is Locked.\nEnter Master Password / PIN to access:", true, async (attempt) => {
+            showAppPrompt("Warranty Auditor is locked. Enter your password to continue:", true, async (attempt) => {
                 if (await sha256(attempt) === secConfig.masterHash) { 
                     document.getElementById('screen-menu').classList.add('active'); 
                     loadDashboardNotifications(); 
@@ -1215,7 +1481,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     async function saveSessionToDB(sessionData) { dbIndex[currentSessionKey] = { month: sessionData.month, year: sessionData.year, finalized: sessionData.finalized || false, last_saved: sessionData.last_saved, audit_remark: sessionData.audit_remark || '' }; await localforage.setItem('db_index', dbIndex); await localforage.setItem(currentSessionKey, sessionData); }      
     function showLoader(show) { document.getElementById('loader').style.display = show ? 'flex' : 'none'; }
-    function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); if(id === 'screen-menu') setTimeout(loadDashboardNotifications, 100); if(id === 'screen-new-audit') { const today = new Date(); const y = today.getFullYear(); const m = today.getMonth(); const firstDay = new Date(y, m, 1).toISOString().split('T')[0]; const lastDay = new Date(y, m + 1, 0).toISOString().split('T')[0]; const fromEl = document.getElementById('audit-from'); const toEl = document.getElementById('audit-to'); if(!fromEl.value) fromEl.value = firstDay; if(!toEl.value) toEl.value = lastDay; } }
+    function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); if(id === 'screen-menu') setTimeout(loadDashboardNotifications, 100); if(id === 'screen-new-audit') { const today = new Date(); const y = today.getFullYear(); const m = today.getMonth(); const firstDay = new Date(y, m, 1).toISOString().split('T')[0]; const lastDay = new Date(y, m + 1, 0).toISOString().split('T')[0]; const fromEl = document.getElementById('audit-from'); const toEl = document.getElementById('audit-to'); if(!fromEl.value) { fromEl.value = firstDay; setTimeout(() => setMonthPickerValue('mp-from', y, m), 0); } if(!toEl.value) { toEl.value = lastDay; setTimeout(() => setMonthPickerValue('mp-to', y, m), 0); } } }
 
     function detectColumns(headers) {
         const map = {}; 
@@ -1277,7 +1543,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // Show Suspense(P) urgent notification
         if (tsuspense > 0) {
             const suspenseMonthsStr = suspenseMonths.join(', ');
-            document.getElementById('suspense-notif-text').innerHTML = `<strong style="font-size:1rem; display:block; margin-bottom:4px; color:var(--danger);">⚠️ URGENT: Suspense(P) Parts Pending</strong> <span style="color:var(--text-muted);">You have <b>${tsuspense}</b> Suspense(P) part(s) not yet sent to Technical Centre in <b>${suspenseMonthsStr}</b>. Click to view.</span>`; 
+            document.getElementById('suspense-notif-text').innerHTML = `<strong style="font-size:1rem; display:block; margin-bottom:4px; color:var(--danger);">Suspense(P) — Action Required</strong> <span style="color:var(--text-muted);">You have <b>${tsuspense}</b> Suspense(P) part(s) not yet sent to Technical Centre in <b>${suspenseMonthsStr}</b>. Click to view.</span>`; 
             suspenseBanner.style.display = 'flex';
         } else {
             suspenseBanner.style.display = 'none';
@@ -1290,7 +1556,7 @@ window.addEventListener('DOMContentLoaded', () => {
             banner.className = 'notification-banner alert-mode';
             banner.style.display = 'flex'; 
         } else if (pendingDrafts > 0) {
-            document.getElementById('notif-text').innerHTML = `<strong style="font-size:1rem; display:block; margin-bottom:4px; color:var(--accent);">📝 Draft Pending</strong> <span style="color:var(--text-muted);">You have ${pendingDrafts} Draft session(s) pending completion. Click to view.</span>`; 
+            document.getElementById('notif-text').innerHTML = `<strong style="font-size:1rem; display:block; margin-bottom:4px; color:var(--accent);">Draft Pending</strong> <span style="color:var(--text-muted);">You have ${pendingDrafts} Draft session(s) pending completion. Click to view.</span>`; 
             banner.className = 'notification-banner info-mode';
             banner.style.display = 'flex';
         } else { 
@@ -1303,17 +1569,35 @@ window.addEventListener('DOMContentLoaded', () => {
         const keys = Object.keys(dbIndex);
         if(keys.length === 0) return showAppAlert("No audits saved. Please create an audit first.");
         
-        optContainer.innerHTML = '<div class="custom-option" data-value="__all__">📊 All Months Combined</div>';
+        optContainer.innerHTML = '<div class="custom-option" data-value="__all__">All Months Combined</div>';
         keys.forEach(k => { optContainer.innerHTML += `<div class="custom-option" data-value="${k}">${dbIndex[k].month} ${dbIndex[k].finalized ? '(Finalized)' : '(Draft)'}</div>`; });
         
-        document.getElementById('dash-content-area').style.display = 'none';
-        document.getElementById('dash-scope').value = ""; 
-        document.getElementById('wrap-dash-scope').querySelector('.trigger-text').innerText = "Select an Audit to View...";
         showScreen('screen-dashboard');
+
+        // Restore last session selection if available
+        const lastKey = sessionStorage.getItem('dash_last_key');
+        const lastFilter = sessionStorage.getItem('dash_last_filter') || 'all';
+        if (lastKey && (lastKey === '__all__' || dbIndex[lastKey])) {
+            // Restore the dropdown display
+            const matchOpt = optContainer.querySelector(`[data-value="${lastKey}"]`);
+            if (matchOpt) {
+                document.getElementById('dash-scope').value = lastKey;
+                document.getElementById('wrap-dash-scope').querySelector('.trigger-text').innerText = matchOpt.innerText;
+                matchOpt.classList.add('selected');
+            }
+            loadDashboardMonth(lastKey).then(() => {
+                if (lastFilter !== 'all') setDashFilter(lastFilter);
+            });
+        } else {
+            document.getElementById('dash-content-area').style.display = 'none';
+            document.getElementById('dash-scope').value = ""; 
+            document.getElementById('wrap-dash-scope').querySelector('.trigger-text').innerText = "Select an Audit to View...";
+        }
     }
 
     async function loadDashboardMonth(sessionKey) {
         if(!sessionKey) return;
+        sessionStorage.setItem('dash_last_key', sessionKey);
         showLoader(true);
 
         if(sessionKey === '__all__') {
@@ -1359,7 +1643,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // Update dashboard suspense notification
         const dashSuspenseNotif = document.getElementById('dash-suspense-notif');
         if (suspenseUrgent > 0) {
-            document.getElementById('dash-suspense-text').innerHTML = `<strong style="font-weight:700;">⚠️ URGENT:</strong> ${suspenseUrgent} Suspense(P) part${suspenseUrgent > 1 ? 's' : ''} need${suspenseUrgent === 1 ? 's' : ''} to be sent to Technical Centre immediately!`;
+            document.getElementById('dash-suspense-text').innerHTML = `<strong style="font-weight:700;">Action Required:</strong> ${suspenseUrgent} Suspense(P) part${suspenseUrgent > 1 ? 's' : ''} need${suspenseUrgent === 1 ? 's' : ''} to be sent to Technical Centre immediately!`;
             dashSuspenseNotif.style.display = 'flex';
         } else {
             dashSuspenseNotif.style.display = 'none';
@@ -1388,6 +1672,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function setDashFilter(filterType) {
         dashCurrentFilter = filterType;
+        sessionStorage.setItem('dash_last_filter', filterType);
         document.querySelectorAll('#dash-content-area .stat-card.active-filter').forEach(c => c.classList.remove('active-filter'));
         const btn = document.getElementById('dash-card-' + filterType);
         if(btn) btn.classList.add('active-filter');
@@ -1454,13 +1739,18 @@ window.addEventListener('DOMContentLoaded', () => {
             else if (entry.audited) statusHtml = `<span class="status-unclear">Unc</span>`;
             
             // Add urgent flag for suspense pending
-            if (isSuspensePending) statusHtml += ' <span style="background:var(--danger); color:white; padding:2px 6px; border-radius:4px; font-size:0.7rem; font-weight:700; margin-left:4px;">⚠️ URGENT</span>';
+            if (isSuspensePending) statusHtml += ' <span style="background:var(--danger); color:white; padding:2px 6px; border-radius:4px; font-size:0.7rem; font-weight:700; margin-left:4px;">URGENT</span>';
             
             const tr = document.createElement('tr');
             // Highlight entire row if suspense pending
             if (isSuspensePending) tr.style.background = 'rgba(239, 68, 68, 0.08)';
             
-            tr.innerHTML = `<td>${claimNo}</td><td>${statusHtml}</td><td>${row[dashColMap.ro_no] || '-'}</td><td>${row[dashColMap.claim_type] || '-'}</td><td>${row[dashColMap.causal_part] || '-'}</td><td style="color:var(--text-muted); max-width:100px; overflow:hidden; text-overflow:ellipsis;">${row[dashColMap.part_desc] || '-'}</td><td style="white-space:nowrap;">${row[dashColMap.prod_date] || '-'}</td><td>${row[dashColMap.amount] || '-'}</td><td style="color:var(--text-muted);">${(entry.findings||[]).join('; ')}</td><td style="color:var(--accent); font-style:italic; max-width:120px; overflow:hidden; text-overflow:ellipsis;">${entry.optional_remark || '-'}</td>`;
+            const dTooltip = [
+                entry.audited ? (isClear ? 'Clean' : 'Unclear') : 'Pending',
+                row[dashColMap.amount] ? fmtAmt(row[dashColMap.amount]) : '',
+                entry.findings && entry.findings[0] ? entry.findings[0].split(' [')[0].split(' (')[0] : ''
+            ].filter(Boolean).join(' · ');
+            tr.innerHTML = `<td>${claimNo}</td><td>${statusHtml}</td><td>${row[dashColMap.ro_no] || '-'}</td><td>${row[dashColMap.claim_type] || '-'}</td><td>${row[dashColMap.causal_part] || '-'}</td><td style="color:var(--text-muted); max-width:100px; overflow:hidden; text-overflow:ellipsis;">${row[dashColMap.part_desc] || '-'}</td><td style="white-space:nowrap;">${row[dashColMap.prod_date] || '-'}</td><td>${row[dashColMap.amount] || '-'}</td><td style="color:var(--text-muted);">${(entry.findings||[]).join('; ')}</td><td style="color:var(--accent); font-style:italic; max-width:120px; overflow:hidden; text-overflow:ellipsis;">${entry.optional_remark || '-'}</td><td style="position:relative;padding:0;width:0;border:none;"><span class="row-tooltip">${dTooltip}</span></td>`;
             frag.appendChild(tr);
         }); tbody.appendChild(frag);
 
@@ -1474,8 +1764,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const fileInput = document.getElementById('audit-file'); const fromDate = document.getElementById('audit-from'); const toDate = document.getElementById('audit-to');
         
         let hasError = false;
-        if (!fromDate.value) { highlightError(fromDate); hasError = true; }
-        if (!toDate.value) { highlightError(toDate); hasError = true; }
+        if (!fromDate.value) { highlightError(document.querySelector('#mp-from .mp-display')); hasError = true; }
+        if (!toDate.value) { highlightError(document.querySelector('#mp-to .mp-display')); hasError = true; }
         if (!fileInput.files.length) { highlightError(fileInput); hasError = true; }
         
         if (hasError) return showAppAlert("Please fill in all highlighted fields.");
@@ -1592,7 +1882,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // Update suspense notification
         const suspenseNotif = document.getElementById('workspace-suspense-notif');
         if (suspenseUrgent > 0) {
-            document.getElementById('workspace-suspense-text').innerHTML = `<strong style="font-weight:700;">⚠️ URGENT:</strong> ${suspenseUrgent} Suspense(P) part${suspenseUrgent > 1 ? 's' : ''} need${suspenseUrgent === 1 ? 's' : ''} to be sent to Technical Centre immediately!`;
+            document.getElementById('workspace-suspense-text').innerHTML = `<strong style="font-weight:700;">Action Required:</strong> ${suspenseUrgent} Suspense(P) part${suspenseUrgent > 1 ? 's' : ''} need${suspenseUrgent === 1 ? 's' : ''} to be sent to Technical Centre immediately!`;
             suspenseNotif.style.display = 'flex';
         } else {
             suspenseNotif.style.display = 'none';
@@ -1639,13 +1929,18 @@ window.addEventListener('DOMContentLoaded', () => {
             else if (entry.audited) statusHtml = `<span class="status-unclear">Unc</span>`;
             
             // Add urgent flag for suspense pending
-            if (isSuspensePending) statusHtml += ' <span style="background:var(--danger); color:white; padding:2px 6px; border-radius:4px; font-size:0.7rem; font-weight:700; margin-left:4px;">⚠️ URGENT</span>';
+            if (isSuspensePending) statusHtml += ' <span style="background:var(--danger); color:white; padding:2px 6px; border-radius:4px; font-size:0.7rem; font-weight:700; margin-left:4px;">URGENT</span>';
             
             const tr = document.createElement('tr'); tr.onclick = () => openAuditModal(start + i);
             // Highlight entire row if suspense pending
             if (isSuspensePending) tr.style.background = 'rgba(239, 68, 68, 0.08)';
             
-            tr.innerHTML = `<td>${claimNo}</td><td>${statusHtml}</td><td>${row[colMap.ro_no] || '-'}</td><td>${row[colMap.claim_type] || '-'}</td><td>${row[colMap.causal_part] || '-'}</td><td style="color:var(--text-muted); max-width:100px; overflow:hidden; text-overflow:ellipsis;">${row[colMap.part_desc] || '-'}</td><td style="white-space:nowrap;">${row[colMap.prod_date] || '-'}</td><td>${row[colMap.amount] || '-'}</td><td style="color:var(--text-muted);">${(entry.findings||[]).join('; ')}</td><td style="color:var(--accent); font-style:italic; max-width:120px; overflow:hidden; text-overflow:ellipsis;">${entry.optional_remark || '-'}</td>`;
+            const tooltipText = [
+                entry.audited ? (isClear ? 'Clean' : 'Unclear') : 'Pending',
+                row[colMap.amount] ? fmtAmt(row[colMap.amount]) : '',
+                entry.findings && entry.findings[0] ? entry.findings[0].split(' [')[0].split(' (')[0] : ''
+            ].filter(Boolean).join(' · ');
+            tr.innerHTML = `<td>${claimNo}</td><td>${statusHtml}</td><td>${row[colMap.ro_no] || '-'}</td><td>${row[colMap.claim_type] || '-'}</td><td>${row[colMap.causal_part] || '-'}</td><td style="color:var(--text-muted); max-width:100px; overflow:hidden; text-overflow:ellipsis;">${row[colMap.part_desc] || '-'}</td><td style="white-space:nowrap;">${row[colMap.prod_date] || '-'}</td><td>${row[colMap.amount] || '-'}</td><td style="color:var(--text-muted);">${(entry.findings||[]).join('; ')}</td><td style="color:var(--accent); font-style:italic; max-width:120px; overflow:hidden; text-overflow:ellipsis;">${entry.optional_remark || '-'}</td><td style="position:relative;padding:0;width:0;border:none;"><span class="row-tooltip">${tooltipText}</span></td>`;
             frag.appendChild(tr);
         }); tbody.appendChild(frag);
         const maxPage = Math.ceil(currentFilteredData.length / pageSize) || 1; document.getElementById('page-indicator').innerText = `${currentPage} / ${maxPage}`;
@@ -1674,11 +1969,24 @@ window.addEventListener('DOMContentLoaded', () => {
         document.getElementById('modal-suspense-box').setAttribute('data-status', status);
     }
 
-    function closeModal() { document.getElementById('audit-modal').classList.remove('active'); const r=document.getElementById('modal-remark'); if(r) r.value=''; const rb=document.getElementById('modal-remark-box'); if(rb) rb.style.display='block'; }
+    function closeModal() {
+        const modal = document.getElementById('audit-modal');
+        modal.classList.remove('active');
+        modal.classList.remove('side-panel');
+        const r = document.getElementById('modal-remark'); if(r) r.value='';
+        const rb = document.getElementById('modal-remark-box'); if(rb) rb.style.display='block';
+        // If side panel was active, restore modal to body-level
+        const wrapperEl = document.getElementById('wide-layout-wrapper');
+        if (wrapperEl && modal.closest('#wide-layout-wrapper')) {
+            document.body.appendChild(modal);
+            wrapperEl.remove();
+        }
+    }
 
     function openAuditModal(filteredIndex) {
         activeClaimRowIndex = filteredIndex; const row = currentFilteredData[filteredIndex];
         const claimNo = row[colMap.claim_no]; document.getElementById('modal-claim-no').innerText = claimNo;
+        const partDesc = colMap.part_desc ? (row[colMap.part_desc] || '') : ''; const partSubtitle = document.getElementById('modal-part-subtitle'); if(partSubtitle) partSubtitle.innerText = partDesc;
         
         const displayKeys = ["ro_no", "claim_type", "causal_part", "part_desc", "prod_date", "amount"]; let detailsHtml = '';
         displayKeys.forEach(k => { if(colMap[k]) { let val = row[colMap[k]] || "-"; let lbl = colMap[k].replace(/_/g, " "); detailsHtml += `<div class="detail-item"><span class="detail-lbl">${lbl}</span><span class="detail-val">${val}</span></div>`; } });
@@ -1749,7 +2057,39 @@ window.addEventListener('DOMContentLoaded', () => {
             suspenseBox.style.display = 'none';
         }
         
-        document.getElementById('audit-modal').classList.add('active');
+        // Scroll modal body to top on every open
+        const modalBody = document.querySelector('#audit-modal .modal-body');
+        if (modalBody) modalBody.scrollTop = 0;
+
+        const modal = document.getElementById('audit-modal');
+        if (window.innerWidth >= 1100) {
+            // Wide screen: side panel mode
+            modal.classList.add('side-panel');
+            modal.classList.remove('active');
+            // Ensure workspace uses wide layout
+            const ws = document.getElementById('screen-workspace');
+            if (!document.getElementById('wide-layout-wrapper')) {
+                const tableWrap = ws.querySelector('.table-wrap');
+                const pagi = ws.querySelector('.pagination');
+                const wrapper = document.createElement('div');
+                wrapper.id = 'wide-layout-wrapper';
+                wrapper.className = 'wide-layout-wrapper';
+                const left = document.createElement('div');
+                left.className = 'wide-left';
+                const right = document.createElement('div');
+                right.className = 'wide-right';
+                tableWrap.parentNode.insertBefore(wrapper, tableWrap);
+                left.appendChild(tableWrap);
+                left.appendChild(pagi);
+                right.appendChild(modal);
+                wrapper.appendChild(left);
+                wrapper.appendChild(right);
+                ws.appendChild(wrapper);
+            }
+        } else {
+            modal.classList.remove('side-panel');
+            modal.classList.add('active');
+        }
     }
 
     async function saveClaimAudit() {
@@ -1825,14 +2165,14 @@ window.addEventListener('DOMContentLoaded', () => {
         const pending = currentData.length - audited; const unclear = audited - clear;
 
         // Build findings summary
-        let summary = `📋 Audit Summary\n`;
-        summary += `✅ Clean: ${clear}\n`;
-        summary += `⚠️ Unclear: ${unclear}\n`;
-        summary += `⏳ Pending: ${pending}\n`;
+        let summary = `Audit Summary\n`;
+        summary += `Clean:   ${clear}\n`;
+        summary += `Unclear: ${unclear}\n`;
+        summary += `Pending: ${pending}\n`;
         if(Object.keys(findingCounts).length > 0) {
             summary += `\nFindings Breakdown:\n`;
             for(const [f, c] of Object.entries(findingCounts)) {
-                summary += `• ${f}: ${c}\n`;
+                summary += `  ${f}: ${c}\n`;
             }
         }
         summary += `\nFinalize this audit?`;
@@ -1843,7 +2183,7 @@ window.addEventListener('DOMContentLoaded', () => {
             session.finalized = true;
             if(auditRemark) session.audit_remark = auditRemark;
             await saveSessionToDB(session);
-            showLoader(false); showAppAlert("Audit Finalized & Saved to Previous Audits."); showScreen('screen-menu');
+            showLoader(false); showAppAlert("Audit finalized and saved."); showScreen('screen-menu');
         };
 
         // Show summary confirm first, then prompt for optional remark (allows empty)
@@ -2033,14 +2373,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 // Clear section
                 if(combinedClear.length > 0) {
-                    aoa.push([`✓ CLEAR CLAIMS (${combinedClear.length})`]);
+                    aoa.push([`CLEAR CLAIMS (${combinedClear.length})`]);
                     aoa.push(headers);
                     combinedClear.forEach(row => aoa.push(Object.values(row)));
                     aoa.push(['']);
                 }
                 // Unclear section
                 if(combinedUnclear.length > 0) {
-                    aoa.push([`✗ UNCLEAR / PENDING CLAIMS (${combinedUnclear.length})`]);
+                    aoa.push([`UNCLEAR / PENDING CLAIMS (${combinedUnclear.length})`]);
                     aoa.push(headers);
                     combinedUnclear.forEach(row => aoa.push(Object.values(row)));
                 }
@@ -2192,7 +2532,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
                     if(combinedClear.length > 0) {
                         doc.setFontSize(10); doc.setFont(undefined,'bold'); doc.setTextColor(16,185,129);
-                        doc.text(`✓ CLEAR CLAIMS  (${combinedClear.length})`, 14, startY);
+                        doc.text(`CLEAR CLAIMS  (${combinedClear.length})`, 14, startY);
                         doc.autoTable({
                             startY: startY + 4,
                             head: [headers],
@@ -2206,7 +2546,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     }
                     if(combinedUnclear.length > 0) {
                         doc.setFontSize(10); doc.setFont(undefined,'bold'); doc.setTextColor(245,158,11);
-                        doc.text(`✗ UNCLEAR / PENDING CLAIMS  (${combinedUnclear.length})`, 14, startY);
+                        doc.text(`UNCLEAR / PENDING CLAIMS  (${combinedUnclear.length})`, 14, startY);
                         doc.autoTable({
                             startY: startY + 4,
                             head: [headers],
@@ -2303,7 +2643,7 @@ window.addEventListener('DOMContentLoaded', () => {
         setCustomSelectValue('wrap-new-code-type', 'unclear');
         
         renderSettingsCodes();
-        showAppAlert("Custom Code Added Successfully!");
+        showAppAlert("Custom code saved.");
     }
 
     async function deleteCustomCode(key) {
@@ -2336,7 +2676,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         if (usedIn > 0) {
             showAppConfirm(
-                `⚠️ Warning: Code "${key}" is used in ${usedIn} audited claim(s).\n\nDeleting it won't erase those findings from saved audits, but re-opening and re-saving those claims will default them to Clean.\n\nProceed?`,
+                `Code "${key}" is in use across ${usedIn} claim(s).\n\nExisting findings are preserved, but re-saving those claims will reset them to Clean.\n\nProceed?`,
                 doDelete
             );
         } else {
@@ -2537,7 +2877,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const _oSS=showScreen;
     showScreen=function(id){_oSS(id);if(id==='screen-backup')setTimeout(initGistUI,50);};
 
-    function toggleGistTokenVisibility(){const i=document.getElementById('gist-token-input'),b=document.getElementById('gist-token-eye');const hidden=i.style.webkitTextSecurity==='disc';i.style.webkitTextSecurity=hidden?'none':'disc';i.style.textSecurity=hidden?'none':'disc';b.innerText=hidden?'Hide':'Show';}
+    function toggleGistTokenVisibility(){const i=document.getElementById('gist-token-input'),b=document.getElementById('gist-token-eye');const hidden=i.style.webkitTextSecurity==='disc';i.style.webkitTextSecurity=hidden?'none':'disc';i.style.textSecurity=hidden?'none':'disc';b.innerHTML=hidden?`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;}
 
     async function connectGist(){
         const tok=document.getElementById('gist-token-input').value.trim();
@@ -2640,13 +2980,210 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
     // --- PC KEYBOARD SHORTCUTS (Workspace / Auditing only) ---
+    // ── SHORTCUT OVERLAY helpers ──
+    function toggleShortcutOverlay() {
+        const el = document.getElementById('shortcut-overlay');
+        el.classList.toggle('active');
+    }
+    function closeShortcutOverlay(e) {
+        if (e.target === document.getElementById('shortcut-overlay')) toggleShortcutOverlay();
+    }
+
+    // ── DROPDOWN keyboard navigation ──
+
+    // ══════════════════════════════════════════════════
+    // CUSTOM MONTH-YEAR PICKER
+    // ══════════════════════════════════════════════════
+    const MP_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const _mpState = {}; // { wrapperId: { year, month } }
+
+    function _mpInit(wrapperId) {
+        if (!_mpState[wrapperId]) {
+            const now = new Date();
+            _mpState[wrapperId] = { year: now.getFullYear(), month: now.getMonth() };
+        }
+    }
+
+    function renderMonthGrid(wrapperId) {
+        _mpInit(wrapperId);
+        const state = _mpState[wrapperId];
+        const now = new Date();
+        const container = document.getElementById(wrapperId + '-months');
+        const yearLabel = document.getElementById(wrapperId + '-year');
+        if (!container || !yearLabel) return;
+
+        yearLabel.innerText = state.year;
+
+        // Get currently selected month for this picker (from hidden input)
+        const wrapper = document.getElementById(wrapperId);
+        const targetId = wrapper.getAttribute('data-target');
+        const hiddenVal = document.getElementById(targetId).value; // YYYY-MM-DD or ''
+        let selMonth = -1, selYear = -1;
+        if (hiddenVal) {
+            const d = new Date(hiddenVal);
+            selMonth = d.getMonth(); selYear = d.getFullYear();
+        }
+
+        container.innerHTML = '';
+        MP_MONTHS.forEach((name, idx) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'mp-month-btn';
+            btn.innerText = name;
+
+            const isSelected = (idx === selMonth && state.year === selYear);
+            const isCurrent = (idx === now.getMonth() && state.year === now.getFullYear());
+            if (isSelected) btn.classList.add('selected');
+            if (isCurrent && !isSelected) btn.classList.add('current-month');
+
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                selectMonth(wrapperId, state.year, idx);
+            };
+            container.appendChild(btn);
+        });
+    }
+
+    function toggleMonthPicker(wrapperId) {
+        const wrapper = document.getElementById(wrapperId);
+        const isOpen = wrapper.classList.contains('open');
+
+        // Close all pickers
+        document.querySelectorAll('.mp-wrapper.open').forEach(w => w.classList.remove('open'));
+
+        if (!isOpen) {
+            _mpInit(wrapperId);
+            renderMonthGrid(wrapperId);
+            wrapper.classList.add('open');
+        }
+    }
+
+    function shiftYear(wrapperId, delta) {
+        _mpInit(wrapperId);
+        _mpState[wrapperId].year += delta;
+        renderMonthGrid(wrapperId);
+    }
+
+    function selectMonth(wrapperId, year, monthIdx) {
+        // Build YYYY-MM-DD value (first day of month)
+        const mm = String(monthIdx + 1).padStart(2, '0');
+        const firstDay = `${year}-${mm}-01`;
+        // Last day of month
+        const lastDay = new Date(year, monthIdx + 1, 0).toISOString().split('T')[0];
+
+        const wrapper = document.getElementById(wrapperId);
+        const targetId = wrapper.getAttribute('data-target');
+
+        // Set hidden input value: from = first day, to = last day
+        const hiddenInput = document.getElementById(targetId);
+        if (targetId === 'audit-from') hiddenInput.value = firstDay;
+        else hiddenInput.value = lastDay;
+
+        // Update display label with animation
+        const label = document.getElementById(wrapperId + '-label');
+        label.classList.remove('placeholder');
+        label.style.opacity = '0';
+        label.style.transform = 'translateY(4px)';
+        setTimeout(() => {
+            label.innerText = MP_MONTHS[monthIdx] + ' ' + year;
+            label.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+            label.style.opacity = '1';
+            label.style.transform = 'translateY(0)';
+        }, 80);
+
+        // Update internal state
+        _mpState[wrapperId] = { year, month: monthIdx };
+
+        // Close picker with slight delay for selection animation
+        setTimeout(() => {
+            wrapper.classList.remove('open');
+        }, 180);
+
+        // Re-render to show selection
+        renderMonthGrid(wrapperId);
+    }
+
+    function setMonthPickerValue(wrapperId, year, monthIdx) {
+        _mpInit(wrapperId);
+        _mpState[wrapperId] = { year, month: monthIdx };
+        const label = document.getElementById(wrapperId + '-label');
+        if (label) {
+            label.classList.remove('placeholder');
+            label.innerText = MP_MONTHS[monthIdx] + ' ' + year;
+        }
+        renderMonthGrid(wrapperId);
+    }
+
+    // Close picker on outside click
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.mp-wrapper')) {
+            document.querySelectorAll('.mp-wrapper.open').forEach(w => w.classList.remove('open'));
+        }
+    });
+
+    // Initialize labels as placeholder style on load
+    document.addEventListener('DOMContentLoaded', function() {
+        ['mp-from', 'mp-to'].forEach(id => {
+            const lbl = document.getElementById(id + '-label');
+            if (lbl && lbl.innerText === 'Select month') lbl.classList.add('placeholder');
+        });
+    });
+
     document.addEventListener('keydown', function(e) {
         const workspaceActive = document.getElementById('screen-workspace').classList.contains('active');
         const dashboardActive = document.getElementById('screen-dashboard').classList.contains('active');
+        const menuActive = document.getElementById('screen-menu').classList.contains('active');
         const modalOpen = document.getElementById('audit-modal').classList.contains('active');
         const dialogOpen = document.getElementById('app-dialog').classList.contains('active');
+        const shortcutOpen = document.getElementById('shortcut-overlay').classList.contains('active');
+        const openDropdown = document.querySelector('.custom-select-wrapper.open');
 
-        // Dialog keyboard: Enter = Confirm, Escape = Cancel
+        // --- Shortcut overlay: ? to toggle, Escape to close ---
+        if (shortcutOpen) {
+            if (e.key === 'Escape') { e.preventDefault(); toggleShortcutOverlay(); }
+            return;
+        }
+
+        // --- ? anywhere = open shortcut help (#20) ---
+        if (e.key === '?' && !dialogOpen && !modalOpen && !document.activeElement.matches('input, textarea')) {
+            e.preventDefault(); toggleShortcutOverlay(); return;
+        }
+
+        // --- Dropdown keyboard navigation (#16, 17, 18) ---
+        if (openDropdown) {
+            const opts = Array.from(openDropdown.querySelectorAll('.custom-option'));
+            const focused = openDropdown.querySelector('.custom-option.kb-focus');
+            const idx = focused ? opts.indexOf(focused) : opts.findIndex(o => o.classList.contains('selected'));
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
+                return;
+            }
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                const next = opts[Math.min(idx + 1, opts.length - 1)];
+                opts.forEach(o => o.classList.remove('kb-focus'));
+                next.classList.add('kb-focus');
+                next.scrollIntoView({ block: 'nearest' });
+                return;
+            }
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                const prev = opts[Math.max(idx - 1, 0)];
+                opts.forEach(o => o.classList.remove('kb-focus'));
+                prev.classList.add('kb-focus');
+                prev.scrollIntoView({ block: 'nearest' });
+                return;
+            }
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const target = focused || opts[Math.max(idx, 0)];
+                if (target) { opts.forEach(o => o.classList.remove('kb-focus')); target.click(); }
+                return;
+            }
+        }
+
+        // --- Dialog keyboard: Enter = Confirm, Escape = Cancel ---
         if (dialogOpen) {
             if (e.key === 'Escape') {
                 e.preventDefault();
@@ -2656,26 +3193,27 @@ window.addEventListener('DOMContentLoaded', () => {
             }
             if (e.key === 'Enter') {
                 e.preventDefault();
-                // Always trigger confirm button — works for both plain confirm and password prompt
                 document.getElementById('dialog-btn-yes').click();
             }
             return;
         }
 
-        // When audit modal is open: Enter = Save Remark
+        // --- Audit modal bindings ---
         if (modalOpen) {
             if (e.key === 'Escape') { e.preventDefault(); closeModal(); return; }
+            const activeEl = document.activeElement;
+            const isTypingInModal = activeEl && (activeEl.id === 'modal-remark' || activeEl.id === 'modal-extra-text' || activeEl.tagName === 'TEXTAREA');
+
+            // #19 — 0-9 quick-select discrepancy (when not typing in input)
+            if (!isTypingInModal && /^[0-9]$/.test(e.key) && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                const match = document.querySelector('#wrap-modal-disc .custom-option[data-value="' + e.key + '"]');
+                if (match) { e.preventDefault(); match.click(); }
+                return;
+            }
+
             if (e.key === 'Enter') {
                 e.preventDefault();
-                // Ignore Enter if user is typing in any input/textarea inside the modal
-                const activeEl = document.activeElement;
-                const isTypingInModal = activeEl && (
-                    activeEl.id === 'modal-remark' ||
-                    activeEl.id === 'modal-extra-text' ||
-                    activeEl.tagName === 'TEXTAREA'
-                );
-                if (isTypingInModal) return; // Let them type freely, don't auto-save
-                // Don't save if dropdown is open
+                if (isTypingInModal) return;
                 if (document.querySelector('.custom-select-wrapper.open')) {
                     document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
                     return;
@@ -2685,22 +3223,55 @@ window.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Dashboard autofocus search — same behaviour as workspace
-        if (dashboardActive && !dialogOpen) {
-            const dashSearch = document.getElementById('dash-search');
-            const isTypingInDash = document.activeElement === dashSearch;
-            if (!isTypingInDash && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
-                e.preventDefault(); dashSearch.focus(); dashSearch.value += e.key; handleDashSearch(); return;
+        // --- Escape: back to menu from any simple screen (#1, 3, 4, 5, 6, 7) ---
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            if (workspaceActive) { requestExitWorkspace(); return; } // #8
+            const screens = ['screen-dashboard','screen-archive','screen-reports','screen-security','screen-backup','screen-settings','screen-new-audit'];
+            for (const sid of screens) {
+                if (document.getElementById(sid).classList.contains('active')) {
+                    showScreen('screen-menu'); return;
+                }
             }
-            if (!isTypingInDash && e.key === 'Backspace') { e.preventDefault(); dashSearch.focus(); return; }
         }
 
+        // --- Dashboard: search autofocus + arrow pagination (#12) ---
+        if (dashboardActive) {
+            const dashSearch = document.getElementById('dash-search');
+            const isTyping = document.activeElement === dashSearch;
+            if (e.key === 'ArrowLeft' && !isTyping) { e.preventDefault(); changeDashPage(-1); return; }
+            if (e.key === 'ArrowRight' && !isTyping) { e.preventDefault(); changeDashPage(1); return; }
+            if (!isTyping && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                e.preventDefault(); dashSearch.focus(); dashSearch.value += e.key; handleDashSearch(); return;
+            }
+            if (!isTyping && e.key === 'Backspace') { e.preventDefault(); dashSearch.focus(); return; }
+        }
+
+        // --- Menu grid arrow navigation (#27) ---
+        if (menuActive) {
+            const cards = Array.from(document.querySelectorAll('.menu-card'));
+            const focused = document.activeElement;
+            const idx = cards.indexOf(focused);
+            if (idx === -1) return;
+            const cols = window.innerWidth >= 500 ? Math.round(cards.length / Math.ceil(cards.length / 2)) : 1;
+            let next = -1;
+            if (e.key === 'ArrowRight') next = Math.min(idx + 1, cards.length - 1);
+            else if (e.key === 'ArrowLeft') next = Math.max(idx - 1, 0);
+            else if (e.key === 'ArrowDown') next = Math.min(idx + cols, cards.length - 1);
+            else if (e.key === 'ArrowUp') next = Math.max(idx - cols, 0);
+            if (next !== -1) { e.preventDefault(); cards[next].focus(); return; }
+        }
+
+        // --- Workspace bindings ---
         if (!workspaceActive) return;
 
         const searchInput = document.getElementById('search-claim');
         const isTypingInSearch = document.activeElement === searchInput;
 
-        // If already focused on search, let it type naturally — no interference at all
+        // #11 — Arrow keys: paginate
+        if (e.key === 'ArrowLeft' && !isTypingInSearch) { e.preventDefault(); changePage(-1); return; }
+        if (e.key === 'ArrowRight' && !isTypingInSearch) { e.preventDefault(); changePage(1); return; }
+
         if (isTypingInSearch) {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -2710,7 +3281,6 @@ window.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Enter key: open first visible claim in table
         if (e.key === 'Enter') {
             e.preventDefault();
             const firstRow = document.querySelector('#claims-tbody tr');
@@ -2718,20 +3288,18 @@ window.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Number/letter keys: auto-focus search and append character
         if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
-            e.preventDefault();
-            searchInput.focus();
-            searchInput.value += e.key;
-            handleSearch();
+            e.preventDefault(); searchInput.focus(); searchInput.value += e.key; handleSearch();
         }
-
-        // Backspace: focus search
-        if (e.key === 'Backspace') {
-            e.preventDefault();
-            searchInput.focus();
-        }
+        if (e.key === 'Backspace') { e.preventDefault(); searchInput.focus(); }
     });
+
+    // ── Dropdown: clear kb-focus when dropdown closes ──
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.custom-select-wrapper')) {
+            document.querySelectorAll('.custom-option.kb-focus').forEach(o => o.classList.remove('kb-focus'));
+        }
+    }, true);
 
     let dashChartInstance = null;
 
@@ -2839,6 +3407,9 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     // ── Connect — sign in + immediately check cloud state ──
+    // Owner identity verification (hash-protected, not human-readable)
+    const _ownerVerify = async (e) => (await sha256(e.toLowerCase().trim())) === '47f51db862f5e0714232e00b5669a3c152004576fac888a898c635be0f96cf91';
+
     async function connectGoogleDrive() {
         showLoader(true);
         try {
@@ -2850,6 +3421,28 @@ window.addEventListener('DOMContentLoaded', () => {
             if (!ur.ok) throw new Error("Could not verify Google account.");
             const user = await ur.json();
 
+            // Verify identity
+            const isOwner = await _ownerVerify(user.email || '');
+
+            if (!isOwner) {
+                // Non-owner must enter Client ID to proceed
+                showLoader(false);
+                showAppPrompt("Enter your Client ID to use Google Drive Sync:", false, async (clientId) => {
+                    if (!clientId || clientId.trim().length < 3) {
+                        return showAppAlert("Invalid Client ID. Access Denied.");
+                    }
+                    // Store with client ID tag
+                    localStorage.setItem('gdrive_connected', 'true');
+                    localStorage.setItem('gdrive_user_email', user.email || '');
+                    localStorage.setItem('gdrive_user_name', user.name || '');
+                    localStorage.setItem('gdrive_client_id', clientId.trim());
+                    initGdriveUI();
+                    await checkGdriveBackupStatus();
+                });
+                return;
+            }
+
+            // Owner - direct access
             localStorage.setItem('gdrive_connected', 'true');
             localStorage.setItem('gdrive_user_email', user.email || '');
             localStorage.setItem('gdrive_user_name', user.name || '');
@@ -2872,11 +3465,11 @@ window.addEventListener('DOMContentLoaded', () => {
         const restoreBtn = document.getElementById('gdrive-restore-btn');
         if (!statusBody) return;
 
-        statusBody.innerHTML = '<div style="color:var(--text-muted);font-size:0.78rem;">🔍 Checking Drive...</div>';
+        statusBody.innerHTML = '<div style="color:var(--text-muted);font-size:0.78rem;">Checking Drive...</div>';
 
         try {
             const tok = await getGdriveToken();
-            if (!tok) { statusBody.innerHTML = '<div style="color:var(--danger);font-size:0.78rem;">⚠️ Session expired. Reconnect to check.</div>'; return; }
+            if (!tok) { statusBody.innerHTML = '<div style="color:var(--danger);font-size:0.78rem;">Session expired. Please reconnect.</div>'; return; }
 
             const file = await findGdriveBackupFile(tok);
             _gdriveCloudInfo = file;
@@ -2891,7 +3484,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 statusBody.innerHTML = `
                     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                        <span style="font-size:1.1rem;">✅</span>
+                        <svg style="width:18px;height:18px;stroke:var(--success);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                         <div>
                             <div style="font-size:0.8rem;font-weight:700;color:var(--text-main);">Backup found on Drive</div>
                             <div style="font-size:0.7rem;color:var(--text-muted);">Saved: <b>${dateStr}</b>${sizeKB ? ' · ' + sizeKB : ''}</div>
@@ -2910,7 +3503,7 @@ window.addEventListener('DOMContentLoaded', () => {
                         restoreBtn.style.background = '#10b981';
                         restoreBtn.style.borderColor = '#10b981';
                         restoreBtn.style.color = 'white';
-                        restoreBtn.innerHTML = restoreBtn.innerHTML.replace('Restore from Drive', '⬇ Restore from Drive');
+                        restoreBtn.innerHTML = restoreBtn.innerHTML.replace('Restore from Drive', 'Restore from Drive');
                     }
                 } else {
                     if (hintBox) hintBox.style.display = 'none';
@@ -2919,7 +3512,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 // No backup on Drive
                 statusBody.innerHTML = `
                     <div style="display:flex;align-items:center;gap:8px;">
-                        <span style="font-size:1.1rem;">📭</span>
+                        <svg style="width:18px;height:18px;stroke:var(--text-muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
                         <div>
                             <div style="font-size:0.8rem;font-weight:700;color:var(--text-main);">No backup on Drive yet</div>
                             <div style="font-size:0.7rem;color:var(--text-muted);">Click <b>"Backup to Drive"</b> from your main device first.</div>
@@ -2934,7 +3527,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             }
         } catch(e) {
-            statusBody.innerHTML = `<div style="color:var(--danger);font-size:0.78rem;">⚠️ Error checking Drive: ${e.message}</div>`;
+            statusBody.innerHTML = `<div style="color:var(--danger);font-size:0.78rem;">Error checking Drive: ${e.message}</div>`;
         }
     }
 
@@ -2987,7 +3580,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
             showLoader(false);
             await checkGdriveBackupStatus(); // refresh status card
-            showToast(`✅ Backup saved to Google Drive! ${ds}`, 'success', 4000);
+            showToast(`Backup saved to Google Drive — ${ds}`, 'success', 4000);
         } catch(e) {
             showLoader(false);
             showAppAlert("Upload Failed: " + e.message);
@@ -3010,7 +3603,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         if (!_gdriveCloudInfo) {
-            return showAppAlert("❌ No backup found on Google Drive.\n\nGo to your main device → Backup & Restore → Google Drive → 'Backup to Drive' first.");
+            return showAppAlert("No backup found on Google Drive. Upload from your main device first.");
         }
 
         // Show what will be restored
@@ -3018,7 +3611,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const dateStr = modDate.toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
 
         showAppConfirm(
-            `Restore from Google Drive?\n\n📅 Backup saved: ${dateStr}\n\n⚠️ This will OVERWRITE all local data on this device.`,
+            `Restore from Google Drive?\n\nBackup date: ${dateStr}\n\nThis will overwrite all local data on this device.`,
             async () => {
                 showLoader(true);
                 try {
@@ -3043,7 +3636,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     // Keep gdrive connection on this device
                     localStorage.setItem('gdrive_connected', 'true');
                     showLoader(false);
-                    showAppAlert(`✅ Restore Successful!\n\nData from ${dateStr} has been loaded. App will reload.`);
+                    showAppAlert(`Restore complete. Data from ${dateStr} has been loaded. Reloading...`);
                     setTimeout(() => window.location.reload(), 2000);
                 } catch(e) {
                     showLoader(false);
