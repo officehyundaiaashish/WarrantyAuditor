@@ -239,6 +239,11 @@
             <span id="notif-text">Loading notifications...</span>
         </div>
 
+        <div id="suspense-notification" class="notification-banner" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.4); color: var(--danger); display: none;" onclick="buildDashboard()">
+            <svg style="width:24px; height:24px; flex-shrink:0; stroke:currentColor; stroke-width:2; fill:none;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <span id="suspense-notif-text">Loading suspense notifications...</span>
+        </div>
+
         <div class="menu-grid">
             <div class="menu-card" onclick="showScreen('screen-new-audit')">
                 <svg class="menu-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
@@ -321,6 +326,12 @@
             </div>
 
             <div id="dash-amount-stats" style="margin-bottom:20px;"></div>
+            
+            <div id="dash-suspense-notif" class="notification-banner" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.4); color: var(--danger); display: none; max-width: 100%; margin-bottom: 16px;">
+                <svg style="width:20px; height:20px; flex-shrink:0; stroke:currentColor; stroke-width:2; fill:none;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                <span id="dash-suspense-text"></span>
+            </div>
+            
             <button class="btn" id="btn-toggle-chart" onclick="toggleDashChart()" style="margin-bottom:16px; display:inline-flex; align-items:center; gap:8px;">
     <svg style="width:18px; height:18px; stroke:currentColor; stroke-width:2; fill:none; stroke-linecap:round; stroke-linejoin:round;" viewBox="0 0 24 24"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg> 
     Show Chart
@@ -545,6 +556,11 @@
 
         <div id="workspace-stats" style="margin-bottom: 16px;"></div>
         
+        <div id="workspace-suspense-notif" class="notification-banner" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.4); color: var(--danger); display: none; max-width: 100%; margin-bottom: 16px;">
+            <svg style="width:20px; height:20px; flex-shrink:0; stroke:currentColor; stroke-width:2; fill:none;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <span id="workspace-suspense-text"></span>
+        </div>
+        
         <div style="position:relative; margin-bottom:16px; width: 100%;">
             <svg style="position:absolute; left:12px; top:50%; transform:translateY(-50%); width:20px; height:20px; stroke:var(--text-muted); stroke-width:2; fill:none; z-index:5;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             <input type="text" id="search-claim" inputmode="numeric" class="input" placeholder="Search Claim No..." oninput="handleSearch()" style="padding-left:40px; padding-right:44px; margin-bottom:0;">
@@ -643,6 +659,21 @@
                 <div id="modal-extra-inputs" style="display: none; animation: slideFadeUp 0.2s ease;">
                     <label id="modal-extra-label">Additional Details</label>
                     <input type="text" id="modal-extra-text" class="input" placeholder="...">
+                </div>
+
+                <div id="modal-suspense-box" style="display:none; animation: slideFadeUp 0.2s ease; margin-bottom: 16px; padding: 16px; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px;">
+                    <label style="color: var(--danger); font-weight: 700; margin-bottom: 12px;">⚠️ Suspense(P) - Send to Technical Centre</label>
+                    <div style="margin-bottom: 12px;">
+                        <label style="font-size: 0.75rem; margin-bottom: 8px;">Part Sent Status</label>
+                        <div class="grid-2" style="gap: 8px;">
+                            <button type="button" class="btn" id="suspense-done-btn" onclick="selectSuspenseStatus('done')" style="margin: 0;">✓ Done</button>
+                            <button type="button" class="btn" id="suspense-no-btn" onclick="selectSuspenseStatus('no')" style="margin: 0;">✗ Not Yet</button>
+                        </div>
+                    </div>
+                    <div id="suspense-pod-box" style="display: none;">
+                        <label style="font-size: 0.75rem;">POD Number (Optional)</label>
+                        <input type="text" id="suspense-pod" class="input" placeholder="Enter POD number..." style="margin-bottom: 0;">
+                    </div>
                 </div>
 
                 <div id="modal-remark-box" style="display:block; animation: slideFadeUp 0.2s ease;">
@@ -928,7 +959,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const map = {}; 
         const lowerHeaders = headers.map(h => h.toString().toLowerCase().replace(/[\s_]/g, ''));
         const used = new Set(); // prevent two keys from grabbing same column
-        const fuzzy = { "claim_no": ["claimno","claimnumber","clmno","clm#"], "ro_no": ["rono","r/ono","repairorderno","ronumber"], "claim_type": ["claimtype","clmtype","typeofclaim"], "causal_part": ["causalpart","causalpartno","causalpartnumber","causalpno"], "amount": ["totalamt","totalamount","claimamount","netamount","netamt","amount","amt"], "part_desc": ["partdesc","partdescription","partname","partsname","itemdesc","itemdescription","description"], "prod_date": ["pdctndate","proddate","productiondate","mfgdate","manufacturedate","dateofmanufacture","prod.date","mfg.date","proddt","mfgdt","dateofmfg"] };
+        const fuzzy = { "claim_no": ["claimno","claimnumber","clmno","clm#"], "ro_no": ["rono","r/ono","repairorderno","ronumber"], "claim_type": ["claimtype","clmtype","typeofclaim"], "causal_part": ["causalpart","causalpartno","causalpartnumber","causalpno"], "amount": ["totalamt","totalamount","claimamount","netamount","netamt","amount","amt"], "part_desc": ["partdesc","partdescription","partname","partsname","itemdesc","itemdescription","description"], "prod_date": ["pdctndate","proddate","productiondate","mfgdate","manufacturedate","dateofmanufacture","prod.date","mfg.date","proddt","mfgdt","dateofmfg"], "status": ["status","claimstatus","clmstatus","state"] };
         for (const [key, terms] of Object.entries(fuzzy)) { 
             const idx = lowerHeaders.findIndex((h, i) => !used.has(i) && terms.some(t => h.includes(t))); 
             if (idx !== -1) { map[key] = headers[idx]; used.add(idx); } 
@@ -939,22 +970,37 @@ window.addEventListener('DOMContentLoaded', () => {
     // --- READ-ONLY DASHBOARD ENGINE ---
     async function loadDashboardNotifications() {
         let tunclear = 0; let tpending = 0; let pendingDrafts = 0;
+        let tsuspense = 0; // Track urgent Suspense(P) items
         let actionMonths = [];
+        let suspenseMonths = [];
         
         for (const key of Object.keys(dbIndex)) {
             if (dbIndex[key].finalized) { 
                 const session = await localforage.getItem(key);
                 if(session && session.raw_data) {
-                    let aud = 0; let clr = 0;
+                    let aud = 0; let clr = 0; let susp = 0;
                     session.raw_data.forEach(row => { 
                         const entry = session.audit_data[row[session.col_map.claim_no]]; 
-                        if(entry && entry.audited) { aud++; if(isClaimClean(entry.findings)) clr++; } 
+                        if(entry && entry.audited) { 
+                            aud++; 
+                            if(isClaimClean(entry.findings)) clr++; 
+                            // Count urgent suspense items
+                            if(entry.suspense_pending && entry.suspense_sent === 'no') {
+                                susp++;
+                            }
+                        } 
                     });
                     const p = session.raw_data.length - aud; const u = aud - clr; 
                     if(p > 0 || u > 0) { 
                         tunclear += u; tpending += p; 
                         if (!actionMonths.includes(dbIndex[key].month)) {
                             actionMonths.push(dbIndex[key].month);
+                        }
+                    }
+                    if(susp > 0) {
+                        tsuspense += susp;
+                        if (!suspenseMonths.includes(dbIndex[key].month)) {
+                            suspenseMonths.push(dbIndex[key].month);
                         }
                     }
                 }
@@ -964,6 +1010,17 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         
         const banner = document.getElementById('main-notification');
+        const suspenseBanner = document.getElementById('suspense-notification');
+        
+        // Show Suspense(P) urgent notification
+        if (tsuspense > 0) {
+            const suspenseMonthsStr = suspenseMonths.join(', ');
+            document.getElementById('suspense-notif-text').innerHTML = `<strong style="font-size:1rem; display:block; margin-bottom:4px; color:var(--danger);">⚠️ URGENT: Suspense(P) Parts Pending</strong> <span style="color:var(--text-muted);">You have <b>${tsuspense}</b> Suspense(P) part(s) not yet sent to Technical Centre in <b>${suspenseMonthsStr}</b>. Click to view.</span>`; 
+            suspenseBanner.style.display = 'flex';
+        } else {
+            suspenseBanner.style.display = 'none';
+        }
+        
         if (tunclear > 0 || tpending > 0) { 
             const monthsStr = actionMonths.join(', ');
             // HTML use kiya taaki title bold ho aur clear dikhe
@@ -1017,7 +1074,7 @@ window.addEventListener('DOMContentLoaded', () => {
             document.getElementById('dash-search').value = '';
         }
 
-        let aud = 0; let clr = 0;
+        let aud = 0; let clr = 0; let suspenseUrgent = 0;
         let amtAudited = 0, amtUnclear = 0, amtPending = 0;
 
         dashCurrentData.forEach(row => { 
@@ -1028,10 +1085,23 @@ window.addEventListener('DOMContentLoaded', () => {
                 aud++; 
                 amtAudited += amt;
                 if(isClaimClean(entry.findings)) { clr++; } else { amtUnclear += amt; }
+                // Count urgent suspense items
+                if(entry.suspense_pending && entry.suspense_sent === 'no') {
+                    suspenseUrgent++;
+                }
             } else {
                 amtPending += amt;
             }
         });
+        
+        // Update dashboard suspense notification
+        const dashSuspenseNotif = document.getElementById('dash-suspense-notif');
+        if (suspenseUrgent > 0) {
+            document.getElementById('dash-suspense-text').innerHTML = `<strong style="font-weight:700;">⚠️ URGENT:</strong> ${suspenseUrgent} Suspense(P) part${suspenseUrgent > 1 ? 's' : ''} need${suspenseUrgent === 1 ? 's' : ''} to be sent to Technical Centre immediately!`;
+            dashSuspenseNotif.style.display = 'flex';
+        } else {
+            dashSuspenseNotif.style.display = 'none';
+        }
         
         document.getElementById('dash-total').innerText = dashCurrentData.length; document.getElementById('dash-clean').innerText = clr;
         document.getElementById('dash-unclear').innerText = aud - clr; document.getElementById('dash-pending').innerText = dashCurrentData.length - aud;
@@ -1092,9 +1162,18 @@ window.addEventListener('DOMContentLoaded', () => {
         
         pageData.forEach(row => {
             const claimNo = row[dashColMap.claim_no]; const entry = dashAuditData[claimNo] || {}; const isClear = entry.audited && isClaimClean(entry.findings);
-            let statusHtml = '<span class="status-pending">Pen</span>'; if (isClear) statusHtml = '<span class="status-clear">Cln</span>'; else if (entry.audited) statusHtml = `<span class="status-unclear">Unc</span>`;
+            const isSuspensePending = entry.suspense_pending && entry.suspense_sent === 'no';
+            let statusHtml = '<span class="status-pending">Pen</span>'; 
+            if (isClear) statusHtml = '<span class="status-clear">Cln</span>'; 
+            else if (entry.audited) statusHtml = `<span class="status-unclear">Unc</span>`;
+            
+            // Add urgent flag for suspense pending
+            if (isSuspensePending) statusHtml += ' <span style="background:var(--danger); color:white; padding:2px 6px; border-radius:4px; font-size:0.7rem; font-weight:700; margin-left:4px;">⚠️ URGENT</span>';
             
             const tr = document.createElement('tr');
+            // Highlight entire row if suspense pending
+            if (isSuspensePending) tr.style.background = 'rgba(239, 68, 68, 0.08)';
+            
             tr.innerHTML = `<td>${claimNo}</td><td>${statusHtml}</td><td>${row[dashColMap.ro_no] || '-'}</td><td>${row[dashColMap.claim_type] || '-'}</td><td>${row[dashColMap.causal_part] || '-'}</td><td style="color:var(--text-muted); max-width:100px; overflow:hidden; text-overflow:ellipsis;">${row[dashColMap.part_desc] || '-'}</td><td style="white-space:nowrap;">${row[dashColMap.prod_date] || '-'}</td><td>${row[dashColMap.amount] || '-'}</td><td style="color:var(--text-muted);">${(entry.findings||[]).join('; ')}</td><td style="color:var(--accent); font-style:italic; max-width:120px; overflow:hidden; text-overflow:ellipsis;">${entry.optional_remark || '-'}</td>`;
             frag.appendChild(tr);
         }); tbody.appendChild(frag);
@@ -1204,7 +1283,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateStats() {
-        let audited = 0; let clear = 0;
+        let audited = 0; let clear = 0; let suspenseUrgent = 0;
         let amtAudited = 0, amtUnclear = 0, amtPending = 0;
 
         currentData.forEach(row => { 
@@ -1215,10 +1294,23 @@ window.addEventListener('DOMContentLoaded', () => {
                 audited++; 
                 amtAudited += amt;
                 if(isClaimClean(entry.findings)) { clear++; } else { amtUnclear += amt; }
+                // Count urgent suspense items
+                if(entry.suspense_pending && entry.suspense_sent === 'no') {
+                    suspenseUrgent++;
+                }
             } else {
                 amtPending += amt;
             }
         });
+        
+        // Update suspense notification
+        const suspenseNotif = document.getElementById('workspace-suspense-notif');
+        if (suspenseUrgent > 0) {
+            document.getElementById('workspace-suspense-text').innerHTML = `<strong style="font-weight:700;">⚠️ URGENT:</strong> ${suspenseUrgent} Suspense(P) part${suspenseUrgent > 1 ? 's' : ''} need${suspenseUrgent === 1 ? 's' : ''} to be sent to Technical Centre immediately!`;
+            suspenseNotif.style.display = 'flex';
+        } else {
+            suspenseNotif.style.display = 'none';
+        }
         
         const html = `
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px;">
@@ -1255,13 +1347,45 @@ window.addEventListener('DOMContentLoaded', () => {
         const tbody = document.getElementById('claims-tbody'); tbody.innerHTML = ''; const start = (currentPage - 1) * pageSize; const pageData = currentFilteredData.slice(start, start + pageSize); const frag = document.createDocumentFragment();
         pageData.forEach((row, i) => {
             const claimNo = row[colMap.claim_no]; const entry = currentAuditData[claimNo] || {}; const isClear = entry.audited && isClaimClean(entry.findings);
-            let statusHtml = '<span class="status-pending">Pen</span>'; if (isClear) statusHtml = '<span class="status-clear">Cln</span>'; else if (entry.audited) statusHtml = `<span class="status-unclear">Unc</span>`;
+            const isSuspensePending = entry.suspense_pending && entry.suspense_sent === 'no';
+            let statusHtml = '<span class="status-pending">Pen</span>'; 
+            if (isClear) statusHtml = '<span class="status-clear">Cln</span>'; 
+            else if (entry.audited) statusHtml = `<span class="status-unclear">Unc</span>`;
+            
+            // Add urgent flag for suspense pending
+            if (isSuspensePending) statusHtml += ' <span style="background:var(--danger); color:white; padding:2px 6px; border-radius:4px; font-size:0.7rem; font-weight:700; margin-left:4px;">⚠️ URGENT</span>';
+            
             const tr = document.createElement('tr'); tr.onclick = () => openAuditModal(start + i);
+            // Highlight entire row if suspense pending
+            if (isSuspensePending) tr.style.background = 'rgba(239, 68, 68, 0.08)';
+            
             tr.innerHTML = `<td>${claimNo}</td><td>${statusHtml}</td><td>${row[colMap.ro_no] || '-'}</td><td>${row[colMap.claim_type] || '-'}</td><td>${row[colMap.causal_part] || '-'}</td><td style="color:var(--text-muted); max-width:100px; overflow:hidden; text-overflow:ellipsis;">${row[colMap.part_desc] || '-'}</td><td style="white-space:nowrap;">${row[colMap.prod_date] || '-'}</td><td>${row[colMap.amount] || '-'}</td><td style="color:var(--text-muted);">${(entry.findings||[]).join('; ')}</td><td style="color:var(--accent); font-style:italic; max-width:120px; overflow:hidden; text-overflow:ellipsis;">${entry.optional_remark || '-'}</td>`;
             frag.appendChild(tr);
         }); tbody.appendChild(frag);
         const maxPage = Math.ceil(currentFilteredData.length / pageSize) || 1; document.getElementById('page-indicator').innerText = `${currentPage} / ${maxPage}`;
         document.getElementById('btn-prev').disabled = currentPage === 1; document.getElementById('btn-next').disabled = currentPage === maxPage;
+    }
+
+    function selectSuspenseStatus(status) {
+        const doneBtn = document.getElementById('suspense-done-btn');
+        const noBtn = document.getElementById('suspense-no-btn');
+        const podBox = document.getElementById('suspense-pod-box');
+        
+        // Reset button styles
+        doneBtn.classList.remove('primary');
+        noBtn.classList.remove('primary');
+        
+        // Highlight selected button
+        if (status === 'done') {
+            doneBtn.classList.add('primary');
+            podBox.style.display = 'block';
+        } else {
+            noBtn.classList.add('primary');
+            podBox.style.display = 'none';
+        }
+        
+        // Store selection in a data attribute
+        document.getElementById('modal-suspense-box').setAttribute('data-status', status);
     }
 
     function closeModal() { document.getElementById('audit-modal').classList.remove('active'); const r=document.getElementById('modal-remark'); if(r) r.value=''; const rb=document.getElementById('modal-remark-box'); if(rb) rb.style.display='block'; }
@@ -1314,6 +1438,31 @@ window.addEventListener('DOMContentLoaded', () => {
             const isClean = (discVal === '0' || (DISCREPANCY_TYPES[discVal] && (DISCREPANCY_TYPES[discVal].includes('None Found') || DISCREPANCY_TYPES[discVal].includes('[CLN]'))));
             remarkBox.style.display = 'block';
         }
+        
+        // Handle Suspense(P) claims
+        const suspenseBox = document.getElementById('modal-suspense-box');
+        const suspensePodInput = document.getElementById('suspense-pod');
+        const claimStatus = colMap.status ? String(row[colMap.status] || '').toUpperCase() : '';
+        const isSuspense = claimStatus.includes('SUSPENSE') && claimStatus.includes('(P)');
+        
+        if (isSuspense) {
+            suspenseBox.style.display = 'block';
+            // Load existing suspense data if available
+            if (entry && entry.suspense_sent) {
+                selectSuspenseStatus(entry.suspense_sent);
+                if (entry.suspense_pod) suspensePodInput.value = entry.suspense_pod;
+            } else {
+                // Reset to default
+                document.getElementById('suspense-done-btn').classList.remove('primary');
+                document.getElementById('suspense-no-btn').classList.remove('primary');
+                document.getElementById('suspense-pod-box').style.display = 'none';
+                suspensePodInput.value = '';
+                suspenseBox.removeAttribute('data-status');
+            }
+        } else {
+            suspenseBox.style.display = 'none';
+        }
+        
         document.getElementById('audit-modal').classList.add('active');
     }
 
@@ -1340,6 +1489,22 @@ window.addEventListener('DOMContentLoaded', () => {
         // Save optional remark
         const optRemark = document.getElementById('modal-remark');
         if(optRemark && optRemark.value.trim()) entry.optional_remark = optRemark.value.trim();
+        
+        // Save Suspense(P) tracking data
+        const suspenseBox = document.getElementById('modal-suspense-box');
+        if (suspenseBox && suspenseBox.style.display !== 'none') {
+            const suspenseStatus = suspenseBox.getAttribute('data-status');
+            if (suspenseStatus) {
+                entry.suspense_sent = suspenseStatus;
+                if (suspenseStatus === 'done') {
+                    const suspensePod = document.getElementById('suspense-pod').value.trim();
+                    if (suspensePod) entry.suspense_pod = suspensePod;
+                } else if (suspenseStatus === 'no') {
+                    entry.suspense_pending = true; // Mark for urgent action
+                }
+            }
+        }
+        
         currentAuditData[claimNo] = entry;
 
         closeModal(); updateStats();
@@ -1479,6 +1644,9 @@ window.addEventListener('DOMContentLoaded', () => {
         expRow["Optional Remark"] = auditEntry.optional_remark || "";
         expRow["POD Number"] = auditEntry.pod_number || "";
         expRow["Missing Part Name"] = auditEntry.missing_part_name || "";
+        expRow["Suspense Status"] = auditEntry.suspense_sent || "";
+        expRow["Suspense POD"] = auditEntry.suspense_pod || "";
+        expRow["Urgent Action Required"] = (auditEntry.suspense_pending && auditEntry.suspense_sent === 'no') ? "YES - SEND TO TECHNICAL CENTRE" : "";
         expRow["Audit Time"] = auditEntry.timestamp ? new Date(auditEntry.timestamp).toLocaleString() : "";
         expRow["Auditor"] = "Aashish Giri H";
         return expRow;
@@ -1644,10 +1812,12 @@ window.addEventListener('DOMContentLoaded', () => {
                     curRow++;
                     // Data rows
                     dataRows.forEach((row,ri) => {
-                        const altFill = isClr ? (ri%2===0?'F0FDF4':'DCFCE7') : (ri%2===0?'FFFBEB':'FEF3C7');
+                        // Check if this row has urgent action required
+                        const isUrgent = row["Urgent Action Required"] && row["Urgent Action Required"].includes("YES");
+                        const altFill = isUrgent ? 'FECACA' : (isClr ? (ri%2===0?'F0FDF4':'DCFCE7') : (ri%2===0?'FFFBEB':'FEF3C7'));
                         for(let c=0;c<headers.length;c++){
                             const dAddr=XLSX.utils.encode_cell({r:curRow,c});
-                            if(ws[dAddr]) ws[dAddr].s={font:{sz:8},fill:{fgColor:{rgb:altFill}},border:thinBorder,alignment:{vertical:'center',wrapText:true}};
+                            if(ws[dAddr]) ws[dAddr].s={font:{sz:8,bold:isUrgent},fill:{fgColor:{rgb:altFill}},border:thinBorder,alignment:{vertical:'center',wrapText:true}};
                         }
                         ws['!rows'][curRow]={hpt:15};
                         curRow++;
