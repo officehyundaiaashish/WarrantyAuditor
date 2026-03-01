@@ -301,7 +301,7 @@
 
             <div class="table-wrap">
                 <table id="dash-table">
-                    <thead><tr><th>Claim No</th><th>Status</th><th>R/O No</th><th>Type</th><th>Causal Part</th><th>Amount</th><th>Findings</th></tr></thead>
+                    <thead><tr><th>Claim No</th><th>Status</th><th>R/O No</th><th>Type</th><th>Causal Part</th><th>Part Desc</th><th>Amount</th><th>Findings</th></tr></thead>
                     <tbody id="dash-tbody"></tbody>
                 </table>
             </div>
@@ -517,7 +517,7 @@
 
         <div class="table-wrap">
             <table id="claims-table">
-                <thead><tr><th>Claim No</th><th>Status</th><th>R/O No</th><th>Type</th><th>Causal Part</th><th>Amount</th><th>Findings</th></tr></thead>
+                <thead><tr><th>Claim No</th><th>Status</th><th>R/O No</th><th>Type</th><th>Causal Part</th><th>Part Desc</th><th>Amount</th><th>Findings</th></tr></thead>
                 <tbody id="claims-tbody"></tbody>
             </table>
         </div>
@@ -606,6 +606,11 @@
                 <div id="modal-extra-inputs" style="display: none; animation: slideFadeUp 0.2s ease;">
                     <label id="modal-extra-label">Additional Details</label>
                     <input type="text" id="modal-extra-text" class="input" placeholder="...">
+                </div>
+
+                <div id="modal-remark-box" style="display:none; animation: slideFadeUp 0.2s ease;">
+                    <label>Optional Remark</label>
+                    <input type="text" id="modal-remark" class="input" placeholder="Add a remark (optional)...">
                 </div>
 
                 <div class="grid-2" style="margin-top: 24px;">
@@ -698,9 +703,13 @@
 
     function handleDiscrepancyChange(val) {
         const extraBox = document.getElementById('modal-extra-inputs'); const label = document.getElementById('modal-extra-label'); const input = document.getElementById('modal-extra-text');
+        const remarkBox = document.getElementById('modal-remark-box');
         if(val === '1') { extraBox.style.display = 'block'; label.innerText = "POD Number (Optional)"; input.placeholder = "Enter POD..."; }
         else if(val === '7') { extraBox.style.display = 'block'; label.innerText = "Missing Part Name (Required)"; input.placeholder = "Enter Part..."; }
         else { extraBox.style.display = 'none'; input.value = ''; }
+        // Show optional remark for all non-clean statuses
+        const isClean = (val === '0' || (DISCREPANCY_TYPES[val] && (DISCREPANCY_TYPES[val].includes('None Found') || DISCREPANCY_TYPES[val].includes('[CLN]'))));
+        if(remarkBox) remarkBox.style.display = isClean ? 'none' : 'block';
     }
 
     function highlightError(el) {
@@ -1202,14 +1211,14 @@ window.addEventListener('DOMContentLoaded', () => {
             const claimNo = row[colMap.claim_no]; const entry = currentAuditData[claimNo] || {}; const isClear = entry.audited && isClaimClean(entry.findings);
             let statusHtml = '<span class="status-pending">Pen</span>'; if (isClear) statusHtml = '<span class="status-clear">Cln</span>'; else if (entry.audited) statusHtml = `<span class="status-unclear">Unc</span>`;
             const tr = document.createElement('tr'); tr.onclick = () => openAuditModal(start + i);
-            tr.innerHTML = `<td>${claimNo}</td><td>${statusHtml}</td><td>${row[colMap.ro_no] || '-'}</td><td>${row[colMap.claim_type] || '-'}</td><td>${row[colMap.causal_part] || '-'}</td><td>${row[colMap.amount] || '-'}</td><td style="color:var(--text-muted);">${(entry.findings||[]).join('; ')}</td>`;
+            tr.innerHTML = `<td>${claimNo}</td><td>${statusHtml}</td><td>${row[colMap.ro_no] || '-'}</td><td>${row[colMap.claim_type] || '-'}</td><td>${row[colMap.causal_part] || '-'}</td><td style="color:var(--text-muted); max-width:120px; overflow:hidden; text-overflow:ellipsis;">${row[colMap.part_desc] || '-'}</td><td>${row[colMap.amount] || '-'}</td><td style="color:var(--text-muted);">${(entry.findings||[]).join('; ')}</td>`;
             frag.appendChild(tr);
         }); tbody.appendChild(frag);
         const maxPage = Math.ceil(currentFilteredData.length / pageSize) || 1; document.getElementById('page-indicator').innerText = `${currentPage} / ${maxPage}`;
         document.getElementById('btn-prev').disabled = currentPage === 1; document.getElementById('btn-next').disabled = currentPage === maxPage;
     }
 
-    function closeModal() { document.getElementById('audit-modal').classList.remove('active'); }
+    function closeModal() { document.getElementById('audit-modal').classList.remove('active'); const r=document.getElementById('modal-remark'); if(r) r.value=''; const rb=document.getElementById('modal-remark-box'); if(rb) rb.style.display='none'; }
 
     function openAuditModal(filteredIndex) {
         activeClaimRowIndex = filteredIndex; const row = currentFilteredData[filteredIndex];
@@ -1250,6 +1259,15 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
+        // Load existing optional remark
+        const remarkBox = document.getElementById('modal-remark-box');
+        const remarkInput = document.getElementById('modal-remark');
+        if(remarkBox && remarkInput) {
+            remarkInput.value = (entry && entry.optional_remark) ? entry.optional_remark : '';
+            const discVal = document.getElementById('modal-discrepancy').value;
+            const isClean = (discVal === '0' || (DISCREPANCY_TYPES[discVal] && (DISCREPANCY_TYPES[discVal].includes('None Found') || DISCREPANCY_TYPES[discVal].includes('[CLN]'))));
+            remarkBox.style.display = isClean ? 'none' : 'block';
+        }
         document.getElementById('audit-modal').classList.add('active');
     }
 
@@ -1272,7 +1290,11 @@ window.addEventListener('DOMContentLoaded', () => {
             entry.missing_part_name = extraText; finding += ` (${extraText})`; 
         }
 
-        entry.findings = [finding]; currentAuditData[claimNo] = entry;
+        entry.findings = [finding];
+        // Save optional remark
+        const optRemark = document.getElementById('modal-remark');
+        if(optRemark && optRemark.value.trim()) entry.optional_remark = optRemark.value.trim();
+        currentAuditData[claimNo] = entry;
 
         closeModal(); updateStats();
         
@@ -1291,14 +1313,38 @@ window.addEventListener('DOMContentLoaded', () => {
     async function finalizeAuditFlow() {
         if(!currentData || currentData.length === 0) return;
         let audited = 0; let clear = 0;
-        currentData.forEach(row => { const entry = currentAuditData[row[colMap.claim_no]]; if(entry && entry.audited) { audited++; if(isClaimClean(entry.findings)) clear++; } });
+        const findingCounts = {};
+        currentData.forEach(row => {
+            const entry = currentAuditData[row[colMap.claim_no]];
+            if(entry && entry.audited) {
+                audited++;
+                if(isClaimClean(entry.findings)) { clear++; }
+                else {
+                    const f = (entry.findings[0] || '').split(' [')[0].split(' (')[0];
+                    findingCounts[f] = (findingCounts[f] || 0) + 1;
+                }
+            }
+        });
         const pending = currentData.length - audited; const unclear = audited - clear;
+
+        // Build findings summary
+        let summary = `📋 Audit Summary\n`;
+        summary += `✅ Clean: ${clear}\n`;
+        summary += `⚠️ Unclear: ${unclear}\n`;
+        summary += `⏳ Pending: ${pending}\n`;
+        if(Object.keys(findingCounts).length > 0) {
+            summary += `\nFindings Breakdown:\n`;
+            for(const [f, c] of Object.entries(findingCounts)) {
+                summary += `• ${f}: ${c}\n`;
+            }
+        }
+        summary += `\nFinalize this audit?`;
 
         const processFinalize = async () => {
             showLoader(true); const session = await localforage.getItem(currentSessionKey); session.finalized = true; await saveSessionToDB(session);
             showLoader(false); showAppAlert("Audit Finalized & Saved to Previous Audits."); showScreen('screen-menu');
         };
-        if (pending > 0 || unclear > 0) { showAppConfirm(`You have ${unclear} Unclear and ${pending} Pending claims.\n\nFinalize audit anyway?`, processFinalize); } else { showAppConfirm("All claims are clean.\nDo you want to Finalize this audit?", processFinalize); }
+        showAppConfirm(summary, processFinalize);
     }
 
     // --- ARCHIVE ---
@@ -1346,7 +1392,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function formatRowForExport(row, auditEntry, colMapping) {
         let expRow = {}; for(let key in colMapping) expRow[colMapping[key]] = row[colMapping[key]];
         expRow["Audit Status"] = auditEntry.audited ? "Audited" : "Pending"; expRow["Discrepancy Found"] = (!isClaimClean(auditEntry.findings) && auditEntry.audited) ? "Yes" : "No";
-        expRow["Discrepancy Details"] = auditEntry.findings ? auditEntry.findings.join("; ") : ""; expRow["Audit Time"] = auditEntry.timestamp ? new Date(auditEntry.timestamp).toLocaleString() : "";
+        expRow["Discrepancy Details"] = auditEntry.findings ? auditEntry.findings.join("; ") : ""; expRow["Remark"] = auditEntry.optional_remark || ""; expRow["Audit Time"] = auditEntry.timestamp ? new Date(auditEntry.timestamp).toLocaleString() : "";
         expRow["Remarks"] = auditEntry.remarks || ""; expRow["POD Number"] = auditEntry.pod_number || ""; expRow["Courier Provider"] = auditEntry.courier_provider || ""; 
         expRow["Missing Part Name"] = auditEntry.missing_part_name || ""; expRow["Auditor"] = "Aashish Giri H"; return expRow;
     }
@@ -1459,13 +1505,37 @@ window.addEventListener('DOMContentLoaded', () => {
         tbody.innerHTML = '';
         for (let key in DISCREPANCY_TYPES) {
             let isDefault = DEFAULT_DISCREPANCIES[key] ? true : false;
+            const actions = isDefault
+                ? '<span class="badge">Default</span>'
+                : `<div style="display:flex;gap:4px;"><button class="btn" style="padding:4px 8px; margin:0; font-size:0.7rem;" onclick="editCustomCode('${key}')">Edit</button><button class="btn danger" style="padding:4px 8px; margin:0; font-size:0.7rem;" onclick="deleteCustomCode('${key}')">Del</button></div>`;
             tbody.innerHTML += `<tr>
                 <td style="font-weight:700;">${key}</td>
-                <td style="white-space:normal;">${DISCREPANCY_TYPES[key]}</td>
-                <td>${isDefault ? '<span class="badge">Default</span>' : `<button class="btn danger" style="padding:4px 10px; margin:0;" onclick="deleteCustomCode('${key}')">Delete</button>`}</td>
+                <td style="white-space:normal;">${DISCREPANCY_TYPES[key].replace(/ \[CLN\]$/,'')}</td>
+                <td>${actions}</td>
             </tr>`;
         }
         updateModalDropdown();
+    }
+
+    function editCustomCode(key) {
+        const currentDesc = DISCREPANCY_TYPES[key].replace(/ \[CLN\]$/, '');
+        const isCln = DISCREPANCY_TYPES[key].endsWith('[CLN]');
+        document.getElementById('new-code-id').value = key;
+        document.getElementById('new-code-desc').value = currentDesc;
+        setCustomSelectValue('wrap-new-code-type', isCln ? 'clean' : 'unclear');
+        // Change Add button to Update for this edit session
+        const addBtn = document.querySelector('#screen-settings .btn.primary[onclick="addCustomCode()"]');
+        if(addBtn) {
+            addBtn.innerText = `Update Code ${key}`;
+            addBtn.onclick = () => {
+                delete DISCREPANCY_TYPES[key];
+                localStorage.setItem('auditor_custom_codes', JSON.stringify(DISCREPANCY_TYPES));
+                addCustomCode();
+                addBtn.innerText = '+ Add Code';
+                addBtn.onclick = addCustomCode;
+            };
+        }
+        document.getElementById('new-code-id').scrollIntoView({behavior:'smooth', block:'center'});
     }
 
     function addCustomCode() {
@@ -1760,12 +1830,38 @@ window.addEventListener('DOMContentLoaded', () => {
         const modalOpen = document.getElementById('audit-modal').classList.contains('active');
         const dialogOpen = document.getElementById('app-dialog').classList.contains('active');
 
-        if (dialogOpen) return; // Let dialog handle its own input
+        // Dialog keyboard: Enter = Confirm, Escape = Cancel
+        if (dialogOpen) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                const noBtn = document.getElementById('dialog-btn-no');
+                if (noBtn && noBtn.style.display !== 'none') { noBtn.click(); }
+                else { document.getElementById('dialog-btn-yes').click(); }
+            }
+            if (e.key === 'Enter') {
+                const inputWrap = document.getElementById('dialog-input-wrapper');
+                const inputVisible = inputWrap && inputWrap.style.display !== 'none';
+                if (!inputVisible) { // Only auto-confirm if no text input shown
+                    e.preventDefault();
+                    document.getElementById('dialog-btn-yes').click();
+                }
+            }
+            return;
+        }
 
         // When audit modal is open: Enter = Save Remark
         if (modalOpen) {
+            if (e.key === 'Escape') { e.preventDefault(); closeModal(); return; }
             if (e.key === 'Enter') {
                 e.preventDefault();
+                // Ignore Enter if user is typing in any input/textarea inside the modal
+                const activeEl = document.activeElement;
+                const isTypingInModal = activeEl && (
+                    activeEl.id === 'modal-remark' ||
+                    activeEl.id === 'modal-extra-text' ||
+                    activeEl.tagName === 'TEXTAREA'
+                );
+                if (isTypingInModal) return; // Let them type freely, don't auto-save
                 // Don't save if dropdown is open
                 if (document.querySelector('.custom-select-wrapper.open')) {
                     document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
@@ -1773,7 +1869,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
                 saveClaimAudit();
             }
-            if (e.key === 'Escape') { e.preventDefault(); closeModal(); }
             return;
         }
 
