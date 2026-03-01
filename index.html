@@ -3449,7 +3449,24 @@ window.addEventListener('DOMContentLoaded', () => {
             await checkGdriveBackupStatus();
         } catch(e) {
             showLoader(false);
-            showAppAlert("Connection Failed: " + e.message);
+            // Store error so it doesn't get covered by dialog
+            localStorage.setItem('gdrive_last_error', e.message + ' | ' + (e.stack||'').split('\n')[0]);
+            // Show error in a non-dismissable way inside the UI
+            const statusBody = document.getElementById('gdrive-cloud-status-body');
+            if (statusBody) {
+                document.getElementById('gdrive-connected-section').style.display = 'none';
+                document.getElementById('gdrive-setup-section').style.display = '';
+            }
+            // Show error banner inside settings instead of popup
+            let errBanner = document.getElementById('gdrive-error-banner');
+            if (!errBanner) {
+                errBanner = document.createElement('div');
+                errBanner.id = 'gdrive-error-banner';
+                errBanner.style.cssText = 'background:rgba(239,68,68,0.08);border:1px solid var(--danger);border-radius:8px;padding:10px 12px;margin-top:8px;font-size:0.75rem;color:var(--danger);line-height:1.6;word-break:break-all;';
+                document.getElementById('gdrive-setup-section').appendChild(errBanner);
+            }
+            errBanner.innerHTML = '<b>Error:</b> ' + e.message;
+            errBanner.style.display = '';
         }
     }
 
