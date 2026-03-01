@@ -61,6 +61,12 @@
         .upload-shortcut.syncing svg { animation: spin 1s linear infinite; stroke: var(--accent); }
         @keyframes upload-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.12)} }
         .upload-shortcut.done { animation: upload-pulse 0.4s ease; border-color: var(--success); }
+        .restore-shortcut { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
+        .restore-shortcut:hover { border-color: var(--accent); transform: scale(1.05); }
+        .restore-shortcut svg { width: 18px; height: 18px; stroke: var(--text-main); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: 0.3s; }
+        .restore-shortcut:hover svg { stroke: var(--accent); }
+        .restore-shortcut.loading svg { animation: spin 1s linear infinite; stroke: var(--accent); }
+        .restore-shortcut.done { animation: upload-pulse 0.4s ease; border-color: var(--accent); }
         .theme-toggle:hover { border-color: var(--accent); transform: scale(1.05); }
         .theme-toggle svg { position: absolute; width: 20px; height: 20px; transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55); stroke: var(--text-main); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
         body[data-theme="dark"] .icon-sun { transform: translateY(30px) rotate(90deg); opacity: 0; }
@@ -200,6 +206,9 @@
         <div style="display:flex;gap:8px;align-items:center;">
         <button id="header-upload-btn" class="upload-shortcut" onclick="headerUploadNow()" title="Upload to GitHub Cloud">
             <svg viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+        </button>
+        <button id="header-restore-btn" class="restore-shortcut" onclick="headerRestoreNow()" title="Restore from GitHub Cloud">
+            <svg viewBox="0 0 24 24"><polyline points="8 8 12 12 16 8"/><line x1="12" y1="12" x2="12" y2="3"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
         </button>
         <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
             <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
@@ -1734,13 +1743,51 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Update upload btn visibility based on connection state
+    // Update header buttons visibility based on connection state
     function updateHeaderUploadBtn() {
-        const btn = document.getElementById('header-upload-btn');
-        if (!btn) return;
         const connected = !!localStorage.getItem('gist_token_enc');
-        btn.style.opacity = connected ? '1' : '0.35';
-        btn.title = connected ? 'Upload to GitHub Cloud' : 'Not connected to GitHub';
+        const up = document.getElementById('header-upload-btn');
+        if (up) { up.style.opacity = connected ? '1' : '0.35'; up.title = connected ? 'Upload to GitHub Cloud' : 'Not connected to GitHub'; }
+        const re = document.getElementById('header-restore-btn');
+        if (re) { re.style.opacity = connected ? '1' : '0.35'; re.title = connected ? 'Restore from GitHub Cloud' : 'Not connected to GitHub'; }
+    }
+
+    async function headerRestoreNow() {
+        const btn = document.getElementById('header-restore-btn');
+        if (!localStorage.getItem('gist_token_enc')) { showAppAlert("Not connected to GitHub. Go to Backup & Restore to connect."); return; }
+        showAppConfirm("Restore from GitHub Cloud?\n\nThis will OVERWRITE all local data.", async () => {
+            btn.classList.add('loading');
+            const tok = await getDecryptedToken(); if (!tok) { btn.classList.remove('loading'); return; }
+            try {
+                let gid = localStorage.getItem('gist_id');
+                if (!gid) {
+                    let page = 1, found = false;
+                    while (!found) {
+                        const gr = await fetch('https://api.github.com/gists?per_page=100&page=' + page, { headers: { 'Authorization': 'token ' + tok } }); bumpRate();
+                        if (!gr.ok) throw new Error('Could not search Gists.');
+                        const gists = await gr.json();
+                        if (gists.length === 0) throw new Error("No backup found.");
+                        const match = gists.find(g => g.files && g.files['auditor_backup.json']);
+                        if (match) { gid = match.id; localStorage.setItem('gist_id', gid); found = true; }
+                        else if (gists.length < 100) throw new Error("No backup found in your GitHub Gists.");
+                        else page++;
+                    }
+                }
+                const r = await fetch('https://api.github.com/gists/' + gid, { headers: { 'Authorization': 'token ' + tok } }); bumpRate();
+                if (!r.ok) throw new Error('Could not fetch backup.');
+                const j = await r.json(), ct = j.files['auditor_backup.json']?.content;
+                if (!ct) throw new Error("Backup file not found.");
+                const data = JSON.parse(ct); await localforage.clear();
+                for (let k in data) { if (k === '_secConfig') localStorage.setItem('auditor_sec', data[k]); else if (k === '_autosync') localStorage.setItem('gist_autosync', data[k]); else await localforage.setItem(k, data[k]); }
+                localStorage.setItem('gist_id', gid);
+                btn.classList.remove('loading'); btn.classList.add('done');
+                showToast('Restore Successful! Reloading...', 'success', 3000);
+                setTimeout(() => window.location.reload(), 2000);
+            } catch(e) {
+                btn.classList.remove('loading');
+                showToast('Restore failed: ' + e.message, 'danger', 4000);
+            }
+        });
     }
 
     function initGistUI(){
