@@ -928,7 +928,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const map = {}; 
         const lowerHeaders = headers.map(h => h.toString().toLowerCase().replace(/[\s_]/g, ''));
         const used = new Set(); // prevent two keys from grabbing same column
-        const fuzzy = { "claim_no": ["claimno","claimnumber","clmno","clm#"], "ro_no": ["rono","r/ono","repairorderno","ronumber"], "claim_type": ["claimtype","clmtype","typeofclaim"], "causal_part": ["causalpart","causalpartno","causalpartnumber","causalpno"], "amount": ["totalamt","totalamount","claimamount","netamount","netamt","amount","amt"], "part_desc": ["partdesc","partdescription","partname","partsname","itemdesc","itemdescription","description"], "prod_date": ["proddate","productiondate","mfgdate","manufacturedate","dateofmanufacture","prod.date","mfg.date","proddt","mfgdt","dateofmfg"] };
+        const fuzzy = { "claim_no": ["claimno","claimnumber","clmno","clm#"], "ro_no": ["rono","r/ono","repairorderno","ronumber"], "claim_type": ["claimtype","clmtype","typeofclaim"], "causal_part": ["causalpart","causalpartno","causalpartnumber","causalpno"], "amount": ["totalamt","totalamount","claimamount","netamount","netamt","amount","amt"], "part_desc": ["partdesc","partdescription","partname","partsname","itemdesc","itemdescription","description"], "prod_date": ["pdctndate","proddate","productiondate","mfgdate","manufacturedate","dateofmanufacture","prod.date","mfg.date","proddt","mfgdt","dateofmfg"] };
         for (const [key, terms] of Object.entries(fuzzy)) { 
             const idx = lowerHeaders.findIndex((h, i) => !used.has(i) && terms.some(t => h.includes(t))); 
             if (idx !== -1) { map[key] = headers[idx]; used.add(idx); } 
