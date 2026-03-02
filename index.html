@@ -2511,8 +2511,21 @@ Upload the correct file.`);
             const session = await localforage.getItem(currentSessionKey);
             if (!session) { showLoader(false); return showAppAlert("Session not found."); }
 
-            if (session.raw_data && session.raw_data.length > 0) {
-                // raw_data already saved — seedha load karo, koi filter nahi
+            // Check: raw_data hai, aur usme saare current table columns hain?
+            // Agar koi bhi column raw_data mein nahi mila → purana data hai, re-upload maango
+            const hasRawData = session.raw_data && session.raw_data.length > 0;
+            let missingCols = [];
+            if (hasRawData) {
+                const sampleRow = session.raw_data[0];
+                const allExcelCols = Object.keys(sampleRow);
+                // Check karo ki colMap ke saare mapped columns raw_data mein hain
+                missingCols = Object.values(session.col_map || {}).filter(col => col && !allExcelCols.includes(col));
+            }
+
+            const needsUpload = !hasRawData || missingCols.length > 0;
+
+            if (!needsUpload) {
+                // raw_data sahi hai, saare columns present hain — seedha load karo
                 currentData = session.raw_data;
                 colMap = session.col_map;
                 currentFilteredData = [...currentData];
@@ -2523,15 +2536,19 @@ Upload the correct file.`);
                 showLoader(false);
                 showToast('Table refreshed. Audit entries untouched.', 'success', 3000);
             } else {
-                // raw_data nahi hai — purana audit, file upload karo
+                // raw_data nahi hai ya columns missing hain — re-upload karo
                 showLoader(false);
+                const reason = !hasRawData
+                    ? `No Excel data saved for this audit.`
+                    : `${missingCols.length} column(s) not found in saved data:
+${missingCols.join(', ')}`;
                 showAppConfirm(
-                    `No Excel data saved for this audit.
+                    `${reason}
 
 Upload the original file to populate the table.
 
 Audit: ${session.month}
-(Your audit entries are completely safe — nothing will change)`,
+(Audit entries are completely safe — nothing will change)`,
                     () => _doRefreshUpload(session, (jd, cm) => {
                         currentData = jd; colMap = cm;
                         currentFilteredData = [...currentData]; currentPage = 1; workspaceCurrentFilter = 'all';
