@@ -75,7 +75,7 @@
                             window.location.href = 'index.html?error=blocked';
                             return;
                         }
-                        window._fbUserPerms = data.permissions || [];
+                        window._fbUserPerms = Array.isArray(data.permissions) ? data.permissions : Object.values(data.permissions || []);
                     } else if (user.email === 'n3235wrty@warrantyauditor.app') {
                         // Master User - default all perms if doc missing (emergency)
                         window._fbUserPerms = ['screen-new-audit', 'screen-archive', 'screen-dashboard', 'screen-reports', 'screen-backup', 'screen-settings', 'screen-security', 'screen-users'];
@@ -6289,7 +6289,7 @@ Audit: ${session.month}
                             <span class="user-status-badge ${isBlocked ? 'badge-blocked' : 'badge-active'}">${isBlocked ? 'Blocked' : 'Active'}</span>
                         </div>
                         <div style="font-size:0.75rem; color:var(--text-muted);">
-                            <b>Perms:</b> ${(u.permissions || []).map(p => p.replace('screen-', '')).join(', ')}<br>
+                            <b>Perms:</b> ${(Array.isArray(u.permissions) ? u.permissions : Object.values(u.permissions || {})).map(p => p.replace('screen-', '')).join(', ')}<br>
                             <b>TOTP:</b> ${hasTotp ? '<span style="color:var(--success)">Configured</span>' : '<span style="color:var(--warning)">Not Setup</span>'}
                         </div>
                         <div class="user-actions">
@@ -6359,7 +6359,10 @@ Audit: ${session.month}
                 showLoader(true);
                 try {
                     const docRef = window._fbDoc(window._fbDb, 'users', uid);
-                    await window._fbUpdateDoc(docRef, { totpSecret: window._fbDeleteField() });
+                    await window._fbUpdateDoc(docRef, {
+                        totpSecret: window._fbDeleteField(),
+                        pendingTotpSecret: window._fbDeleteField()
+                    });
                     showLoader(false);
                     showAppAlert("TOTP Reset successful.");
                     openUserManagement();
