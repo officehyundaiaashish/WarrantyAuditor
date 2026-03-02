@@ -64,24 +64,25 @@
                         return;
                     }
 
-                    // Deriving DealerID from email (e.g. n1234@... -> N1234)
-                    const dealerID = user.email.split('@')[0].toUpperCase();
-                    const docRef = doc(db, 'users', dealerID);
-                    const snap = await getDoc(docRef);
-                    if (snap.exists()) {
-                        const data = snap.data();
-                        if (data.status === 'blocked') {
-                            await signOut(auth);
-                            window.location.href = 'index.html?error=blocked';
-                            return;
-                        }
-                        window._fbUserPerms = Array.isArray(data.permissions) ? data.permissions : Object.values(data.permissions || []);
-                    } else if (user.email === 'n3235wrty@warrantyauditor.app') {
-                        // Master User - default all perms if doc missing (emergency)
+                    // 1. MASTER CHECK FIRST
+                    if (user.email && user.email.toLowerCase() === 'n3235wrty@warrantyauditor.app') {
                         window._fbUserPerms = ['screen-new-audit', 'screen-archive', 'screen-dashboard', 'screen-reports', 'screen-backup', 'screen-settings', 'screen-security', 'screen-users'];
                     } else {
-                        // Regular user with no doc - restricted to basic
-                        window._fbUserPerms = ['screen-new-audit', 'screen-archive'];
+                        // 2. REGULAR USER CHECK
+                        const dealerID = user.email.split('@')[0].toUpperCase();
+                        const docRef = doc(db, 'users', dealerID);
+                        const snap = await getDoc(docRef);
+                        if (snap.exists()) {
+                            const data = snap.data();
+                            if (data.status === 'blocked') {
+                                await signOut(auth);
+                                window.location.href = 'index.html?error=blocked';
+                                return;
+                            }
+                            window._fbUserPerms = Array.isArray(data.permissions) ? data.permissions : Object.values(data.permissions || []);
+                        } else {
+                            window._fbUserPerms = ['screen-new-audit', 'screen-archive'];
+                        }
                     }
                 } catch (e) {
                     console.error("Error fetching perms:", e);
