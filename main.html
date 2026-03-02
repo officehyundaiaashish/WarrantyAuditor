@@ -6223,6 +6223,12 @@ Audit: ${session.month}
 
         function updateMenuRBAC() {
             const perms = window._fbUserPerms || [];
+
+            // ── RACE CONDITION FIX ──
+            // Agar permissions abhi Firebase se load nahi huin hain (empty array),
+            // toh menu ko mat chhuo — onAuthStateChanged ke baad automatically call hoga.
+            if (perms.length === 0) return;
+
             const isMaster = window._fbUser && window._fbUser.email === 'n3235wrty@warrantyauditor.app';
 
             // Show/Hide Menu Tiles based on permissions
@@ -6467,8 +6473,12 @@ Audit: ${session.month}
         });
         resetInactivityTimer(); // Start the timer on page load
 
-        // Initial RBAC check on load
-        setTimeout(updateMenuRBAC, 1500);
+        // ── RACE CONDITION FIX ──
+        // updateMenuRBAC ko yahan se NAHI bulana chahiye.
+        // Yeh sirf onAuthStateChanged ke andar call hona chahiye,
+        // jab Firebase se permissions poori tarah load ho chuki hoti hain.
+        // Pehle yahan tha: setTimeout(updateMenuRBAC, 1500) — woh blank permissions ke saath
+        // menu reset kar deta tha, isliye Master ke sare menu cards gayab ho jaate the.
         setTimeout(updateHeaderUserBadge, 1600);
 
     </script>
