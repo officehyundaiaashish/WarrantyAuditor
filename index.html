@@ -2474,29 +2474,16 @@ window.addEventListener('DOMContentLoaded', () => {
         if (!currentSessionKey) return showAppAlert("No active audit session.");
         showLoader(true);
         try {
-            // Case 1: currentData already in memory — just re-render, nothing else
-            if (currentData && currentData.length > 0) {
-                currentFilteredData = [...currentData];
-                currentPage = 1;
-                workspaceCurrentFilter = 'all';
-                document.querySelectorAll('.ws-filter-btn').forEach(b => b.classList.remove('active-filter'));
-                const allBtn = document.getElementById('ws-filter-all'); if (allBtn) allBtn.classList.add('active-filter');
-                updateStats();
-                renderTablePage();
-                showLoader(false);
-                showToast('Table refreshed. Audit entries untouched.', 'success', 3000);
-                return;
-            }
-
-            // Case 2: Memory empty — load from storage
+            // Always load from raw_data in storage — never from in-memory filtered data
+            // Reason: in-memory currentData is filtered, new columns added later won't be there
             const session = await localforage.getItem(currentSessionKey);
             if (session) {
-                // Prefer raw_data → re-apply filter fresh (future-proof for new columns)
-                // Fallback to filtered_data if raw_data not available (older sessions)
                 let tableData = null;
                 if (session.raw_data && session.raw_data.length > 0) {
+                    // raw_data = original full Excel → apply filter fresh → new columns populate too
                     tableData = applyAuditFilter(session.raw_data, session.col_map);
                 } else if (session.filtered_data && session.filtered_data.length > 0) {
+                    // Fallback: older sessions that only have filtered_data saved
                     tableData = session.filtered_data;
                 }
 
