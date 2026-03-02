@@ -2477,30 +2477,20 @@ window.addEventListener('DOMContentLoaded', () => {
             // Always load from raw_data in storage — never from in-memory filtered data
             // Reason: in-memory currentData is filtered, new columns added later won't be there
             const session = await localforage.getItem(currentSessionKey);
-            if (session) {
-                let tableData = null;
-                if (session.raw_data && session.raw_data.length > 0) {
-                    // raw_data = original full Excel → apply filter fresh → new columns populate too
-                    tableData = applyAuditFilter(session.raw_data, session.col_map);
-                } else if (session.filtered_data && session.filtered_data.length > 0) {
-                    // Fallback: older sessions that only have filtered_data saved
-                    tableData = session.filtered_data;
-                }
-
-                if (tableData && tableData.length > 0) {
-                    currentData = tableData;
-                    colMap = session.col_map;
-                    currentFilteredData = [...currentData];
-                    currentPage = 1;
-                    workspaceCurrentFilter = 'all';
-                    document.querySelectorAll('.ws-filter-btn').forEach(b => b.classList.remove('active-filter'));
-                    const allBtn = document.getElementById('ws-filter-all'); if (allBtn) allBtn.classList.add('active-filter');
-                    updateStats();
-                    renderTablePage();
-                    showLoader(false);
-                    showToast('Table refreshed from saved data. Audit entries untouched.', 'success', 3000);
-                    return;
-                }
+            if (session && session.raw_data && session.raw_data.length > 0) {
+                // raw_data = poora original Excel, koi filter nahi — naye columns bhi populate honge
+                currentData = session.raw_data;
+                colMap = session.col_map;
+                currentFilteredData = [...currentData];
+                currentPage = 1;
+                workspaceCurrentFilter = 'all';
+                document.querySelectorAll('.ws-filter-btn').forEach(b => b.classList.remove('active-filter'));
+                const allBtn = document.getElementById('ws-filter-all'); if (allBtn) allBtn.classList.add('active-filter');
+                updateStats();
+                renderTablePage();
+                showLoader(false);
+                showToast('Table refreshed from original data. Audit entries untouched.', 'success', 3000);
+                return;
             }
 
             // Case 3: Nothing available anywhere — offer to re-upload the Excel file with month validation
@@ -2548,15 +2538,13 @@ window.addEventListener('DOMContentLoaded', () => {
                                     }
                                 }
 
-                                // Save both raw + filtered into the session for future-proofing
-                                const fd = applyAuditFilter(jd, cm);
-                                currentData = fd; colMap = cm;
+                                // raw_data seedha use karo — koi filter nahi
+                                currentData = jd; colMap = cm;
                                 currentFilteredData = [...currentData]; currentPage = 1; workspaceCurrentFilter = 'all';
-                                // Also persist into storage so next refresh works without re-upload
+                                // Storage mein save karo taaki agli baar re-upload na karna pade
                                 const sess = await localforage.getItem(currentSessionKey);
                                 if (sess) {
                                     sess.raw_data = jd;
-                                    sess.filtered_data = fd;
                                     sess.col_map = cm;
                                     await localforage.setItem(currentSessionKey, sess);
                                 }
@@ -2564,7 +2552,7 @@ window.addEventListener('DOMContentLoaded', () => {
                                 const ab = document.getElementById('ws-filter-all'); if(ab) ab.classList.add('active-filter');
                                 updateStats(); renderTablePage();
                                 showLoader(false);
-                                showToast(`Table refreshed. ${fd.length} claims loaded. Audit entries untouched.`, 'success', 4000);
+                                showToast(`Table refreshed. ${jd.length} rows loaded. Audit entries untouched.`, 'success', 4000);
                             } catch(err) { showLoader(false); showAppAlert('Refresh failed: ' + err.message); }
                         };
                         rdr.readAsArrayBuffer(file);
