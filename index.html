@@ -2000,12 +2000,15 @@ window.addEventListener('DOMContentLoaded', () => {
                     return true;
                 });
 
-                const launchSession = async (saveRawData) => {
+                const launchSession = async (saveExcelData) => {
                     currentData = filteredData;
                     currentSessionKey = `audit_${fromDate.value}_${toDate.value}_${Date.now()}`; 
                     currentAuditData = {}; workspaceCurrentFilter = 'all'; currentFilteredData = [...currentData]; currentPage = 1; _isNewSession = true; _sessionSnapshot = null;
                     const sessionToSave = { month: periodString, year: '', last_saved: new Date().toLocaleString(), finalized: false, col_map: colMap, audit_data: currentAuditData };
-                    if (saveRawData) sessionToSave.raw_data = filteredData; // Only save raw data if user chose yes
+                    if (saveExcelData) {
+                        sessionToSave.raw_data = jsonData;          // Poora original Excel — future columns ke liye
+                        sessionToSave.filtered_data = filteredData; // Filtered rows — audit ke liye
+                    }
                     await saveSessionToDB(sessionToSave);
                     document.getElementById('workspace-title').innerText = periodString; showLoader(false); showScreen('screen-workspace'); updateStats(); renderTablePage();
                 };
@@ -2013,10 +2016,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 showLoader(false);
                 // Ask user whether to save Excel data in the program
                 showAppConfirm(
-                    `Save Excel data in the program?\n\n• YES — Data stored locally. Refresh Table will work even if you close and reopen.\n• NO — Data loads for this session only. Storage stays clean.\n\n(${filteredData.length} claims loaded)`,
-                    () => launchSession(true)   // Yes: save raw_data
+                    `Save Excel data in the program?\n\n• YES — Data stored locally. Refresh Table will work even after closing & reopening.\n• NO — Data loads for this session only. Storage stays clean.\n\n(${filteredData.length} claims loaded after filtering)`,
+                    () => launchSession(true)
                 );
-                // Override the No button to also launch session (without saving raw data)
                 document.getElementById('dialog-btn-no').onclick = () => { closeDialog(); launchSession(false); };
 
             } catch(err) { showLoader(false); showAppAlert(err.message); }
@@ -2456,42 +2458,62 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     // ── Refresh Table from Saved Excel Data ──
+    // Helper — same filter rules applied at upload time
+    function applyAuditFilter(rows, cm) {
+        return rows.filter(row => {
+            const type = String(row[cm.claim_type] || '').toUpperCase();
+            const amt  = parseFloat(row[cm.amount]) || 0;
+            const desc = String(row[cm.part_desc]  || '').toUpperCase();
+            if (type.includes('FREE SERVICE') || type.includes('FSC')) return false;
+            if (type.includes('CAMPAIGN') && amt < 300 && !desc.includes('POWER WINDOW') && !desc.includes('FUEL PUMP')) return false;
+            return true;
+        });
+    }
+
     async function refreshTableFromSavedData() {
         if (!currentSessionKey) return showAppAlert("No active audit session.");
         showLoader(true);
         try {
-            // Case 1: currentData already in memory (session-only, user said No to save)
+            // Case 1: currentData already in memory — just re-render, nothing else
             if (currentData && currentData.length > 0) {
-                // Just re-apply the table display from current in-memory data — touch nothing else
                 currentFilteredData = [...currentData];
                 currentPage = 1;
                 workspaceCurrentFilter = 'all';
-                // Reset filter buttons
                 document.querySelectorAll('.ws-filter-btn').forEach(b => b.classList.remove('active-filter'));
                 const allBtn = document.getElementById('ws-filter-all'); if (allBtn) allBtn.classList.add('active-filter');
                 updateStats();
                 renderTablePage();
                 showLoader(false);
-                showToast('Table refreshed from session data. Audit entries untouched.', 'success', 3000);
+                showToast('Table refreshed. Audit entries untouched.', 'success', 3000);
                 return;
             }
 
-            // Case 2: No in-memory data — try to load raw_data from storage
+            // Case 2: Memory empty — load from storage
             const session = await localforage.getItem(currentSessionKey);
-            if (session && session.raw_data && session.raw_data.length > 0) {
-                // Restore only the table-relevant columns from saved raw_data — DO NOT touch audit entries
-                currentData = session.raw_data;
-                colMap = session.col_map;
-                currentFilteredData = [...currentData];
-                currentPage = 1;
-                workspaceCurrentFilter = 'all';
-                document.querySelectorAll('.ws-filter-btn').forEach(b => b.classList.remove('active-filter'));
-                const allBtn = document.getElementById('ws-filter-all'); if (allBtn) allBtn.classList.add('active-filter');
-                updateStats();
-                renderTablePage();
-                showLoader(false);
-                showToast('Table refreshed from saved data. Audit entries untouched.', 'success', 3000);
-                return;
+            if (session) {
+                // Prefer raw_data → re-apply filter fresh (future-proof for new columns)
+                // Fallback to filtered_data if raw_data not available (older sessions)
+                let tableData = null;
+                if (session.raw_data && session.raw_data.length > 0) {
+                    tableData = applyAuditFilter(session.raw_data, session.col_map);
+                } else if (session.filtered_data && session.filtered_data.length > 0) {
+                    tableData = session.filtered_data;
+                }
+
+                if (tableData && tableData.length > 0) {
+                    currentData = tableData;
+                    colMap = session.col_map;
+                    currentFilteredData = [...currentData];
+                    currentPage = 1;
+                    workspaceCurrentFilter = 'all';
+                    document.querySelectorAll('.ws-filter-btn').forEach(b => b.classList.remove('active-filter'));
+                    const allBtn = document.getElementById('ws-filter-all'); if (allBtn) allBtn.classList.add('active-filter');
+                    updateStats();
+                    renderTablePage();
+                    showLoader(false);
+                    showToast('Table refreshed from saved data. Audit entries untouched.', 'success', 3000);
+                    return;
+                }
             }
 
             // Case 3: Nothing available anywhere — offer to re-upload the Excel file with month validation
@@ -2539,20 +2561,23 @@ window.addEventListener('DOMContentLoaded', () => {
                                     }
                                 }
 
-                                // Filter same as new audit
-                                const fd = jd.filter(row => {
-                                    const type = String(row[cm.claim_type]||'').toUpperCase(); const amt = parseFloat(row[cm.amount])||0; const desc = String(row[cm.part_desc]||'').toUpperCase();
-                                    if (type.includes('FREE SERVICE')||type.includes('FSC')) return false;
-                                    if (type.includes('CAMPAIGN')&&amt<300&&!desc.includes('POWER WINDOW')&&!desc.includes('FUEL PUMP')) return false;
-                                    return true;
-                                });
+                                // Save both raw + filtered into the session for future-proofing
+                                const fd = applyAuditFilter(jd, cm);
                                 currentData = fd; colMap = cm;
                                 currentFilteredData = [...currentData]; currentPage = 1; workspaceCurrentFilter = 'all';
+                                // Also persist into storage so next refresh works without re-upload
+                                const sess = await localforage.getItem(currentSessionKey);
+                                if (sess) {
+                                    sess.raw_data = jd;
+                                    sess.filtered_data = fd;
+                                    sess.col_map = cm;
+                                    await localforage.setItem(currentSessionKey, sess);
+                                }
                                 document.querySelectorAll('.ws-filter-btn').forEach(b => b.classList.remove('active-filter'));
                                 const ab = document.getElementById('ws-filter-all'); if(ab) ab.classList.add('active-filter');
                                 updateStats(); renderTablePage();
                                 showLoader(false);
-                                showToast(`Table refreshed from uploaded file. ${fd.length} claims loaded. Audit entries untouched.`, 'success', 4000);
+                                showToast(`Table refreshed. ${fd.length} claims loaded. Audit entries untouched.`, 'success', 4000);
                             } catch(err) { showLoader(false); showAppAlert('Refresh failed: ' + err.message); }
                         };
                         rdr.readAsArrayBuffer(file);
@@ -2707,16 +2732,22 @@ window.addEventListener('DOMContentLoaded', () => {
     
     async function loadSession(key) {
         showLoader(true); const session = await localforage.getItem(key); if(!session) { showLoader(false); return showAppAlert("Error loading session."); }
-        currentSessionKey = key; 
-        currentData = session.raw_data || []; // raw_data may not exist if user chose not to save it
-        workspaceCurrentFilter = 'all'; currentFilteredData = [...currentData]; 
+        currentSessionKey = key;
+        // Prefer raw_data → re-filter fresh. Fallback to filtered_data. Fallback to raw_data as-is.
+        if (session.raw_data && session.raw_data.length > 0) {
+            currentData = applyAuditFilter(session.raw_data, session.col_map);
+        } else if (session.filtered_data && session.filtered_data.length > 0) {
+            currentData = session.filtered_data;
+        } else {
+            currentData = [];
+        }
+        workspaceCurrentFilter = 'all'; currentFilteredData = [...currentData];
         currentAuditData = session.audit_data || {}; colMap = session.col_map || {}; currentPage = 1; _isNewSession = false;
-        _sessionSnapshot = JSON.parse(JSON.stringify(session.audit_data || {})); // snapshot before any edits
+        _sessionSnapshot = JSON.parse(JSON.stringify(session.audit_data || {}));
         document.getElementById('workspace-title').innerText = session.month; document.getElementById('search-claim').value = '';
         showLoader(false);
         if (currentData.length === 0) {
             showScreen('screen-workspace'); updateStats(); renderTablePage();
-            // Notify user table data not available — show a prominent hint
             showToast('Table data not saved for this audit. Use "Refresh Table" to upload the Excel file.', 'warning', 6000);
         } else {
             updateStats(); renderTablePage(); showScreen('screen-workspace');
