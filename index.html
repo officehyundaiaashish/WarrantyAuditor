@@ -13,7 +13,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteField } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAJZDURUl_Xh2FWjoVwGLZ4yuhVdFUZMHc",
@@ -34,6 +34,7 @@
         window._fbDoc = doc;
         window._fbSetDoc = setDoc;
         window._fbGetDoc = getDoc;
+        window._fbDeleteField = deleteField;
         window._fbUpdateDoc = updateDoc;
         window._fbSignInWithEmail = signInWithEmailAndPassword;
         window._fbCreateUser = createUserWithEmailAndPassword;
@@ -457,15 +458,26 @@
                     }
 
                     if (userData.totpSecret) {
-                        // Secret exists, proceed to OTP entry
+                        // Secret already confirmed — go straight to OTP entry (no QR ever again)
                         isFirstTime = false;
                         document.getElementById('login-section').style.display = 'none';
                         document.getElementById('totp-section').style.display = 'block';
                         document.getElementById('totp-code').focus();
+                    } else if (userData.pendingTotpSecret) {
+                        // QR was already shown on a previous login but user never verified it.
+                        // Skip QR again — use the same pending secret and go straight to OTP entry.
+                        isFirstTime = true;
+                        currentTempSecret = userData.pendingTotpSecret;
+                        document.getElementById('login-section').style.display = 'none';
+                        document.getElementById('totp-section').style.display = 'block';
+                        document.getElementById('totp-code').focus();
                     } else {
-                        // First time: Generate secret
+                        // Very first time ever — generate secret, show QR ONCE, save it immediately
                         isFirstTime = true;
                         currentTempSecret = generateSecret();
+
+                        // Save pendingTotpSecret right away so QR never shows again on next login
+                        await window._fbUpdateDoc(userDocRef, { pendingTotpSecret: currentTempSecret });
 
                         const otpUri = new OTPAuth.TOTP({
                             issuer: 'Warranty Auditor',
@@ -493,6 +505,7 @@
                         status: "active",
                         failedAttempts: 0,
                         permissions: ['screen-new-audit', 'screen-archive'],
+                        pendingTotpSecret: currentTempSecret,
                         createdAt: new Date().toISOString()
                     });
 
@@ -566,9 +579,12 @@
 
                 if (delta !== null) {
                     // Valid!
-                    // If first time, save the secret to Firestore
+                    // If first time, finalize: move pendingTotpSecret → totpSecret, remove pending field
                     if (isFirstTime) {
-                        await window._fbUpdateDoc(userDocRef, { totpSecret: currentTempSecret });
+                        await window._fbUpdateDoc(userDocRef, {
+                            totpSecret: currentTempSecret,
+                            pendingTotpSecret: window._fbDeleteField()
+                        });
                     }
 
                     // Add a sessionStorage flag so we know this session passed TOTP
