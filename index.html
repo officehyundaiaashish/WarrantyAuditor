@@ -347,8 +347,14 @@
                 </div>
 
                 <div id="totp-error" class="text-warning"></div>
+                <div id="totp-countdown" style="display:none; text-align:center; font-size:0.82rem; color:var(--text-muted); margin-top: 10px;"></div>
 
-                <button type="button" class="btn" onclick="verifyTotp()">Verify</button>
+                <button type="button" class="btn" id="verify-btn" onclick="verifyTotp()">Verify</button>
+
+                <p style="text-align:center; margin-top:14px; font-size:0.8rem; color:var(--text-muted);">
+                    Can't access your authenticator app?
+                    <br><span style="color:var(--accent); font-weight:600;">Contact your administrator to reset your TOTP.</span>
+                </p>
             </div>
 
         </div>
@@ -364,6 +370,8 @@
         let isFirstTime = false;
         let authEmail = "";
         let userDocRef = null;
+        let otpAttempts = 0;        // Wrong OTP attempt counter
+        let otpLockTimer = null;    // Countdown interval handle
 
         function showLoading() { document.getElementById('loader').style.display = 'flex'; }
         function hideLoading() { document.getElementById('loader').style.display = 'none'; }
@@ -540,6 +548,32 @@
             document.getElementById('totp-code').focus();
         }
 
+        function startOtpLockout() {
+            let seconds = 30;
+            const verifyBtn = document.getElementById('verify-btn');
+            const countdownEl = document.getElementById('totp-countdown');
+            const codeInput = document.getElementById('totp-code');
+            verifyBtn.disabled = true;
+            verifyBtn.style.opacity = '0.5';
+            codeInput.disabled = true;
+            countdownEl.style.display = 'block';
+            otpLockTimer = setInterval(() => {
+                seconds--;
+                countdownEl.textContent = `Too many wrong attempts. Please wait ${seconds}s before trying again.`;
+                if (seconds <= 0) {
+                    clearInterval(otpLockTimer);
+                    otpAttempts = 0;
+                    verifyBtn.disabled = false;
+                    verifyBtn.style.opacity = '1';
+                    codeInput.disabled = false;
+                    codeInput.value = '';
+                    countdownEl.style.display = 'none';
+                    hideError('totp-error');
+                    codeInput.focus();
+                }
+            }, 1000);
+        }
+
         async function verifyTotp() {
             const code = document.getElementById('totp-code').value.trim();
             if (code.length !== 6) {
@@ -578,13 +612,19 @@
                 let delta = totp.validate({ token: code, window: 1 });
 
                 if (delta !== null) {
-                    // Valid!
+                    // Valid! Reset attempt counter
+                    otpAttempts = 0;
+
                     // If first time, finalize: move pendingTotpSecret → totpSecret, remove pending field
                     if (isFirstTime) {
                         await window._fbUpdateDoc(userDocRef, {
                             totpSecret: currentTempSecret,
-                            pendingTotpSecret: window._fbDeleteField()
+                            pendingTotpSecret: window._fbDeleteField(),
+                            lastLogin: new Date().toISOString()
                         });
+                    } else {
+                        // Save lastLogin timestamp (non-blocking)
+                        window._fbUpdateDoc(userDocRef, { lastLogin: new Date().toISOString() }).catch(() => {});
                     }
 
                     // Add a sessionStorage flag so we know this session passed TOTP
@@ -594,8 +634,16 @@
                     // Redirect to the actual app
                     window.location.href = "main.html";
                 } else {
-                    showError('totp-error', "Invalid OTP Code.");
-                    hideLoading();
+                    // Wrong OTP
+                    otpAttempts++;
+                    if (otpAttempts >= 3) {
+                        hideLoading();
+                        showError('totp-error', "3 incorrect codes entered.");
+                        startOtpLockout();
+                    } else {
+                        showError('totp-error', `Invalid OTP Code. ${3 - otpAttempts} attempt(s) remaining.`);
+                        hideLoading();
+                    }
                 }
             } catch (e) {
                 console.error(e);
