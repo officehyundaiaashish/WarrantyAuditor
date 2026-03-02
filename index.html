@@ -853,7 +853,7 @@
                     <span style="font-weight:700;">Archive Protection</span>
                     <button class="sec-toggle-pill" id="btn-toggle-arc-sec" onclick="toggleSecurity('archive')" title="Toggle Archive Lock"></button>
                 </div>
-                <p style="font-size:0.75rem; margin:10px 0 0 0; color:var(--text-muted);">Requires Master Password to open or delete Finalized Audits.</p>
+                <p style="font-size:0.75rem; margin:10px 0 0 0; color:var(--text-muted);">Requires Master Password to open or delete Closed Audits.</p>
             </div>
 
             <button class="btn" onclick="showScreen('screen-menu')" style="display:none;"></button>
@@ -1004,7 +1004,7 @@
                         <button id="btn-autosync-toggle" onclick="toggleAutoSync()" style="padding:6px 14px; border-radius:20px; border:1px solid var(--border); background:var(--surface); font-size:0.78rem; font-weight:700; cursor:pointer; transition:all 0.2s; color:var(--text-muted);">OFF</button>
                     </div>
                     <div id="autosync-warning" style="display:none; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:8px; padding:10px; font-size:0.72rem; color:var(--warning); line-height:1.6;">5,000 req/hr limit. Auto-sync uses ~18/hr.</div>
-                    <div id="autosync-triggers" style="display:none; margin-top:10px; font-size:0.72rem; color:var(--text-muted); line-height:1.8;">⚡ Finalize · Tab close · Every 3 min</div>
+                    <div id="autosync-triggers" style="display:none; margin-top:10px; font-size:0.72rem; color:var(--text-muted); line-height:1.8;">⚡ Close Audit · Tab close · Every 3 min</div>
                 </div>
                 <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
                     <span id="gist-sync-indicator" style="display:none; font-size:0.75rem; color:var(--accent); font-weight:600; align-items:center; gap:6px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block;animation:pulse 1.2s ease-in-out infinite;"></span> Syncing...</span>
@@ -1103,7 +1103,14 @@
         <div class="flex-between" style="margin-bottom: 12px;">
             <h3 id="workspace-title" style="margin:0; font-size:1.15rem;">Workspace</h3>
             <div style="display: flex; gap: 8px;">
-                <button class="btn primary" style="width: auto; margin:0; padding: 8px 16px; font-size:0.8rem;" onclick="finalizeAuditFlow()">Finalize</button>
+                <button class="btn primary" style="width: auto; margin:0; padding: 8px 16px; font-size:0.8rem;" onclick="finalizeAuditFlow()">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    Close Audit
+                </button>
+                <button class="btn" style="width: auto; margin:0; padding: 8px 16px; font-size:0.8rem; color:var(--accent); border-color:rgba(59,130,246,0.4);" onclick="refreshTableFromSavedData()" title="Refresh table from saved Excel data">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    Refresh Table
+                </button>
                 <button class="btn danger" style="width: auto; margin:0; padding: 8px 16px; font-size:0.8rem;" onclick="discardWorkspace()">Discard</button>
                 <button class="btn" style="width: auto; margin:0; padding: 8px 16px; font-size:0.8rem;" onclick="requestExitWorkspace()">Menu</button>
             </div>
@@ -1149,13 +1156,13 @@
         </div>
 
         <div class="legend-hint">
-            <span><span class="legend-dot" style="background:#10b981;"></span> <b>Fin</b> = Finalized Audit</span>
+            <span><span class="legend-dot" style="background:#10b981;"></span> <b>Cls</b> = Closed Audit</span>
             <span><span class="legend-dot" style="background:#f59e0b;"></span> <b>Drf</b> = Ongoing Draft</span>
         </div>
 
         <div class="table-wrap" style="margin-bottom: 20px;">
             <table>
-                <thead><tr><th>Period</th><th>Status</th><th>Actions</th></tr></thead>
+                <thead><tr><th>Period</th><th>Audit No.</th><th>Status</th><th>Actions</th></tr></thead>
                 <tbody id="archive-tbody"></tbody>
             </table>
         </div>
@@ -1549,7 +1556,22 @@ window.addEventListener('DOMContentLoaded', () => {
 
     localforage.getItem('db_index').then(val => { if(val) dbIndex = val; });
 
-    async function saveSessionToDB(sessionData) { dbIndex[currentSessionKey] = { month: sessionData.month, year: sessionData.year, finalized: sessionData.finalized || false, last_saved: sessionData.last_saved, audit_remark: sessionData.audit_remark || '' }; await localforage.setItem('db_index', dbIndex); await localforage.setItem(currentSessionKey, sessionData); }      
+    async function saveSessionToDB(sessionData) { 
+        dbIndex[currentSessionKey] = { 
+            month: sessionData.month, 
+            year: sessionData.year, 
+            finalized: sessionData.finalized || false, 
+            last_saved: sessionData.last_saved, 
+            audit_remark: sessionData.audit_remark || '',
+            audit_number: sessionData.audit_number || dbIndex[currentSessionKey]?.audit_number || undefined,
+            audit_cancel_count: sessionData.audit_cancel_count || dbIndex[currentSessionKey]?.audit_cancel_count || 0,
+            audit_cancel_history: sessionData.audit_cancel_history || dbIndex[currentSessionKey]?.audit_cancel_history || []
+        }; 
+        // Remove undefined keys
+        if (!dbIndex[currentSessionKey].audit_number) delete dbIndex[currentSessionKey].audit_number;
+        await localforage.setItem('db_index', dbIndex); 
+        await localforage.setItem(currentSessionKey, sessionData); 
+    }
     function showLoader(show) { document.getElementById('loader').style.display = show ? 'flex' : 'none'; }
     function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); if(id === 'screen-menu') setTimeout(loadDashboardNotifications, 100); if(id === 'screen-new-audit') { const today = new Date(); const y = today.getFullYear(); const m = today.getMonth(); const firstDay = new Date(y, m, 1).toISOString().split('T')[0]; const lastDay = new Date(y, m + 1, 0).toISOString().split('T')[0]; const fromEl = document.getElementById('audit-from'); const toEl = document.getElementById('audit-to'); if(!fromEl.value) { fromEl.value = firstDay; setTimeout(() => setMonthPickerValue('mp-from', y, m), 0); } if(!toEl.value) { toEl.value = lastDay; setTimeout(() => setMonthPickerValue('mp-to', y, m), 0); } } }
 
@@ -1640,7 +1662,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(keys.length === 0) return showAppAlert("No audits saved. Please create an audit first.");
         
         optContainer.innerHTML = '<div class="custom-option" data-value="__all__">All Months Combined</div>';
-        keys.forEach(k => { optContainer.innerHTML += `<div class="custom-option" data-value="${k}">${dbIndex[k].month} ${dbIndex[k].finalized ? '(Finalized)' : '(Draft)'}</div>`; });
+        keys.forEach(k => { optContainer.innerHTML += `<div class="custom-option" data-value="${k}">${dbIndex[k].month}${dbIndex[k].audit_number ? ' [' + dbIndex[k].audit_number + ']' : ''} ${dbIndex[k].finalized ? '(Closed)' : '(Draft)'}</div>`; });
         
         showScreen('screen-dashboard');
 
@@ -1829,6 +1851,98 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
 
+    // ── Smart File Month Validator ──
+    // Scans ALL date-looking columns in the file, extracts majority month/year,
+    // and compares with the selected audit period. Returns { valid, fileMonth, fileYear, colUsed } or throws.
+    function detectFileDateMonth(jsonData, colMapping) {
+        if (!jsonData || jsonData.length === 0) return null;
+
+        const sampleRows = jsonData.slice(0, Math.min(80, jsonData.length));
+        const allHeaders = Object.keys(jsonData[0]);
+
+        // Step 1: Find all date-looking columns by keyword OR by actual value pattern
+        const dateKeywords = ['date','dt','day','claimdt','clmdt','claimdate','clmdate','repairdate','servicedate','invoicedate','jobcarddate','rcvdate','receiveddate','entrydate','submissiondate','dealerdate','dealerdt','registrationdate','regdate','regdt','claimsubmission'];
+        
+        const dateCols = [];
+        allHeaders.forEach(h => {
+            const hl = h.toString().toLowerCase().replace(/[\s_\-\.]/g,'');
+            if (dateKeywords.some(k => hl.includes(k))) {
+                dateCols.push(h);
+                return;
+            }
+            // Also detect by value pattern — check if >60% of sample rows have a date-like value
+            let dateCount = 0;
+            sampleRows.forEach(row => {
+                const v = String(row[h] || '').trim();
+                // Matches: dd/mm/yyyy, dd-mm-yyyy, yyyy-mm-dd, dd-Mon-yyyy, serial numbers (Excel date numbers)
+                if (/\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(v) || /\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}/.test(v) || /\d{1,2}[\/\-][A-Za-z]{3}[\/\-]\d{2,4}/.test(v) || (/^\d{5}$/.test(v) && parseInt(v) > 40000 && parseInt(v) < 60000)) {
+                    dateCount++;
+                }
+            });
+            if (sampleRows.length > 0 && (dateCount / sampleRows.length) > 0.6) dateCols.push(h);
+        });
+
+        if (dateCols.length === 0) return null; // No date column found — skip validation
+
+        // Step 2: Parse dates from each detected column, collect month/year counts
+        const parseDate = (val) => {
+            if (!val) return null;
+            const v = String(val).trim();
+            // Excel serial number
+            if (/^\d{5}$/.test(v)) {
+                const serial = parseInt(v);
+                if (serial > 40000 && serial < 60000) {
+                    const d = new Date((serial - 25569) * 86400 * 1000);
+                    return { m: d.getUTCMonth(), y: d.getUTCFullYear() };
+                }
+            }
+            // dd/mm/yyyy or dd-mm-yyyy
+            let m = v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+            if (m) {
+                const day = parseInt(m[1]), mon = parseInt(m[2]), yr = parseInt(m[3]);
+                const year = yr < 100 ? 2000 + yr : yr;
+                if (mon >= 1 && mon <= 12) return { m: mon - 1, y: year };
+            }
+            // yyyy-mm-dd
+            m = v.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+            if (m) return { m: parseInt(m[2]) - 1, y: parseInt(m[1]) };
+            // dd-Mon-yyyy or dd/Mon/yyyy
+            m = v.match(/^(\d{1,2})[\/\-]([A-Za-z]{3})[\/\-](\d{2,4})$/);
+            if (m) {
+                const months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+                const mi = months.indexOf(m[2].toLowerCase());
+                if (mi !== -1) { const yr = parseInt(m[3]); return { m: mi, y: yr < 100 ? 2000 + yr : yr }; }
+            }
+            // Native Date parse fallback
+            const d = new Date(v);
+            if (!isNaN(d.getTime())) return { m: d.getMonth(), y: d.getFullYear() };
+            return null;
+        };
+
+        // Step 3: For each date column, count month/year combos
+        let bestCol = null, bestMonthYear = null, bestCount = 0;
+        dateCols.forEach(col => {
+            const counts = {};
+            sampleRows.forEach(row => {
+                const parsed = parseDate(row[col]);
+                if (!parsed) return;
+                const key = `${parsed.y}-${parsed.m}`;
+                counts[key] = (counts[key] || 0) + 1;
+            });
+            const topEntry = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
+            if (topEntry && topEntry[1] > bestCount) {
+                bestCount = topEntry[1];
+                bestCol = col;
+                const [y, m] = topEntry[0].split('-').map(Number);
+                bestMonthYear = { y, m };
+            }
+        });
+
+        if (!bestMonthYear || bestCount < 3) return null; // Too few parseable dates — skip
+
+        return { fileMonth: bestMonthYear.m, fileYear: bestMonthYear.y, colUsed: bestCol, matchCount: bestCount };
+    }
+
     // --- WORKSPACE CREATION ---
     function startNewAudit() {
         const fileInput = document.getElementById('audit-file'); const fromDate = document.getElementById('audit-from'); const toDate = document.getElementById('audit-to');
@@ -1855,16 +1969,57 @@ window.addEventListener('DOMContentLoaded', () => {
                 if(jsonData.length === 0) throw new Error("File empty.");
                 colMap = detectColumns(Object.keys(jsonData[0])); if(!colMap.claim_no) throw new Error("Could not detect Claim No column.");
 
-                currentData = jsonData.filter(row => {
+                // ── Smart Month Validation ──
+                const fromDt = new Date(fromDate.value);
+                const toDt = new Date(toDate.value);
+                const dateCheck = detectFileDateMonth(jsonData, colMap);
+                if (dateCheck) {
+                    const fileMonthName = new Date(dateCheck.fileYear, dateCheck.fileMonth, 1).toLocaleDateString('en-GB', {month:'long', year:'numeric'});
+                    // Check if file's majority month falls within the selected audit period
+                    const fileDate = new Date(dateCheck.fileYear, dateCheck.fileMonth, 1);
+                    const fromMonth = new Date(fromDt.getFullYear(), fromDt.getMonth(), 1);
+                    const toMonth = new Date(toDt.getFullYear(), toDt.getMonth(), 1);
+                    const isMatch = fileDate >= fromMonth && fileDate <= toMonth;
+                    if (!isMatch) {
+                        showLoader(false);
+                        const selectedPeriod = fromStr === toStr ? fromStr : `${fromStr} to ${toStr}`;
+                        return showAppAlert(
+                            `❌ Wrong File — Month Mismatch!\n\n` +
+                            `You selected audit period: ${selectedPeriod}\n` +
+                            `But this file contains data for: ${fileMonthName}\n\n` +
+                            `Column detected: "${dateCheck.colUsed}" (${dateCheck.matchCount} rows matched)\n\n` +
+                            `Please upload the correct file for ${selectedPeriod}.`
+                        );
+                    }
+                }
+
+                const filteredData = jsonData.filter(row => {
                     const type = String(row[colMap.claim_type] || "").toUpperCase(); const amt = parseFloat(row[colMap.amount]) || 0; const desc = String(row[colMap.part_desc] || "").toUpperCase();
                     if (type.includes("FREE SERVICE") || type.includes("FSC")) return false;
                     if (type.includes("CAMPAIGN") && amt < 300 && !desc.includes("POWER WINDOW") && !desc.includes("FUEL PUMP")) return false;
                     return true;
                 });
-                currentSessionKey = `audit_${fromDate.value}_${toDate.value}_${Date.now()}`; currentAuditData = {}; workspaceCurrentFilter = 'all'; currentFilteredData = [...currentData]; currentPage = 1; _isNewSession = true; _sessionSnapshot = null;
-                await saveSessionToDB({ month: periodString, year: '', last_saved: new Date().toLocaleString(), finalized: false, col_map: colMap, audit_data: currentAuditData, raw_data: currentData });
-                document.getElementById('workspace-title').innerText = periodString; showScreen('screen-workspace'); updateStats(); renderTablePage();
-            } catch(err) { showAppAlert(err.message); } finally { showLoader(false); }
+
+                const launchSession = async (saveRawData) => {
+                    currentData = filteredData;
+                    currentSessionKey = `audit_${fromDate.value}_${toDate.value}_${Date.now()}`; 
+                    currentAuditData = {}; workspaceCurrentFilter = 'all'; currentFilteredData = [...currentData]; currentPage = 1; _isNewSession = true; _sessionSnapshot = null;
+                    const sessionToSave = { month: periodString, year: '', last_saved: new Date().toLocaleString(), finalized: false, col_map: colMap, audit_data: currentAuditData };
+                    if (saveRawData) sessionToSave.raw_data = filteredData; // Only save raw data if user chose yes
+                    await saveSessionToDB(sessionToSave);
+                    document.getElementById('workspace-title').innerText = periodString; showLoader(false); showScreen('screen-workspace'); updateStats(); renderTablePage();
+                };
+
+                showLoader(false);
+                // Ask user whether to save Excel data in the program
+                showAppConfirm(
+                    `Save Excel data in the program?\n\n• YES — Data stored locally. Refresh Table will work even if you close and reopen.\n• NO — Data loads for this session only. Storage stays clean.\n\n(${filteredData.length} claims loaded)`,
+                    () => launchSession(true)   // Yes: save raw_data
+                );
+                // Override the No button to also launch session (without saving raw data)
+                document.getElementById('dialog-btn-no').onclick = () => { closeDialog(); launchSession(false); };
+
+            } catch(err) { showLoader(false); showAppAlert(err.message); }
         }; setTimeout(() => reader.readAsArrayBuffer(fileInput.files[0]), 50);
     }
 
@@ -2217,6 +2372,22 @@ window.addEventListener('DOMContentLoaded', () => {
         else { applyWorkspaceFilters(); } 
     }
 
+    // ── Audit Number Generation Helpers ──
+    function _generateAuditNumber() {
+        // Format: W00[YY][seq] e.g. W002500001
+        const year = new Date().getFullYear().toString().slice(-2);
+        // Count existing audit numbers for this year
+        let seq = 1;
+        for (const key of Object.keys(dbIndex)) {
+            const meta = dbIndex[key];
+            if (meta.audit_number) {
+                const prefix = 'W00' + year;
+                if (meta.audit_number.startsWith(prefix)) seq++;
+            }
+        }
+        return 'W00' + year + String(seq).padStart(3, '0');
+    }
+
     async function finalizeAuditFlow() {
         if(!currentData || currentData.length === 0) return;
         let audited = 0; let clear = 0;
@@ -2245,20 +2416,19 @@ window.addEventListener('DOMContentLoaded', () => {
                 summary += `  ${f}: ${c}\n`;
             }
         }
-        summary += `\nFinalize this audit?`;
+        summary += `\nClose this audit?`;
 
-        const processFinalize = async (auditRemark) => {
+        const processClose = async (auditRemark) => {
             showLoader(true);
             const session = await localforage.getItem(currentSessionKey);
             session.finalized = true;
             if(auditRemark) session.audit_remark = auditRemark;
             await saveSessionToDB(session);
-            showLoader(false); showAppAlert("Audit finalized and saved."); showScreen('screen-menu');
+            showLoader(false); showAppAlert("Audit closed and saved."); showScreen('screen-menu');
         };
 
         // Show summary confirm first, then prompt for optional remark (allows empty)
         showAppConfirm(summary, () => {
-            // Custom prompt that allows empty value (remark is optional)
             const msg = "Add a final remark for this audit?\n(Leave blank and press Confirm to skip)";
             document.getElementById('dialog-msg').innerText = msg;
             document.getElementById('dialog-input-wrapper').style.display = 'block';
@@ -2275,15 +2445,125 @@ window.addEventListener('DOMContentLoaded', () => {
             document.getElementById('dialog-btn-yes').onclick = () => {
                 const remark = input.value.trim();
                 closeDialog();
-                // Reset input style back to PIN style for next use
                 input.style.cssText = 'text-align:center; letter-spacing:4px; font-size:1.2rem; margin:0; padding-right:44px; -webkit-text-security:disc; text-security:disc;';
                 input.placeholder = '••••••••';
                 input.setAttribute('inputmode', 'numeric');
-                processFinalize(remark);
+                processClose(remark);
             };
             document.getElementById('app-dialog').classList.add('active');
             setTimeout(() => input.focus(), 100);
         });
+    }
+
+    // ── Refresh Table from Saved Excel Data ──
+    async function refreshTableFromSavedData() {
+        if (!currentSessionKey) return showAppAlert("No active audit session.");
+        showLoader(true);
+        try {
+            // Case 1: currentData already in memory (session-only, user said No to save)
+            if (currentData && currentData.length > 0) {
+                // Just re-apply the table display from current in-memory data — touch nothing else
+                currentFilteredData = [...currentData];
+                currentPage = 1;
+                workspaceCurrentFilter = 'all';
+                // Reset filter buttons
+                document.querySelectorAll('.ws-filter-btn').forEach(b => b.classList.remove('active-filter'));
+                const allBtn = document.getElementById('ws-filter-all'); if (allBtn) allBtn.classList.add('active-filter');
+                updateStats();
+                renderTablePage();
+                showLoader(false);
+                showToast('Table refreshed from session data. Audit entries untouched.', 'success', 3000);
+                return;
+            }
+
+            // Case 2: No in-memory data — try to load raw_data from storage
+            const session = await localforage.getItem(currentSessionKey);
+            if (session && session.raw_data && session.raw_data.length > 0) {
+                // Restore only the table-relevant columns from saved raw_data — DO NOT touch audit entries
+                currentData = session.raw_data;
+                colMap = session.col_map;
+                currentFilteredData = [...currentData];
+                currentPage = 1;
+                workspaceCurrentFilter = 'all';
+                document.querySelectorAll('.ws-filter-btn').forEach(b => b.classList.remove('active-filter'));
+                const allBtn = document.getElementById('ws-filter-all'); if (allBtn) allBtn.classList.add('active-filter');
+                updateStats();
+                renderTablePage();
+                showLoader(false);
+                showToast('Table refreshed from saved data. Audit entries untouched.', 'success', 3000);
+                return;
+            }
+
+            // Case 3: Nothing available anywhere — offer to re-upload the Excel file with month validation
+            showLoader(false);
+            showAppConfirm(
+                "No table data in memory or storage.\n\nThe Excel file was not saved for this audit.\nUpload the file now to refresh the table?\n\n(Your audit entries are completely safe)",
+                () => {
+                    // Create a temporary file input for re-upload
+                    const tmpInput = document.createElement('input');
+                    tmpInput.type = 'file'; tmpInput.accept = '.xlsx,.xls,.csv'; tmpInput.style.display = 'none';
+                    document.body.appendChild(tmpInput);
+                    tmpInput.onchange = async function() {
+                        const file = tmpInput.files[0]; document.body.removeChild(tmpInput);
+                        if (!file) return;
+                        showLoader(true);
+                        const rdr = new FileReader();
+                        rdr.onload = async function(ev) {
+                            try {
+                                const wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array'});
+                                const jd = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:''});
+                                if (!jd.length) throw new Error('File empty.');
+                                const cm = detectColumns(Object.keys(jd[0]));
+                                if (!cm.claim_no) throw new Error('Could not detect Claim No column.');
+
+                                // ── Month validation against current session's period ──
+                                const session = await localforage.getItem(currentSessionKey);
+                                if (session) {
+                                    // Extract from & to from session key: audit_YYYY-MM-DD_YYYY-MM-DD_ts
+                                    const parts = currentSessionKey.split('_');
+                                    if (parts.length >= 3) {
+                                        const fromDt = new Date(parts[1]);
+                                        const toDt = new Date(parts[2]);
+                                        const dateCheck = detectFileDateMonth(jd, cm);
+                                        if (dateCheck) {
+                                            const fileDate = new Date(dateCheck.fileYear, dateCheck.fileMonth, 1);
+                                            const fromMonth = new Date(fromDt.getFullYear(), fromDt.getMonth(), 1);
+                                            const toMonth = new Date(toDt.getFullYear(), toDt.getMonth(), 1);
+                                            const isMatch = fileDate >= fromMonth && fileDate <= toMonth;
+                                            if (!isMatch) {
+                                                showLoader(false);
+                                                const fileMon = new Date(dateCheck.fileYear, dateCheck.fileMonth, 1).toLocaleDateString('en-GB', {month:'long', year:'numeric'});
+                                                return showAppAlert(`❌ Wrong File!\n\nThis file is for: ${fileMon}\nBut this audit is for: ${session.month}\n\nUpload the correct file for ${session.month}.`);
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Filter same as new audit
+                                const fd = jd.filter(row => {
+                                    const type = String(row[cm.claim_type]||'').toUpperCase(); const amt = parseFloat(row[cm.amount])||0; const desc = String(row[cm.part_desc]||'').toUpperCase();
+                                    if (type.includes('FREE SERVICE')||type.includes('FSC')) return false;
+                                    if (type.includes('CAMPAIGN')&&amt<300&&!desc.includes('POWER WINDOW')&&!desc.includes('FUEL PUMP')) return false;
+                                    return true;
+                                });
+                                currentData = fd; colMap = cm;
+                                currentFilteredData = [...currentData]; currentPage = 1; workspaceCurrentFilter = 'all';
+                                document.querySelectorAll('.ws-filter-btn').forEach(b => b.classList.remove('active-filter'));
+                                const ab = document.getElementById('ws-filter-all'); if(ab) ab.classList.add('active-filter');
+                                updateStats(); renderTablePage();
+                                showLoader(false);
+                                showToast(`Table refreshed from uploaded file. ${fd.length} claims loaded. Audit entries untouched.`, 'success', 4000);
+                            } catch(err) { showLoader(false); showAppAlert('Refresh failed: ' + err.message); }
+                        };
+                        rdr.readAsArrayBuffer(file);
+                    };
+                    tmpInput.click();
+                }
+            );
+        } catch(e) {
+            showLoader(false);
+            showAppAlert("Refresh failed: " + e.message);
+        }
     }
 
     // --- ARCHIVE ---
@@ -2293,38 +2573,170 @@ window.addEventListener('DOMContentLoaded', () => {
         for (const [key, meta] of Object.entries(dbIndex)) {
             if (meta.finalized === showFinalized) {
                 found = true; const tr = document.createElement('tr');
+                const auditNum = meta.audit_number || '';
+                const isFrozen = !!meta.audit_number; // Audit number generated = frozen
+
+                // Build action buttons based on state
+                let actionBtns = '';
+                if (showFinalized) {
+                    if (!isFrozen) {
+                        actionBtns = `
+                            <button class="btn primary" style="padding:5px 10px; width:auto; margin:0; font-size:0.75rem;" onclick="resumeSession('${key}', ${meta.finalized})">Reopen</button>
+                            <button class="btn" style="padding:5px 10px; width:auto; margin:0; font-size:0.75rem; color:var(--accent); border-color:rgba(59,130,246,0.4);" onclick="generateAuditNumber('${key}')">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Gen No.
+                            </button>
+                            <button class="btn danger" style="padding:5px 10px; width:auto; margin:0; font-size:0.75rem;" onclick="deleteSession('${key}', ${meta.finalized})">Del</button>`;
+                    } else {
+                        actionBtns = `
+                            <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.4);color:var(--success);font-size:0.7rem;font-weight:700;">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Frozen
+                            </span>
+                            <button class="btn danger" style="padding:5px 10px; width:auto; margin:0; font-size:0.75rem;" onclick="cancelAuditNumber('${key}')">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Cancel No.
+                            </button>`;
+                    }
+                } else {
+                    actionBtns = `
+                        <button class="btn primary" style="padding:5px 10px; width:auto; margin:0; font-size:0.75rem;" onclick="resumeSession('${key}', ${meta.finalized})">Open</button>
+                        <button class="btn danger" style="padding:5px 10px; width:auto; margin:0; font-size:0.75rem;" onclick="deleteSession('${key}', ${meta.finalized})">Del</button>`;
+                }
+
+                // Cancellation count badge
+                const cancelCount = meta.audit_cancel_count || 0;
+                const cancelBadge = cancelCount > 0
+                    ? `<span style="display:inline-flex;align-items:center;gap:3px;margin-left:6px;padding:2px 7px;border-radius:10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--danger);font-size:0.65rem;font-weight:700;" title="Audit number cancelled ${cancelCount} time(s)">✕${cancelCount} cancelled</span>` : '';
+
                 tr.innerHTML = `
-                    <td style="font-weight:600;">${meta.month}<br><span style="font-size:0.7rem; color:var(--text-muted); font-weight:normal;">${meta.last_saved}</span>${meta.audit_remark ? `<br><span style="font-size:0.7rem; color:var(--accent); font-weight:600; font-style:italic;">"${meta.audit_remark}"</span>` : ''}</td>
-                    <td><span class="badge ${meta.finalized ? 'status-clear' : 'status-unclear'}">${meta.finalized ? 'Fin' : 'Drf'}</span></td>
-                    <td><div style="display:flex; gap:6px;"><button class="btn primary" style="padding:6px; width:auto; margin:0;" onclick="resumeSession('${key}', ${meta.finalized})">Open</button><button class="btn danger" style="padding:6px; width:auto; margin:0;" onclick="deleteSession('${key}', ${meta.finalized})">Del</button></div></td>
+                    <td style="font-weight:600;">${meta.month}<br>
+                        <span style="font-size:0.7rem; color:var(--text-muted); font-weight:normal;">${meta.last_saved}</span>
+                        ${meta.audit_remark ? `<br><span style="font-size:0.7rem; color:var(--accent); font-weight:600; font-style:italic;">"${meta.audit_remark}"</span>` : ''}
+                    </td>
+                    <td style="font-size:0.8rem;">
+                        ${auditNum ? `<span style="font-family:monospace;font-weight:800;color:var(--success);background:rgba(16,185,129,0.1);padding:3px 8px;border-radius:6px;border:1px solid rgba(16,185,129,0.3);">${auditNum}</span>${cancelBadge}` : '<span style="color:var(--text-muted);font-size:0.72rem;">Not generated</span>'}
+                    </td>
+                    <td><span class="badge ${meta.finalized ? 'status-clear' : 'status-unclear'}">${meta.finalized ? 'Cls' : 'Drf'}</span></td>
+                    <td><div style="display:flex; gap:5px; flex-wrap:wrap;">${actionBtns}</div></td>
                 `; tbody.appendChild(tr);
             }
         }
-        if(!found) tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding: 20px;">No records found.</td></tr>`;
+        if(!found) tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding: 20px;">No records found.</td></tr>`;
         showLoader(false); showScreen('screen-archive');
     }
 
-    async function resumeSession(key, isFinalized) { if (isFinalized) { verifyPasswordFlow(() => loadSession(key)); } else { loadSession(key); } }
+    async function generateAuditNumber(key) {
+        const meta = dbIndex[key];
+        if (!meta) return;
+        if (meta.audit_number) return showAppAlert("Audit number already generated: " + meta.audit_number);
+
+        const newNum = _generateAuditNumber();
+        showAppConfirm(
+            `Generate Audit Number?\n\nAudit: ${meta.month}\nNumber: ${newNum}\n\n⚠️ Once generated, this audit will be FROZEN.\nNo changes can be made without cancelling the number.\n\nAre you sure?`,
+            async () => {
+                showLoader(true);
+                try {
+                    const session = await localforage.getItem(key);
+                    dbIndex[key].audit_number = newNum;
+                    dbIndex[key].audit_number_generated_at = new Date().toISOString();
+                    if (!dbIndex[key].audit_cancel_history) dbIndex[key].audit_cancel_history = [];
+                    await localforage.setItem('db_index', dbIndex);
+                    if (session) { session.audit_number = newNum; await localforage.setItem(key, session); }
+                    showLoader(false);
+                    // Animated success toast
+                    showToast(`✅ Audit Number Generated: ${newNum} — Audit is now FROZEN.`, 'success', 5000);
+                    openArchive(true);
+                } catch(e) {
+                    showLoader(false);
+                    showAppAlert("Failed: " + e.message);
+                }
+            }
+        );
+    }
+
+    async function cancelAuditNumber(key) {
+        const meta = dbIndex[key];
+        if (!meta || !meta.audit_number) return showAppAlert("No audit number to cancel.");
+        const numToCancel = meta.audit_number;
+
+        // Require password to cancel
+        showAppPrompt(`Cancel Audit Number: ${numToCancel}\n\nEnter Master Password to confirm:`, true, async (attempt) => {
+            if (!secConfig.masterHash) return showAppAlert("No master password set. Please set a password in Security Settings first.");
+            if (await sha256(attempt) !== secConfig.masterHash) return showAppAlert("Incorrect Password. Cancellation denied.");
+
+            showAppConfirm(
+                `Confirm Cancel Audit Number?\n\nNumber: ${numToCancel}\nAudit: ${meta.month}\n\n⚠️ This will UNFREEZE the audit and remove the audit number.\nThis cancellation will be permanently recorded.`,
+                async () => {
+                    showLoader(true);
+                    try {
+                        const session = await localforage.getItem(key);
+                        const cancelRecord = {
+                            cancelled_number: numToCancel,
+                            cancelled_at: new Date().toISOString(),
+                            cancelled_by: 'Master Password Verified'
+                        };
+                        if (!dbIndex[key].audit_cancel_history) dbIndex[key].audit_cancel_history = [];
+                        dbIndex[key].audit_cancel_history.push(cancelRecord);
+                        dbIndex[key].audit_cancel_count = (dbIndex[key].audit_cancel_count || 0) + 1;
+                        delete dbIndex[key].audit_number;
+                        delete dbIndex[key].audit_number_generated_at;
+                        await localforage.setItem('db_index', dbIndex);
+                        if (session) {
+                            delete session.audit_number;
+                            if (!session.audit_cancel_history) session.audit_cancel_history = [];
+                            session.audit_cancel_history.push(cancelRecord);
+                            await localforage.setItem(key, session);
+                        }
+                        showLoader(false);
+                        showToast(`Audit Number ${numToCancel} cancelled. Audit is now unfrozen. History recorded.`, 'warning', 5000);
+                        openArchive(true);
+                    } catch(e) {
+                        showLoader(false);
+                        showAppAlert("Failed: " + e.message);
+                    }
+                }
+            );
+        });
+    }
+
+    async function resumeSession(key, isFinalized) {
+        const meta = dbIndex[key];
+        if (meta && meta.audit_number) {
+            return showAppAlert(`This audit is FROZEN.\nAudit Number: ${meta.audit_number}\n\nTo make changes, go to Previous Audits and cancel the audit number first.`);
+        }
+        if (isFinalized) { verifyPasswordFlow(() => loadSession(key)); } else { loadSession(key); }
+    }
     
     async function loadSession(key) {
         showLoader(true); const session = await localforage.getItem(key); if(!session) { showLoader(false); return showAppAlert("Error loading session."); }
-        currentSessionKey = key; currentData = session.raw_data; workspaceCurrentFilter = 'all'; currentFilteredData = [...currentData]; 
-        currentAuditData = session.audit_data; colMap = session.col_map; currentPage = 1; _isNewSession = false;
+        currentSessionKey = key; 
+        currentData = session.raw_data || []; // raw_data may not exist if user chose not to save it
+        workspaceCurrentFilter = 'all'; currentFilteredData = [...currentData]; 
+        currentAuditData = session.audit_data || {}; colMap = session.col_map || {}; currentPage = 1; _isNewSession = false;
         _sessionSnapshot = JSON.parse(JSON.stringify(session.audit_data || {})); // snapshot before any edits
         document.getElementById('workspace-title').innerText = session.month; document.getElementById('search-claim').value = '';
-        updateStats(); renderTablePage(); showLoader(false); showScreen('screen-workspace');
+        showLoader(false);
+        if (currentData.length === 0) {
+            showScreen('screen-workspace'); updateStats(); renderTablePage();
+            // Notify user table data not available — show a prominent hint
+            showToast('Table data not saved for this audit. Use "Refresh Table" to upload the Excel file.', 'warning', 6000);
+        } else {
+            updateStats(); renderTablePage(); showScreen('screen-workspace');
+        }
     }
 
     async function deleteSession(key, isFinalized) {
+        const meta = dbIndex[key];
+        if (meta && meta.audit_number) {
+            return showAppAlert(`Cannot delete a FROZEN audit.\nAudit Number: ${meta.audit_number}\n\nCancel the audit number first to delete.`);
+        }
         const delOp = async () => { delete dbIndex[key]; await localforage.setItem('db_index', dbIndex); await localforage.removeItem(key); openArchive(document.getElementById('archive-title').innerText.includes('Previous')); };
-        if (isFinalized) { verifyPasswordFlow(() => showAppConfirm("Permanently delete this Finalized Audit?", delOp)); } else { showAppConfirm("Permanently delete this Draft?", () => verifyPasswordFlow(delOp)); }
+        if (isFinalized) { verifyPasswordFlow(() => showAppConfirm("Permanently delete this Closed Audit?", delOp)); } else { showAppConfirm("Permanently delete this Draft?", () => verifyPasswordFlow(delOp)); }
     }
 
     // --- REPORTING & EXPORT ENGINE ---
     function openReportingMenu() {
         const optContainer = document.getElementById('options-report-scope');
         optContainer.innerHTML = '<div class="custom-option selected" data-value="master">Master Report (All Dates)</div>';
-        for (const [key, meta] of Object.entries(dbIndex)) { optContainer.innerHTML += `<div class="custom-option" data-value="${key}">${meta.month} ${meta.finalized ? '(Fin)' : '(Drf)'}</div>`; }
+        for (const [key, meta] of Object.entries(dbIndex)) { optContainer.innerHTML += `<div class="custom-option" data-value="${key}">${meta.month}${meta.audit_number ? ' [' + meta.audit_number + ']' : ''} ${meta.finalized ? '(Cls)' : '(Drf)'}</div>`; }
         showScreen('screen-reports');
     }
 
@@ -2405,6 +2817,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const headers = combinedClear.length > 0 ? Object.keys(combinedClear[0]) : Object.keys(combinedUnclear[0]);
                 const periodLabel = scope === 'master' ? 'All Periods' : (dbIndex[scope] ? dbIndex[scope].month : scope);
                 const scopeRemark = scope !== 'master' && dbIndex[scope] && dbIndex[scope].audit_remark ? dbIndex[scope].audit_remark : '';
+                const scopeAuditNum = scope !== 'master' && dbIndex[scope] && dbIndex[scope].audit_number ? dbIndex[scope].audit_number : '';
 
                 // ── Helper: apply cell style ──
                 function cellStyle(ws, addr, s) { if(!ws[addr]) ws[addr]={v:'',t:'s'}; ws[addr].s = s; }
@@ -2425,7 +2838,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const aoa = []; let r = 0;
 
                 // Row 0: Title
-                aoa.push([`WARRANTY AUDIT REPORT — ${periodLabel}`]);
+                aoa.push([`WARRANTY AUDIT REPORT — ${periodLabel}${scopeAuditNum ? '  |  Audit No: ' + scopeAuditNum : ''}`]);
                 // Row 1: Meta
                 aoa.push([`Generated: ${new Date().toLocaleString()}   |   Auditor: Aashish Giri H   |   Filter: ${filter}`]);
                 // Row 2: Remark (if any)
@@ -2559,6 +2972,11 @@ window.addEventListener('DOMContentLoaded', () => {
                     doc.setFontSize(8); doc.setFont(undefined, 'normal');
                     doc.text(`Period: ${periodLabel}`, 14, 18);
                     doc.text(`Generated: ${now}`, 14, 23);
+                    // Show audit number if available
+                    const scopeAuditNum = scope !== 'master' && dbIndex[scope] && dbIndex[scope].audit_number ? dbIndex[scope].audit_number : null;
+                    if (scopeAuditNum) {
+                        doc.text(`Audit No: ${scopeAuditNum}`, 14, 28);
+                    }
                     doc.setFontSize(8);
                     doc.text(`Auditor: Aashish Giri H`, pageW - 14, 18, { align: 'right' });
                     doc.text(`Filter: ${filter}  |  Total Claims: ${totalClaims}`, pageW - 14, 23, { align: 'right' });
@@ -2817,7 +3235,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(!btn)return;
         const st=document.getElementById('autosync-status-text'),tr=document.getElementById('autosync-triggers'),wa=document.getElementById('autosync-warning');
         if(en){btn.innerText='ON';btn.style.cssText='padding:6px 14px;border-radius:20px;font-size:0.78rem;font-weight:700;cursor:pointer;background:rgba(16,185,129,0.15);color:var(--success);border:1px solid rgba(16,185,129,0.4);';const ls=localStorage.getItem('gist_last_sync');if(st)st.innerText=ls?'Last sync: '+ls:'Active — not synced yet';if(tr)tr.style.display='block';if(wa)wa.style.display='block';}
-        else{btn.innerText='OFF';btn.style.cssText='padding:6px 14px;border-radius:20px;font-size:0.78rem;font-weight:700;cursor:pointer;background:var(--surface);color:var(--text-muted);border:1px solid var(--border);';if(st)st.innerText='Enable to auto-backup on finalize, close & every 3 min';if(tr)tr.style.display='none';if(wa)wa.style.display='none';}
+        else{btn.innerText='OFF';btn.style.cssText='padding:6px 14px;border-radius:20px;font-size:0.78rem;font-weight:700;cursor:pointer;background:var(--surface);color:var(--text-muted);border:1px solid var(--border);';if(st)st.innerText='Enable to auto-backup on close & every 3 min';if(tr)tr.style.display='none';if(wa)wa.style.display='none';}
         updateLastSyncCard();
     }
 
@@ -3127,7 +3545,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     const _oFA=finalizeAuditFlow;
-    finalizeAuditFlow=async function(){await _oFA();if(isAutoSyncOn()&&localStorage.getItem('gist_token_enc'))setTimeout(()=>silentAutoSync('finalize'),1500);};
+    finalizeAuditFlow=async function(){await _oFA();if(isAutoSyncOn()&&localStorage.getItem('gist_token_enc'))setTimeout(()=>silentAutoSync('close'),1500);};
 
     setTimeout(()=>{
         if(isAutoSyncOn()&&localStorage.getItem('gist_token_enc')){startSyncTimer();const d=getRateData();if(d.c>=RATE_WARN)checkRate(d.c);}updateHeaderUploadBtn();
