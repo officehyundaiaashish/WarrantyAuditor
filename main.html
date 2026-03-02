@@ -6347,20 +6347,33 @@ Audit: ${session.month}
 
             showLoader(true);
             try {
-                // 1. Create mapping email
                 const email = `${dealerID.toLowerCase()}@warrantyauditor.app`;
 
-                // Note: We cannot create a Firebase Auth user from the client using a DIFFERENT email 
-                // without signing out the current admin. 
-                // In this implementation, we will write to a 'pending_users' collection 
-                // or assume the user will sign up themselves, OR we use a Cloud Function.
-                // FOR THIS UI DEMO: We will write the document to 'users' collection. 
-                // The Master Admin will have to manually create the Firebase Auth entry or we explain the limitation.
+                // 1. Dynamically import required Firebase modules
+                const { initializeApp, deleteApp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+                const { getAuth, createUserWithEmailAndPassword } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
 
-                // IMPORTANT: Since we don't have a backend/cloud functions here, 
-                // we'll instruct the Master User that Auth must be enabled.
+                // 2. Create a temporary Firebase app to avoid logging out the Master ID
+                const tempAppName = "TempApp_" + Date.now();
+                const tempConfig = {
+                    apiKey: "AIzaSyAJZDURUl_Xh2FWjoVwGLZ4yuhVdFUZMHc",
+                    authDomain: "warranty-auditor.firebaseapp.com",
+                    projectId: "warranty-auditor",
+                    storageBucket: "warranty-auditor.firebasestorage.app",
+                    messagingSenderId: "972734980479",
+                    appId: "1:972734980479:web:21cfbcf8a1d195f3fffa4a"
+                };
+                const tempApp = initializeApp(tempConfig, tempAppName);
+                const tempAuth = getAuth(tempApp);
 
-                const docRef = window._fbDoc(window._fbDb, 'users', dealerID); // Using dealerID as key
+                // 3. Create the actual login credentials in Firebase Auth
+                await createUserWithEmailAndPassword(tempAuth, email, password);
+
+                // 4. Delete the temporary connection immediately
+                await deleteApp(tempApp);
+
+                // 5. Save the user permissions to Firestore database
+                const docRef = window._fbDoc(window._fbDb, 'users', dealerID);
                 await window._fbSetDoc(docRef, {
                     dealerID,
                     email,
@@ -6370,7 +6383,7 @@ Audit: ${session.month}
                 });
 
                 showLoader(false);
-                showAppAlert(`User ${dealerID} document created.\n\nNote: You must also create the login credentials in Firebase Console for ${email}.`);
+                showAppAlert(`Success! User ${dealerID} created.\nThey can now log in immediately with the password you set.`);
                 document.getElementById('new-user-id').value = '';
                 document.getElementById('new-user-pwd').value = '';
                 openUserManagement();
