@@ -2202,9 +2202,16 @@ window.addEventListener('DOMContentLoaded', () => {
         modal.classList.remove('side-panel');
         const r = document.getElementById('modal-remark'); if(r) r.value='';
         const rb = document.getElementById('modal-remark-box'); if(rb) rb.style.display='block';
-        // If side panel was active, restore modal to body-level
+        // Restore wide-layout-wrapper — put table-wrap and pagination back, then remove wrapper
         const wrapperEl = document.getElementById('wide-layout-wrapper');
-        if (wrapperEl && modal.closest('#wide-layout-wrapper')) {
+        if (wrapperEl) {
+            const ws = document.getElementById('screen-workspace');
+            const tableWrap = wrapperEl.querySelector('.table-wrap');
+            const pagi = wrapperEl.querySelector('.pagination');
+            // Put table and pagination back into workspace before removing wrapper
+            if (tableWrap) ws.appendChild(tableWrap);
+            if (pagi) ws.appendChild(pagi);
+            // Put modal back to body level
             document.body.appendChild(modal);
             wrapperEl.remove();
         }
@@ -2288,35 +2295,10 @@ window.addEventListener('DOMContentLoaded', () => {
         const modalBody = document.querySelector('#audit-modal .modal-body');
         if (modalBody) modalBody.scrollTop = 0;
 
+        // Always show as centered popup — no side panel cutting
         const modal = document.getElementById('audit-modal');
-        if (window.innerWidth >= 1100) {
-            // Wide screen: side panel mode
-            modal.classList.add('side-panel');
-            modal.classList.remove('active');
-            // Ensure workspace uses wide layout
-            const ws = document.getElementById('screen-workspace');
-            if (!document.getElementById('wide-layout-wrapper')) {
-                const tableWrap = ws.querySelector('.table-wrap');
-                const pagi = ws.querySelector('.pagination');
-                const wrapper = document.createElement('div');
-                wrapper.id = 'wide-layout-wrapper';
-                wrapper.className = 'wide-layout-wrapper';
-                const left = document.createElement('div');
-                left.className = 'wide-left';
-                const right = document.createElement('div');
-                right.className = 'wide-right';
-                tableWrap.parentNode.insertBefore(wrapper, tableWrap);
-                left.appendChild(tableWrap);
-                left.appendChild(pagi);
-                right.appendChild(modal);
-                wrapper.appendChild(left);
-                wrapper.appendChild(right);
-                ws.appendChild(wrapper);
-            }
-        } else {
-            modal.classList.remove('side-panel');
-            modal.classList.add('active');
-        }
+        modal.classList.remove('side-panel');
+        modal.classList.add('active');
     }
 
     async function saveClaimAudit() {
@@ -2477,20 +2459,102 @@ window.addEventListener('DOMContentLoaded', () => {
             // Always load from raw_data in storage — never from in-memory filtered data
             // Reason: in-memory currentData is filtered, new columns added later won't be there
             const session = await localforage.getItem(currentSessionKey);
-            if (session && session.raw_data && session.raw_data.length > 0) {
-                // raw_data = poora original Excel, koi filter nahi — naye columns bhi populate honge
-                currentData = session.raw_data;
-                colMap = session.col_map;
-                currentFilteredData = [...currentData];
-                currentPage = 1;
-                workspaceCurrentFilter = 'all';
-                document.querySelectorAll('.ws-filter-btn').forEach(b => b.classList.remove('active-filter'));
-                const allBtn = document.getElementById('ws-filter-all'); if (allBtn) allBtn.classList.add('active-filter');
-                updateStats();
-                renderTablePage();
-                showLoader(false);
-                showToast('Table refreshed from original data. Audit entries untouched.', 'success', 3000);
-                return;
+            if (session) {
+                if (session.raw_data && session.raw_data.length > 0) {
+                    // raw_data hai — poora original Excel, koi filter nahi
+                    // Naye columns bhi yahan honge → table mein populate honge
+                    currentData = session.raw_data;
+                    colMap = session.col_map;
+                    currentFilteredData = [...currentData];
+                    currentPage = 1;
+                    workspaceCurrentFilter = 'all';
+                    document.querySelectorAll('.ws-filter-btn').forEach(b => b.classList.remove('active-filter'));
+                    const allBtn = document.getElementById('ws-filter-all'); if (allBtn) allBtn.classList.add('active-filter');
+                    updateStats();
+                    renderTablePage();
+                    showLoader(false);
+                    // Check karo ki koi column unpopulated toh nahi
+                    const sampleRow = session.raw_data[0] || {};
+                    const tableKeys = ['claim_no','ro_no','claim_type','causal_part','part_desc','prod_date','amount'];
+                    const missing = tableKeys.filter(k => session.col_map[k] && !(session.col_map[k] in sampleRow));
+                    if (missing.length > 0) {
+                        showToast(`Table refreshed. Note: ${missing.length} column(s) not found in saved data — re-upload file to populate.`, 'warning', 5000);
+                    } else {
+                        showToast('Table refreshed from original data. Audit entries untouched.', 'success', 3000);
+                    }
+                    return;
+                } else {
+                    // raw_data nahi hai — purana audit tha, file save nahi hui thi
+                    // Sirf yeh batao ki kaunsi fields populated nahi hain
+                    showLoader(false);
+                    const savedColMap = session.col_map || {};
+                    const tableKeys = ['claim_no','ro_no','claim_type','causal_part','part_desc','prod_date','amount'];
+                    const presentCols = tableKeys.filter(k => savedColMap[k]);
+                    const missingCols = tableKeys.filter(k => !savedColMap[k]);
+                    let msg = `This audit has no saved Excel data.
+
+`;
+                    msg += `Columns available in audit: ${presentCols.join(', ') || 'none'}
+`;
+                    if (missingCols.length > 0) msg += `Columns not found: ${missingCols.join(', ')}
+`;
+                    msg += `
+Upload the original file to populate the table.`;
+                    showAppConfirm(msg, () => {
+                        const tmpInput = document.createElement('input');
+                        tmpInput.type = 'file'; tmpInput.accept = '.xlsx,.xls,.csv'; tmpInput.style.display = 'none';
+                        document.body.appendChild(tmpInput);
+                        tmpInput.onchange = async function() {
+                            const file = tmpInput.files[0]; document.body.removeChild(tmpInput);
+                            if (!file) return;
+                            showLoader(true);
+                            const rdr = new FileReader();
+                            rdr.onload = async function(ev) {
+                                try {
+                                    const wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array'});
+                                    const jd = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:''});
+                                    if (!jd.length) throw new Error('File empty.');
+                                    const cm = detectColumns(Object.keys(jd[0]));
+                                    if (!cm.claim_no) throw new Error('Could not detect Claim No column.');
+                                    // Month validation
+                                    const parts = currentSessionKey.split('_');
+                                    if (parts.length >= 3) {
+                                        const dateCheck = detectFileDateMonth(jd, cm);
+                                        if (dateCheck) {
+                                            const fromDt = new Date(parts[1]); const toDt = new Date(parts[2]);
+                                            const fileDate = new Date(dateCheck.fileYear, dateCheck.fileMonth, 1);
+                                            const fromMonth = new Date(fromDt.getFullYear(), fromDt.getMonth(), 1);
+                                            const toMonth = new Date(toDt.getFullYear(), toDt.getMonth(), 1);
+                                            if (fileDate < fromMonth || fileDate > toMonth) {
+                                                showLoader(false);
+                                                const fileMon = new Date(dateCheck.fileYear, dateCheck.fileMonth, 1).toLocaleDateString('en-GB', {month:'long', year:'numeric'});
+                                                return showAppAlert(`❌ Wrong File!
+
+This file: ${fileMon}
+This audit: ${session.month}
+
+Please upload the correct file.`);
+                                            }
+                                        }
+                                    }
+                                    // Save raw_data for future refreshes
+                                    currentData = jd; colMap = cm;
+                                    currentFilteredData = [...currentData]; currentPage = 1; workspaceCurrentFilter = 'all';
+                                    const sess = await localforage.getItem(currentSessionKey);
+                                    if (sess) { sess.raw_data = jd; sess.col_map = cm; await localforage.setItem(currentSessionKey, sess); }
+                                    document.querySelectorAll('.ws-filter-btn').forEach(b => b.classList.remove('active-filter'));
+                                    const ab = document.getElementById('ws-filter-all'); if(ab) ab.classList.add('active-filter');
+                                    updateStats(); renderTablePage();
+                                    showLoader(false);
+                                    showToast(`Table populated. ${jd.length} rows loaded. Audit entries untouched.`, 'success', 4000);
+                                } catch(err) { showLoader(false); showAppAlert('Failed: ' + err.message); }
+                            };
+                            rdr.readAsArrayBuffer(file);
+                        };
+                        tmpInput.click();
+                    });
+                    return;
+                }
             }
 
             // Case 3: Nothing available anywhere — offer to re-upload the Excel file with month validation
