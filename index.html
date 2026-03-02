@@ -2000,26 +2000,13 @@ window.addEventListener('DOMContentLoaded', () => {
                     return true;
                 });
 
-                const launchSession = async (saveExcelData) => {
-                    currentData = filteredData;
-                    currentSessionKey = `audit_${fromDate.value}_${toDate.value}_${Date.now()}`; 
-                    currentAuditData = {}; workspaceCurrentFilter = 'all'; currentFilteredData = [...currentData]; currentPage = 1; _isNewSession = true; _sessionSnapshot = null;
-                    const sessionToSave = { month: periodString, year: '', last_saved: new Date().toLocaleString(), finalized: false, col_map: colMap, audit_data: currentAuditData };
-                    if (saveExcelData) {
-                        sessionToSave.raw_data = jsonData;          // Poora original Excel — future columns ke liye
-                        sessionToSave.filtered_data = filteredData; // Filtered rows — audit ke liye
-                    }
-                    await saveSessionToDB(sessionToSave);
-                    document.getElementById('workspace-title').innerText = periodString; showLoader(false); showScreen('screen-workspace'); updateStats(); renderTablePage();
-                };
-
-                showLoader(false);
-                // Ask user whether to save Excel data in the program
-                showAppConfirm(
-                    `Save Excel data in the program?\n\n• YES — Data stored locally. Refresh Table will work even after closing & reopening.\n• NO — Data loads for this session only. Storage stays clean.\n\n(${filteredData.length} claims loaded after filtering)`,
-                    () => launchSession(true)
-                );
-                document.getElementById('dialog-btn-no').onclick = () => { closeDialog(); launchSession(false); };
+                // Direct launch — no prompt, no raw_data saving
+                currentData = filteredData;
+                currentSessionKey = `audit_${fromDate.value}_${toDate.value}_${Date.now()}`; 
+                currentAuditData = {}; workspaceCurrentFilter = 'all'; currentFilteredData = [...currentData]; currentPage = 1; _isNewSession = true; _sessionSnapshot = null;
+                const sessionToSave = { month: periodString, year: '', last_saved: new Date().toLocaleString(), finalized: false, col_map: colMap, audit_data: currentAuditData };
+                await saveSessionToDB(sessionToSave);
+                document.getElementById('workspace-title').innerText = periodString; showLoader(false); showScreen('screen-workspace'); updateStats(); renderTablePage();
 
             } catch(err) { showLoader(false); showAppAlert(err.message); }
         }; setTimeout(() => reader.readAsArrayBuffer(fileInput.files[0]), 50);
@@ -2452,121 +2439,214 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ── Upload helper used by refresh for both old and new audits ──
-    function _doRefreshUpload(sessionRef, onSuccess) {
-        const tmpInput = document.createElement('input');
-        tmpInput.type = 'file'; tmpInput.accept = '.xlsx,.xls,.csv'; tmpInput.style.display = 'none';
-        document.body.appendChild(tmpInput);
-        tmpInput.onchange = async function() {
-            const file = tmpInput.files[0]; document.body.removeChild(tmpInput);
-            if (!file) return;
-            showLoader(true);
-            const rdr = new FileReader();
-            rdr.onload = async function(ev) {
-                try {
-                    const wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array'});
-                    const jd = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:''});
-                    if (!jd.length) throw new Error('File empty.');
-                    const cm = detectColumns(Object.keys(jd[0]));
-                    if (!cm.claim_no) throw new Error('Could not detect Claim No column.');
-
-                    // Month validation against session period
-                    const parts = currentSessionKey.split('_');
-                    if (parts.length >= 3) {
-                        const dateCheck = detectFileDateMonth(jd, cm);
-                        if (dateCheck) {
-                            const fromDt = new Date(parts[1]); const toDt = new Date(parts[2]);
-                            const fileDate = new Date(dateCheck.fileYear, dateCheck.fileMonth, 1);
-                            const fromMonth = new Date(fromDt.getFullYear(), fromDt.getMonth(), 1);
-                            const toMonth = new Date(toDt.getFullYear(), toDt.getMonth(), 1);
-                            if (fileDate < fromMonth || fileDate > toMonth) {
-                                showLoader(false);
-                                const fileMon = new Date(dateCheck.fileYear, dateCheck.fileMonth, 1).toLocaleDateString('en-GB', {month:'long', year:'numeric'});
-                                return showAppAlert(`❌ Wrong File!
-
-This file: ${fileMon}
-This audit: ${sessionRef.month}
-
-Upload the correct file.`);
-                            }
-                        }
-                    }
-
-                    // Save raw_data — koi filter nahi, poora original
-                    const sess = await localforage.getItem(currentSessionKey);
-                    if (sess) { sess.raw_data = jd; sess.col_map = cm; await localforage.setItem(currentSessionKey, sess); }
-
-                    onSuccess(jd, cm);
-                } catch(err) { showLoader(false); showAppAlert('Failed: ' + err.message); }
-            };
-            rdr.readAsArrayBuffer(file);
-        };
-        tmpInput.click();
-    }
-
+    // ── Refresh Table — upload file, detect unpopulated columns, populate only those ──
     async function refreshTableFromSavedData() {
         if (!currentSessionKey) return showAppAlert("No active audit session.");
-        showLoader(true);
-        try {
-            const session = await localforage.getItem(currentSessionKey);
-            if (!session) { showLoader(false); return showAppAlert("Session not found."); }
 
-            // Check: raw_data hai, aur usme saare current table columns hain?
-            // Agar koi bhi column raw_data mein nahi mila → purana data hai, re-upload maango
-            const hasRawData = session.raw_data && session.raw_data.length > 0;
-            let missingCols = [];
-            if (hasRawData) {
-                const sampleRow = session.raw_data[0];
-                const allExcelCols = Object.keys(sampleRow);
-                // Check karo ki colMap ke saare mapped columns raw_data mein hain
-                missingCols = Object.values(session.col_map || {}).filter(col => col && !allExcelCols.includes(col));
+        const session = await localforage.getItem(currentSessionKey);
+        if (!session) return showAppAlert("Session not found.");
+
+        // Get current table headers (what the table shows)
+        const tableColKeys = ['claim_no','ro_no','claim_type','causal_part','part_desc','prod_date','amount'];
+
+        // Find which columns are unpopulated in currentData
+        // A column is "unpopulated" if it has no mapped header OR all rows show '-' / empty
+        const unpopulatedKeys = tableColKeys.filter(k => {
+            if (!colMap[k]) return true; // no mapping at all
+            if (currentData.length === 0) return true; // no data loaded
+            const filled = currentData.filter(r => r[colMap[k]] && String(r[colMap[k]]).trim() !== '').length;
+            return filled === 0; // all rows empty for this column
+        });
+
+        const monthLabel = session.month || 'this audit';
+
+        // Ask user to upload file
+        showAppConfirm(
+            `Refresh Table — ${monthLabel}
+
+This will upload the Excel file and populate the table.
+
+Unpopulated columns: ${unpopulatedKeys.length > 0 ? unpopulatedKeys.join(', ') : 'none detected (will populate all)'}
+
+Audit entries, remarks and findings will NOT be touched.`,
+            () => {
+                const tmpInput = document.createElement('input');
+                tmpInput.type = 'file'; tmpInput.accept = '.xlsx,.xls,.csv'; tmpInput.style.display = 'none';
+                document.body.appendChild(tmpInput);
+
+                tmpInput.onchange = async function() {
+                    const file = tmpInput.files[0]; document.body.removeChild(tmpInput);
+                    if (!file) return;
+                    showLoader(true);
+
+                    const rdr = new FileReader();
+                    rdr.onload = async function(ev) {
+                        try {
+                            const wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array'});
+                            const jd = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:''});
+                            if (!jd.length) throw new Error('File empty.');
+
+                            // Month validation
+                            const cm = detectColumns(Object.keys(jd[0]));
+                            if (!cm.claim_no) throw new Error('Could not detect Claim No column in uploaded file.');
+
+                            const parts = currentSessionKey.split('_');
+                            if (parts.length >= 3) {
+                                const dateCheck = detectFileDateMonth(jd, cm);
+                                if (dateCheck) {
+                                    const fromDt = new Date(parts[1]); const toDt = new Date(parts[2]);
+                                    const fileDate = new Date(dateCheck.fileYear, dateCheck.fileMonth, 1);
+                                    const fromMonth = new Date(fromDt.getFullYear(), fromDt.getMonth(), 1);
+                                    const toMonth = new Date(toDt.getFullYear(), toDt.getMonth(), 1);
+                                    if (fileDate < fromMonth || fileDate > toMonth) {
+                                        showLoader(false);
+                                        const fileMon = new Date(dateCheck.fileYear, dateCheck.fileMonth, 1)
+                                            .toLocaleDateString('en-GB', {month:'long', year:'numeric'});
+                                        return showAppAlert(`❌ Wrong File!
+
+This file: ${fileMon}
+This audit: ${monthLabel}
+
+Please upload the correct file.`);
+                                    }
+                                }
+                            }
+
+                            // Excel ke saare headers
+                            const excelHeaders = Object.keys(jd[0]);
+
+                            // Table columns jo populate karni hain — sab (unpopulated + already mapped)
+                            // Unmap karenge: table header name → excel column name
+                            // User se confirm karenge agar naam alag ho
+                            const colLabels = {
+                                claim_no: 'Claim No',
+                                ro_no: 'R/O No',
+                                claim_type: 'Claim Type',
+                                causal_part: 'Causal Part',
+                                part_desc: 'Part Description',
+                                prod_date: 'Production Date',
+                                amount: 'Amount'
+                            };
+
+                            // Auto-detect mapping: table key → excel header
+                            // First try existing colMap, then fuzzy match
+                            const fuzzyWords = {
+                                claim_no: ['claimno','claimnumber','clmno','clm#','claim'],
+                                ro_no: ['rono','r/ono','repairorder','ronumber','ro'],
+                                claim_type: ['claimtype','clmtype','typeofclaim','type'],
+                                causal_part: ['causalpart','causal','causalpno','causalpartno'],
+                                part_desc: ['partdesc','partdescription','partname','description','itemdesc'],
+                                prod_date: ['proddate','productiondate','mfgdate','manufacturedate','pdctndate','proddt'],
+                                amount: ['totalamt','totalamount','claimamount','netamount','amount','amt']
+                            };
+
+                            // Build mapping: tableKey → excelHeader
+                            const mapping = {};
+                            const lowerHeaders = excelHeaders.map(h => h.toLowerCase().replace(/[\s_\-\.]/g,''));
+
+                            tableColKeys.forEach(k => {
+                                // Try existing colMap first
+                                if (colMap[k] && excelHeaders.includes(colMap[k])) {
+                                    mapping[k] = colMap[k];
+                                    return;
+                                }
+                                // Fuzzy match
+                                const terms = fuzzyWords[k] || [];
+                                const idx = lowerHeaders.findIndex(h => terms.some(t => h.includes(t)));
+                                if (idx !== -1) mapping[k] = excelHeaders[idx];
+                            });
+
+                            // Check: koi column map nahi hua?
+                            const unmapped = tableColKeys.filter(k => k !== 'claim_no' && !mapping[k]);
+
+                            showLoader(false);
+
+                            // Show user the mapping and ask for confirmation
+                            // Also ask for any unmapped columns
+                            let mappingMsg = `File loaded. ${jd.length} rows found.
+
+Column mapping detected:
+`;
+                            tableColKeys.forEach(k => {
+                                const label = colLabels[k] || k;
+                                const mapped = mapping[k] || '❌ Not found';
+                                mappingMsg += `  ${label} → "${mapped}"
+`;
+                            });
+                            if (unmapped.length > 0) {
+                                mappingMsg += `
+⚠️ ${unmapped.length} column(s) not auto-detected.`;
+                            }
+                            mappingMsg += `
+
+Proceed to populate table?
+(Only rows matching existing Claim Numbers will be populated. Audit entries untouched.)`;
+
+                            showAppConfirm(mappingMsg, async () => {
+                                showLoader(true);
+
+                                // Build lookup: claimNo → excel row
+                                const excelLookup = {};
+                                jd.forEach(row => {
+                                    const cn = row[mapping.claim_no || cm.claim_no];
+                                    if (cn) excelLookup[String(cn).trim()] = row;
+                                });
+
+                                // Apply filter same as new audit (keep filtered data intact)
+                                const filteredExcel = jd.filter(row => {
+                                    const type = String(row[cm.claim_type] || '').toUpperCase();
+                                    const amt = parseFloat(row[cm.amount]) || 0;
+                                    const desc = String(row[cm.part_desc] || '').toUpperCase();
+                                    if (type.includes('FREE SERVICE') || type.includes('FSC')) return false;
+                                    if (type.includes('CAMPAIGN') && amt < 300 && !desc.includes('POWER WINDOW') && !desc.includes('FUEL PUMP')) return false;
+                                    return true;
+                                });
+
+                                // New colMap — merge existing with new mappings
+                                const newColMap = { ...colMap };
+                                tableColKeys.forEach(k => { if (mapping[k]) newColMap[k] = mapping[k]; });
+
+                                // Populate: if currentData already has rows, update them
+                                // If empty, use filteredExcel as base
+                                if (currentData.length > 0) {
+                                    // Update existing rows — only add missing column values
+                                    currentData = currentData.map(existingRow => {
+                                        const claimNo = String(existingRow[colMap.claim_no] || existingRow[newColMap.claim_no] || '').trim();
+                                        const excelRow = excelLookup[claimNo];
+                                        if (!excelRow) return existingRow;
+                                        const updated = { ...existingRow };
+                                        tableColKeys.forEach(k => {
+                                            if (mapping[k] && (!existingRow[mapping[k]] || String(existingRow[mapping[k]]).trim() === '')) {
+                                                updated[mapping[k]] = excelRow[mapping[k]];
+                                            }
+                                        });
+                                        return updated;
+                                    });
+                                } else {
+                                    // No existing data — use filtered excel as table
+                                    currentData = filteredExcel;
+                                }
+
+                                colMap = newColMap;
+                                currentFilteredData = [...currentData];
+                                currentPage = 1; workspaceCurrentFilter = 'all';
+                                document.querySelectorAll('.ws-filter-btn').forEach(b => b.classList.remove('active-filter'));
+                                const ab = document.getElementById('ws-filter-all'); if(ab) ab.classList.add('active-filter');
+                                updateStats(); renderTablePage();
+                                showLoader(false);
+                                showToast(`Table refreshed. ${currentData.length} rows loaded. Audit entries untouched.`, 'success', 4000);
+                            });
+
+                        } catch(err) { showLoader(false); showAppAlert('Refresh failed: ' + err.message); }
+                    };
+                    rdr.readAsArrayBuffer(file);
+                };
+                tmpInput.click();
             }
-
-            const needsUpload = !hasRawData || missingCols.length > 0;
-
-            if (!needsUpload) {
-                // raw_data sahi hai, saare columns present hain — seedha load karo
-                currentData = session.raw_data;
-                colMap = session.col_map;
-                currentFilteredData = [...currentData];
-                currentPage = 1; workspaceCurrentFilter = 'all';
-                document.querySelectorAll('.ws-filter-btn').forEach(b => b.classList.remove('active-filter'));
-                const allBtn = document.getElementById('ws-filter-all'); if (allBtn) allBtn.classList.add('active-filter');
-                updateStats(); renderTablePage();
-                showLoader(false);
-                showToast('Table refreshed. Audit entries untouched.', 'success', 3000);
-            } else {
-                // raw_data nahi hai ya columns missing hain — re-upload karo
-                showLoader(false);
-                const reason = !hasRawData
-                    ? `No Excel data saved for this audit.`
-                    : `${missingCols.length} column(s) not found in saved data:
-${missingCols.join(', ')}`;
-                showAppConfirm(
-                    `${reason}
-
-Upload the original file to populate the table.
-
-Audit: ${session.month}
-(Audit entries are completely safe — nothing will change)`,
-                    () => _doRefreshUpload(session, (jd, cm) => {
-                        currentData = jd; colMap = cm;
-                        currentFilteredData = [...currentData]; currentPage = 1; workspaceCurrentFilter = 'all';
-                        document.querySelectorAll('.ws-filter-btn').forEach(b => b.classList.remove('active-filter'));
-                        const ab = document.getElementById('ws-filter-all'); if(ab) ab.classList.add('active-filter');
-                        updateStats(); renderTablePage();
-                        showLoader(false);
-                        showToast(`Table populated. ${jd.length} rows loaded. Audit entries untouched.`, 'success', 4000);
-                    })
-                );
-            }
-        } catch(e) {
-            showLoader(false);
-            showAppAlert("Refresh failed: " + e.message);
-        }
+        );
     }
 
-    // --- ARCHIVE ---
+        // --- ARCHIVE ---
     async function openArchive(showFinalized) {
         showLoader(true); const tbody = document.getElementById('archive-tbody'); tbody.innerHTML = '';
         document.getElementById('archive-title').innerText = showFinalized ? "Previous Audits" : "Drafts"; let found = false;
@@ -2708,25 +2788,16 @@ Audit: ${session.month}
     async function loadSession(key) {
         showLoader(true); const session = await localforage.getItem(key); if(!session) { showLoader(false); return showAppAlert("Error loading session."); }
         currentSessionKey = key;
-        // Prefer raw_data → re-filter fresh. Fallback to filtered_data. Fallback to raw_data as-is.
-        if (session.raw_data && session.raw_data.length > 0) {
-            currentData = applyAuditFilter(session.raw_data, session.col_map);
-        } else if (session.filtered_data && session.filtered_data.length > 0) {
-            currentData = session.filtered_data;
-        } else {
-            currentData = [];
-        }
-        workspaceCurrentFilter = 'all'; currentFilteredData = [...currentData];
+        // Table data is never stored — always empty on load
+        // Use Refresh Table button to populate from Excel file
+        currentData = [];
+        workspaceCurrentFilter = 'all'; currentFilteredData = [];
         currentAuditData = session.audit_data || {}; colMap = session.col_map || {}; currentPage = 1; _isNewSession = false;
         _sessionSnapshot = JSON.parse(JSON.stringify(session.audit_data || {}));
         document.getElementById('workspace-title').innerText = session.month; document.getElementById('search-claim').value = '';
         showLoader(false);
-        if (currentData.length === 0) {
-            showScreen('screen-workspace'); updateStats(); renderTablePage();
-            showToast('Table data not saved for this audit. Use "Refresh Table" to upload the Excel file.', 'warning', 6000);
-        } else {
-            updateStats(); renderTablePage(); showScreen('screen-workspace');
-        }
+        showScreen('screen-workspace'); updateStats(); renderTablePage();
+        showToast('Use "Refresh Table" to load the Excel file and populate the table.', 'warning', 5000);
     }
 
     async function deleteSession(key, isFinalized) {
