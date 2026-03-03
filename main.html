@@ -58,25 +58,49 @@
 
                 // Fetch User Permissions from Firestore
                 try {
-                    // ── TOTP SESSION CHECK (3-hour Firebase-based) ──
+                    // ── TOTP SESSION CHECK (3-hour) ──
+                    // Priority order:
+                    // 1. sessionStorage flag — fastest, same tab
+                    // 2. localStorage timestamp — survives tab/browser close
+                    // 3. Firestore totpVerifiedAt — last resort, costs a read
                     const totpOk = sessionStorage.getItem('totp_verified') === 'true';
                     if (!totpOk) {
-                        // Check Firebase: was TOTP verified within last 3 hours?
+                        let sessionValid = false;
+
+                        // Check localStorage first — no Firestore read needed
+                        const localVerifiedAt = localStorage.getItem('totp_verified_at');
+                        const localVerifiedUid = localStorage.getItem('totp_verified_uid');
                         const isMasterEmail = user.email && user.email.toLowerCase() === 'n3235wrty@warrantyauditor.app';
                         const dealerIDCheck = user.email.split('@')[0].toUpperCase();
-                        const checkRef = doc(db, 'users', isMasterEmail ? 'N3235WRTY' : dealerIDCheck);
-                        const checkSnap = await getDoc(checkRef);
-                        let sessionValid = false;
-                        if (checkSnap.exists()) {
-                            const tvAt = checkSnap.data().totpVerifiedAt;
-                            if (tvAt) {
-                                const elapsed = Date.now() - new Date(tvAt).getTime();
-                                if (elapsed < 3 * 60 * 60 * 1000) { // 3 hours
-                                    sessionValid = true;
-                                    sessionStorage.setItem('totp_verified', 'true'); // restore flag
+                        const expectedUid = isMasterEmail ? 'N3235WRTY' : dealerIDCheck;
+
+                        if (localVerifiedAt && localVerifiedUid === expectedUid) {
+                            const elapsed = Date.now() - new Date(localVerifiedAt).getTime();
+                            if (elapsed < 3 * 60 * 60 * 1000) {
+                                sessionValid = true;
+                                sessionStorage.setItem('totp_verified', 'true');
+                            }
+                        }
+
+                        // localStorage expired or missing — fallback to Firestore
+                        if (!sessionValid) {
+                            const checkRef = doc(db, 'users', expectedUid);
+                            const checkSnap = await getDoc(checkRef);
+                            if (checkSnap.exists()) {
+                                const tvAt = checkSnap.data().totpVerifiedAt;
+                                if (tvAt) {
+                                    const elapsed = Date.now() - new Date(tvAt).getTime();
+                                    if (elapsed < 3 * 60 * 60 * 1000) {
+                                        sessionValid = true;
+                                        // Restore both flags so next check hits localStorage
+                                        sessionStorage.setItem('totp_verified', 'true');
+                                        localStorage.setItem('totp_verified_at', tvAt);
+                                        localStorage.setItem('totp_verified_uid', expectedUid);
+                                    }
                                 }
                             }
                         }
+
                         if (!sessionValid) {
                             await signOut(auth);
                             window.location.href = 'index.html';
@@ -6855,6 +6879,8 @@ Audit: ${session.month}
                 sessionStorage.removeItem('totp_verified');
                 sessionStorage.removeItem('wau_uid');
                 localStorage.removeItem('wa_last_uid');
+                localStorage.removeItem('totp_verified_at');
+                localStorage.removeItem('totp_verified_uid');
                 if (window._fbSignOut && window._fbAuth) {
                     try { await window._fbSignOut(window._fbAuth); } catch(e) {}
                 }
