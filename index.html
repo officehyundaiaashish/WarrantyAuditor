@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warranty Auditor - Login</title>
+    <title>Warranty Auditor</title>
 
     <script src="https://unpkg.com/otpauth/dist/otpauth.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.0/build/qrcode.min.js"></script>
@@ -276,10 +276,155 @@
         }
 
         @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+            to { transform: rotate(360deg); }
         }
+
+        /* PC — full page layout */
+        @media (min-width: 768px) {
+            body { align-items: stretch; padding: 0; }
+            .login-wrap {
+                max-width: 100%; width: 100%;
+                border-radius: 0; border: none; box-shadow: none;
+                display: flex; flex-direction: column;
+            }
+            .login-header { padding: 52px 24px 24px; flex-shrink: 0; }
+            .login-body {
+                flex: 1; display: flex; flex-direction: column;
+                justify-content: center;
+                max-width: 440px; width: 100%;
+                margin: 0 auto; padding-bottom: 40px;
+            }
+            .login-footer { flex-shrink: 0; }
+        }
+
+        /* Welcome Back Banner */
+        .wb-banner {
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(16,185,129,0.08);
+            border: 1px solid rgba(16,185,129,0.22);
+            border-radius: 10px; padding: 10px 14px;
+            margin-bottom: 18px;
+            font-size: 0.82rem; font-weight: 600; color: #059669;
+            opacity: 0; transform: translateY(-8px);
+            transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16,1,0.3,1);
+        }
+        @media (prefers-color-scheme: dark) {
+            .wb-banner { color: #34d399; background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.2); }
+        }
+        .wb-banner.wb-show { opacity: 1; transform: translateY(0); }
+        .wb-check {
+            width: 22px; height: 22px; flex-shrink: 0;
+            background: rgba(16,185,129,0.15); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* ── Attempt dots ── */
+        .attempt-dots {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 10px 0 4px;
+        }
+        .attempt-dots.visible { display: flex; }
+        .att-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: var(--border);
+            border: 1.5px solid transparent;
+            transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+            transform: scale(1);
+        }
+        .att-dot.warn {
+            background: var(--warning);
+            border-color: var(--warning);
+            transform: scale(1.15);
+            box-shadow: 0 0 8px rgba(245,158,11,0.5);
+        }
+        .att-dot.danger {
+            background: var(--danger);
+            border-color: var(--danger);
+            transform: scale(1.2);
+            box-shadow: 0 0 10px rgba(239,68,68,0.55);
+            animation: dotPulse 0.8s ease infinite alternate;
+        }
+        @keyframes dotPulse {
+            from { box-shadow: 0 0 6px rgba(239,68,68,0.4); }
+            to   { box-shadow: 0 0 14px rgba(239,68,68,0.8); }
+        }
+        .attempts-label {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-right: 2px;
+        }
+
+        /* ── Forgot Password Link ── */
+        .forgot-link-row {
+            text-align: center;
+            margin-top: 12px;
+        }
+        .forgot-link {
+            background: none; border: none; padding: 0;
+            color: var(--text-muted); font-size: 0.8rem; font-weight: 500;
+            cursor: pointer; text-decoration: none;
+            transition: color 0.2s;
+        }
+        .forgot-link:hover { color: var(--text-main); }
+
+        /* ── Forgot Password Panel (slides in below login) ── */
+        .forgot-panel {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.16,1,0.3,1), opacity 0.35s ease;
+            opacity: 0;
+        }
+        .forgot-panel.open {
+            max-height: 500px;
+            opacity: 1;
+        }
+        .forgot-divider {
+            display: flex; align-items: center; gap: 10px;
+            margin: 18px 0 16px;
+            color: var(--text-muted); font-size: 0.75rem;
+        }
+        .forgot-divider::before, .forgot-divider::after {
+            content: ''; flex: 1;
+            height: 1px; background: var(--border);
+        }
+        .forgot-title {
+            font-size: 0.88rem; font-weight: 700;
+            color: var(--text-main); margin-bottom: 12px;
+        }
+        .forgot-note {
+            font-size: 0.78rem; color: var(--text-muted);
+            line-height: 1.5; margin-bottom: 14px;
+        }
+        .pending-badge {
+            display: none;
+            align-items: center; gap: 10px;
+            background: rgba(245,158,11,0.08);
+            border: 1px solid rgba(245,158,11,0.25);
+            border-radius: 10px; padding: 10px 14px;
+            margin-top: 12px;
+            font-size: 0.8rem; font-weight: 600; color: #d97706;
+            animation: fadeInUp 0.3s ease both;
+        }
+        @media (prefers-color-scheme: dark) { .pending-badge { color: #fbbf24; } }
+        .pending-badge.show { display: flex; }
+        @keyframes fadeInUp {
+            from { opacity:0; transform: translateY(6px); }
+            to   { opacity:1; transform: translateY(0); }
+        }
+        .btn-secondary {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 100%; padding: 13px 16px;
+            background: transparent;
+            color: var(--text-main);
+            border: 1.5px solid var(--border);
+            border-radius: 8px; font-size: 0.95rem; font-weight: 700;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .btn-secondary:hover { border-color: var(--text-muted); background: var(--bg-base); }
     </style>
 </head>
 
@@ -294,11 +439,19 @@
             <img class="app-title-icon"
                 src="data:image/png;base64,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"
                 alt="Hyundai">
-            <h1 class="app-title-text">Warranty Auditor Access</h1>
-            <p style="color:var(--text-muted); font-size: 0.85rem; margin-top: 6px;">Sign in to your account</p>
+            <h1 class="app-title-text">Warranty Auditor</h1>
+            <p id="login-subtitle" style="color:var(--text-muted); font-size: 0.85rem; margin-top: 6px;">Sign in to your account</p>
         </div>
 
         <div class="login-body">
+
+            <!-- Welcome Back Banner -->
+            <div id="wb-banner" class="wb-banner">
+                <div class="wb-check">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <span id="wb-text">Welcome back!</span>
+            </div>
 
             <!-- SECTION 1: USER ID & PASSWORD -->
             <div id="login-section">
@@ -319,9 +472,65 @@
                         autocomplete="current-password">
                 </div>
 
+                <!-- Attempt dots -->
+                <div id="attempt-dots" class="attempt-dots">
+                    <span class="attempts-label">Attempts:</span>
+                    <div class="att-dot" id="adot1"></div>
+                    <div class="att-dot" id="adot2"></div>
+                    <div class="att-dot" id="adot3"></div>
+                </div>
+
                 <div id="login-error" class="text-warning"></div>
 
                 <button type="button" class="btn" onclick="validateCredentials()">Login</button>
+
+                <!-- Forgot password link -->
+                <div class="forgot-link-row">
+                    <button class="forgot-link" onclick="toggleForgot()">Forgot password</button>
+                </div>
+
+            </div>
+
+            <!-- ── Forgot Password Panel (slides in below) ── -->
+            <div id="forgot-panel" class="forgot-panel">
+                <div class="forgot-divider">Reset Password</div>
+                <div class="forgot-title">Request a Password Reset</div>
+                <div class="forgot-note">
+                    Enter your User ID and a new password. Your request will be sent to the administrator for approval before it takes effect.
+                </div>
+
+                <div class="input-area">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <input type="text" id="fp-uid" placeholder="User ID" class="login-input" style="text-transform:uppercase;">
+                </div>
+                <div class="input-area">
+                    <svg viewBox="0 0 24 24">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    <input type="password" id="fp-pwd" placeholder="New Password (min 6 chars)" class="login-input">
+                </div>
+                <div class="input-area">
+                    <svg viewBox="0 0 24 24">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    <input type="password" id="fp-pwd2" placeholder="Confirm New Password" class="login-input">
+                </div>
+
+                <div id="fp-error" class="text-warning"></div>
+
+                <button type="button" class="btn" onclick="submitForgotPassword()" style="margin-bottom:10px;">Send Reset Request</button>
+                <button type="button" class="btn-secondary" onclick="toggleForgot()">Cancel</button>
+
+                <!-- Pending approval badge -->
+                <div id="pending-badge" class="pending-badge">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span>Request sent! Awaiting administrator approval.</span>
+                </div>
             </div>
 
             <!-- SECTION 2: QR CODE SETUP -->
@@ -389,6 +598,33 @@
             if (params.get('error') === 'blocked') {
                 showError('login-error', "Access Denied: Your account has been blocked. Please contact the administrator.");
             }
+
+            // Welcome back banner
+            const _lastUid = localStorage.getItem('wa_last_uid');
+            if (_lastUid) {
+                document.getElementById('usrId').value = _lastUid;
+                document.getElementById('wb-text').textContent = 'Welcome back, ' + _lastUid + '!';
+                document.getElementById('login-subtitle').textContent = 'Good to see you again';
+                // Delay so CSS transition fires after render
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    document.getElementById('wb-banner').classList.add('wb-show');
+                }));
+            }
+
+            // Restore attempt dots if any pending
+            if (_lastUid) {
+                const _fd0 = JSON.parse(localStorage.getItem('wa_fail_' + _lastUid) || '{"c":0,"t":0}');
+                if (Date.now() - _fd0.t < 3600000 && _fd0.c > 0) updateAttemptDots(_fd0.c);
+            }
+
+            // Hide banner + reset dots when user changes UID
+            document.getElementById('usrId').addEventListener('input', function() {
+                document.getElementById('wb-banner').classList.remove('wb-show');
+                document.getElementById('login-subtitle').textContent = 'Sign in to your account';
+                updateAttemptDots(0);
+                // Close forgot panel if open
+                if (forgotOpen) toggleForgot();
+            });
         });
 
         // Enter key listeners
@@ -464,6 +700,10 @@
                     if (userData.failedAttempts > 0) {
                         await window._fbUpdateDoc(userDocRef, { failedAttempts: 0 });
                     }
+                    // Save UID for welcome back, clear local fail counter
+                    localStorage.setItem('wa_last_uid', uidInput.toUpperCase());
+                    localStorage.removeItem('wa_fail_' + uidInput.toUpperCase());
+                    updateAttemptDots(0);
 
                     if (userData.totpSecret) {
                         // Secret already confirmed — go straight to OTP entry (no QR ever again)
@@ -533,10 +773,20 @@
                     });
                 }
             } catch (error) {
-                // If it's a wrong password, try to update failed attempts (if doc exists and we somehow know their email)
-                // Note: Without auth, we can't write to firestore unless rules permit.
-                // In a robust system, this might involve a cloud function. For now, we rely on local error msg.
-                showError('login-error', "Invalid User ID or Password.");
+                // Firebase Auth failed — user NOT authenticated, cannot write Firestore
+                const _uid = document.getElementById('usrId').value.trim().toUpperCase();
+                const _key = 'wa_fail_' + _uid;
+                let _fd = JSON.parse(localStorage.getItem(_key) || '{"c":0,"t":0}');
+                if (Date.now() - _fd.t > 3600000) _fd.c = 0;
+                _fd.c++; _fd.t = Date.now();
+                localStorage.setItem(_key, JSON.stringify(_fd));
+                updateAttemptDots(_fd.c);
+
+                if (_fd.c >= 3) {
+                    showError('login-error', 'Too many failed attempts. Please verify your credentials carefully or contact your administrator.');
+                } else {
+                    showError('login-error', 'Invalid User ID or Password. (' + _fd.c + '/3 attempts)');
+                }
             }
 
             hideLoading();
@@ -612,26 +862,30 @@
                 let delta = totp.validate({ token: code, window: 1 });
 
                 if (delta !== null) {
-                    // Valid! Reset attempt counter
                     otpAttempts = 0;
+                    const _now = new Date().toISOString();
+                    const _uidSave = document.getElementById('usrId').value.trim().toUpperCase();
 
-                    // If first time, finalize: move pendingTotpSecret → totpSecret, remove pending field
                     if (isFirstTime) {
                         await window._fbUpdateDoc(userDocRef, {
                             totpSecret: currentTempSecret,
                             pendingTotpSecret: window._fbDeleteField(),
-                            lastLogin: new Date().toISOString()
+                            lastLogin: _now,
+                            totpVerifiedAt: _now
                         });
                     } else {
-                        // Save lastLogin timestamp (non-blocking)
-                        window._fbUpdateDoc(userDocRef, { lastLogin: new Date().toISOString() }).catch(() => {});
+                        window._fbUpdateDoc(userDocRef, {
+                            lastLogin: _now,
+                            totpVerifiedAt: _now
+                        }).catch(() => {});
                     }
 
-                    // Add a sessionStorage flag so we know this session passed TOTP
+                    // Clear fail counter, save UID for welcome back
+                    localStorage.removeItem('wa_fail_' + _uidSave);
+                    localStorage.setItem('wa_last_uid', _uidSave);
+
                     sessionStorage.setItem('totp_verified', 'true');
                     sessionStorage.setItem('wau_uid', currentUserId);
-
-                    // Redirect to the actual app
                     window.location.href = "main.html";
                 } else {
                     // Wrong OTP
@@ -649,6 +903,95 @@
                 console.error(e);
                 showError('totp-error', "An unexpected error occurred.");
                 hideLoading();
+            }
+        }
+
+        // ── Attempt Dots ──
+        function updateAttemptDots(n) {
+            const wrap = document.getElementById('attempt-dots');
+            if (!wrap) return;
+            if (n <= 0) { wrap.classList.remove('visible'); return; }
+            wrap.classList.add('visible');
+            [1,2,3].forEach(i => {
+                const d = document.getElementById('adot' + i);
+                d.className = 'att-dot';
+                if (i <= n) d.classList.add(n >= 3 ? 'danger' : 'warn');
+            });
+        }
+
+        // ── Forgot Password Toggle ──
+        let forgotOpen = false;
+        function toggleForgot() {
+            forgotOpen = !forgotOpen;
+            const panel = document.getElementById('forgot-panel');
+            panel.classList.toggle('open', forgotOpen);
+            if (forgotOpen) {
+                // Pre-fill UID if already typed
+                const uid = document.getElementById('usrId').value.trim().toUpperCase();
+                if (uid) document.getElementById('fp-uid').value = uid;
+                setTimeout(() => document.getElementById('fp-uid').focus(), 100);
+            } else {
+                // Reset form on close
+                document.getElementById('fp-uid').value = '';
+                document.getElementById('fp-pwd').value = '';
+                document.getElementById('fp-pwd2').value = '';
+                document.getElementById('fp-error').style.display = 'none';
+                document.getElementById('pending-badge').classList.remove('show');
+            }
+        }
+
+        // ── Submit Forgot Password ──
+        async function submitForgotPassword() {
+            const uid   = document.getElementById('fp-uid').value.trim().toUpperCase();
+            const pwd   = document.getElementById('fp-pwd').value;
+            const pwd2  = document.getElementById('fp-pwd2').value;
+            const errEl = document.getElementById('fp-error');
+            const badge = document.getElementById('pending-badge');
+
+            const showFpErr = (msg) => { errEl.innerHTML = msg; errEl.style.display = 'block'; };
+            errEl.style.display = 'none';
+            badge.classList.remove('show');
+
+            if (!uid)               return showFpErr('Please enter your User ID.');
+            if (uid === 'N3235WRTY') return showFpErr('Master account cannot use this feature.');
+            if (!pwd || pwd.length < 6) return showFpErr('Password must be at least 6 characters.');
+            if (pwd !== pwd2)       return showFpErr('Passwords do not match.');
+
+            showLoading();
+            try {
+                const ref  = window._fbDoc(window._fbDb, 'users', uid);
+                const snap = await window._fbGetDoc(ref);
+
+                if (!snap.exists()) {
+                    hideLoading();
+                    return showFpErr('User ID not found. Please check and try again.');
+                }
+                const data = snap.data();
+                if (data.status === 'blocked') {
+                    hideLoading();
+                    return showFpErr('This account is blocked. Contact your administrator.');
+                }
+                if (data.pendingPasswordReset) {
+                    hideLoading();
+                    badge.querySelector('span').textContent = 'A reset request is already pending approval.';
+                    badge.classList.add('show');
+                    return;
+                }
+
+                await window._fbUpdateDoc(ref, {
+                    pendingPasswordReset: true,
+                    pendingNewPassword: pwd,
+                    pendingPasswordRequestedAt: new Date().toISOString()
+                });
+
+                hideLoading();
+                document.getElementById('fp-pwd').value = '';
+                document.getElementById('fp-pwd2').value = '';
+                badge.querySelector('span').textContent = 'Request sent! Awaiting administrator approval.';
+                badge.classList.add('show');
+            } catch(e) {
+                hideLoading();
+                showFpErr('Something went wrong. Please try again.');
             }
         }
 
