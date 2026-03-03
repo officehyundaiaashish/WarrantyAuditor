@@ -2710,7 +2710,7 @@
                     </div>
                     <div>
                         <label>Password</label>
-                        <input type="text" id="new-user-pwd" class="input" placeholder="Type password">
+                        <input type="text" id="new-user-pwd" class="input" placeholder="Password (letters + numbers)">
                     </div>
                 </div>
 
@@ -6739,6 +6739,8 @@ Audit: ${session.month}
 
             if (!dealerID || !password) return showAppAlert("Please enter both User ID and Password.");
             if (password.length < 6) return showAppAlert("Password must be at least 6 characters.");
+            if (!/[a-zA-Z]/.test(password)) return showAppAlert("Password must contain at least one letter.");
+            if (!/[0-9]/.test(password))    return showAppAlert("Password must contain at least one number.");
 
             showLoader(true);
             try {
