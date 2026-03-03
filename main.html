@@ -2275,7 +2275,8 @@
     <div id="app-dialog" class="modal-backdrop">
         <div class="modal-dialog" style="max-width: 340px;">
             <div class="modal-body" style="text-align:center; padding: 32px 24px;">
-                <h3 id="dialog-msg" style="margin-bottom:20px; font-size:1.05rem; line-height: 1.5;"></h3>
+                <div id="dialog-icon" style="display:flex;justify-content:center;margin-bottom:14px;"></div>
+                <h3 id="dialog-msg" style="margin-bottom:20px; font-size:1.05rem; line-height: 1.5; white-space:pre-line;"></h3>
 
                 <div id="dialog-input-wrapper" style="position:relative; display:none; margin-bottom: 16px;"
                     autocomplete="off">
@@ -3115,7 +3116,7 @@
                             5,000 req/hr limit. Auto-sync uses ~18/hr.</div>
                         <div id="autosync-triggers"
                             style="display:none; margin-top:10px; font-size:0.72rem; color:var(--text-muted); line-height:1.8;">
-                            Close Audit · Tab close · Every 3 min</div>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;flex-shrink:0;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Close Audit · Tab close · Every 3 min</div>
                     </div>
                     <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
                         <span id="gist-sync-indicator"
@@ -3705,8 +3706,14 @@
         // JS § 2 — DIALOG / ALERT / CONFIRM / PROMPT
         // ════════════════════════════════════════════════════════
         function closeDialog() { document.getElementById('app-dialog').classList.remove('active'); const di = document.getElementById('dialog-input'); di.value = ''; di.style.cssText = 'text-align:center; letter-spacing:4px; font-size:1.2rem; margin:0; padding-right:44px; -webkit-text-security:disc; text-security:disc;'; di.placeholder = '••••••••'; di.setAttribute('inputmode', 'numeric'); }
-        function showAppAlert(msg) { document.getElementById('dialog-msg').innerText = msg; document.getElementById('dialog-input-wrapper').style.display = 'none'; document.getElementById('dialog-btn-no').style.display = 'none'; document.getElementById('dialog-btn-yes').onclick = closeDialog; document.getElementById('app-dialog').classList.add('active'); }
-        function showAppConfirm(msg, onYes) { document.getElementById('dialog-msg').innerText = msg; document.getElementById('dialog-input-wrapper').style.display = 'none'; document.getElementById('dialog-btn-no').style.display = 'block'; document.getElementById('dialog-btn-yes').onclick = () => { closeDialog(); if (onYes) onYes(); }; document.getElementById('dialog-btn-no').onclick = closeDialog; document.getElementById('app-dialog').classList.add('active'); }
+        function showAppAlert(msg) {
+            const iconEl = document.getElementById('dialog-icon');
+            if (iconEl) iconEl.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+            document.getElementById('dialog-msg').innerText = msg; document.getElementById('dialog-input-wrapper').style.display = 'none'; document.getElementById('dialog-btn-no').style.display = 'none'; document.getElementById('dialog-btn-yes').onclick = closeDialog; document.getElementById('app-dialog').classList.add('active'); }
+        function showAppConfirm(msg, onYes) {
+            const iconEl = document.getElementById('dialog-icon');
+            if (iconEl) iconEl.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+            document.getElementById('dialog-msg').innerText = msg; document.getElementById('dialog-input-wrapper').style.display = 'none'; document.getElementById('dialog-btn-no').style.display = 'block'; document.getElementById('dialog-btn-yes').onclick = () => { closeDialog(); if (onYes) onYes(); }; document.getElementById('dialog-btn-no').onclick = closeDialog; document.getElementById('app-dialog').classList.add('active'); }
 
         function showAppPrompt(msg, isPassword, onConfirm, disableCancel = false) {
             document.getElementById('dialog-msg').innerText = msg;
@@ -4926,7 +4933,7 @@ Audit: ${session.month}
                     // Cancellation count badge
                     const cancelCount = meta.audit_cancel_count || 0;
                     const cancelBadge = cancelCount > 0
-                        ? `<span style="display:inline-flex;align-items:center;gap:3px;margin-left:6px;padding:2px 7px;border-radius:10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--danger);font-size:0.65rem;font-weight:700;" title="Audit number cancelled ${cancelCount} time(s)">${cancelCount}x cancelled</span>` : '';
+                        ? `<span style="display:inline-flex;align-items:center;gap:3px;margin-left:6px;padding:2px 7px;border-radius:10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--danger);font-size:0.65rem;font-weight:700;" title="Audit number cancelled ${cancelCount} time(s)"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:3px;flex-shrink:0;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>${cancelCount}x cancelled</span>` : '';
 
                     tr.innerHTML = `
                     <td style="font-weight:600;">${meta.month}<br>
@@ -5593,8 +5600,8 @@ Audit: ${session.month}
         function showToast(msg, type, dur) {
             let t = document.getElementById('gist-toast');
             if (!t) { t = document.createElement('div'); t.id = 'gist-toast'; t.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;max-width:92vw;width:380px;padding:14px 18px;border-radius:12px;font-size:0.8rem;font-weight:600;line-height:1.5;box-shadow:0 8px 32px rgba(0,0,0,0.22);cursor:pointer;transition:opacity 0.3s;'; t.onclick = () => { t.style.opacity = '0'; setTimeout(() => { if (t.parentNode) t.remove(); }, 300); }; document.body.appendChild(t); }
-            const S = { danger: { bg: 'rgba(239,68,68,0.97)', b: '#ef4444', c: '#fff' }, warning: { bg: 'rgba(245,158,11,0.97)', b: '#f59e0b', c: '#111' }, success: { bg: 'rgba(16,185,129,0.97)', b: '#10b981', c: '#fff' } };
-            const s = S[type] || S.success; t.style.background = s.bg; t.style.border = '1px solid ' + s.b; t.style.color = s.c; t.style.opacity = '1'; t.innerText = msg;
+            const S = { danger: { bg: 'rgba(239,68,68,0.97)', b: '#ef4444', c: '#fff', icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>' }, warning: { bg: 'rgba(245,158,11,0.97)', b: '#f59e0b', c: '#111', icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' }, success: { bg: 'rgba(16,185,129,0.97)', b: '#10b981', c: '#fff', icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' } };
+            const s = S[type] || S.success; t.style.background = s.bg; t.style.border = '1px solid ' + s.b; t.style.color = s.c; t.style.opacity = '1'; t.style.display = 'flex'; t.style.alignItems = 'center'; t.style.gap = '10px'; t.innerHTML = s.icon + '<span>' + msg + '</span>';
             if (t._x) clearTimeout(t._x); t._x = setTimeout(() => { t.style.opacity = '0'; setTimeout(() => { if (t.parentNode) t.remove(); }, 300); }, (dur || 5000));
         }
 
@@ -6697,10 +6704,9 @@ Audit: ${session.month}
                         </div>
                         ${u.pendingPasswordReset ? `
                         <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:9px 12px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                            <div style="font-size:0.78rem;color:#f59e0b;font-weight:700;">Password Reset Requested</div>
+                            <div style="font-size:0.78rem;color:#f59e0b;font-weight:700;display:flex;align-items:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Password Reset Requested</div>
                             <button onclick="approvePasswordReset('${uid}', '${u.dealerID}', this)"
-                                style="padding:5px 12px;border-radius:6px;border:none;background:#f59e0b;color:#000;font-size:0.75rem;font-weight:800;cursor:pointer;white-space:nowrap;flex-shrink:0;">
-                                Approve
+                                style="padding:5px 12px;border-radius:6px;border:none;background:#f59e0b;color:#000;font-size:0.75rem;font-weight:800;cursor:pointer;white-space:nowrap;flex-shrink:0;display:inline-flex;align-items:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;flex-shrink:0;"><polyline points="20 6 9 17 4 12"/></svg>Approve
                             </button>
                         </div>` : ''}
                         <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:10px;">
@@ -6712,7 +6718,7 @@ Audit: ${session.month}
                         <div style="background:var(--bg-base);border-radius:10px;border:1px solid var(--border);overflow:hidden;margin-bottom:12px;">
                             <button onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'; this.querySelector('.perm-arrow').style.transform=this.nextElementSibling.style.display==='none'?'rotate(0deg)':'rotate(180deg)';"
                                 style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:transparent;border:none;cursor:pointer;font-size:0.82rem;font-weight:700;color:var(--text-main);">
-                                <span>Screen Permissions (${effectivePerms.length} / ${allScreens.length})</span>
+                                <span style="display:flex;align-items:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;flex-shrink:0;"><circle cx="7.5" cy="15.5" r="5.5"/><path d="M21 2l-9.6 9.6"/><path d="M15.5 7.5l3 3L22 7l-3-3"/></svg>Screen Permissions (${effectivePerms.length} / ${allScreens.length})</span>
                                 <svg class="perm-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s ease;flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
                             </button>
                             <div style="display:none;padding:4px 14px 12px;border-top:1px solid var(--border);">
@@ -6720,8 +6726,7 @@ Audit: ${session.month}
                                     ${permCheckboxes}
                                 </div>
                                 <button onclick="saveUserPermissions('${uid}', this.closest('.user-card'))"
-                                    style="margin-top:12px;width:100%;padding:9px;border-radius:8px;border:none;background:var(--primary);color:var(--primary-text);font-size:0.82rem;font-weight:700;cursor:pointer;">
-                                    Save Permissions
+                                    style="margin-top:12px;width:100%;padding:9px;border-radius:8px;border:none;background:var(--primary);color:var(--primary-text);font-size:0.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;flex-shrink:0;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Save Permissions
                                 </button>
                             </div>
                         </div>
