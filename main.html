@@ -1291,7 +1291,7 @@
         .stat-card {
             background: var(--surface);
             border: 1px solid var(--border);
-            padding: 20px;
+            padding: 14px 10px;
             border-radius: 12px;
             text-align: center;
             box-shadow: var(--shadow);
@@ -1312,9 +1312,9 @@
         }
 
         .stat-value {
-            font-size: 2rem;
+            font-size: 1.5rem;
             font-weight: 800;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
         .stat-label {
@@ -1327,16 +1327,16 @@
 
         /* Claim count cards are bigger */
         .stat-card.claim-card {
-            padding: 24px 16px;
+            padding: 12px 10px;
         }
 
         .stat-card.claim-card .stat-value {
-            font-size: 2.6rem;
-            margin-bottom: 8px;
+            font-size: 1.8rem;
+            margin-bottom: 4px;
         }
 
         .stat-card.claim-card .stat-label {
-            font-size: 0.8rem;
+            font-size: 0.7rem;
         }
 
         /* App Footer */
@@ -2455,8 +2455,13 @@
     <div id="admin-change-pwd-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:4002;" onclick="closeAdminChangePwdSheet()"></div>
     <div id="admin-change-pwd-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px 40px;z-index:4003;max-width:480px;margin:0 auto;box-shadow:0 -8px 32px rgba(0,0,0,0.2);animation:slideFadeUp 0.25s ease;">
         <div style="width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px;"></div>
+        <input type="hidden" id="admin-cpwd-uid">
         <h3 style="margin:0 0 6px;font-size:1.1rem;" id="admin-cpwd-title">Set Password</h3>
-        <p style="margin:0 0 20px;font-size:0.8rem;color:var(--text-muted);" id="admin-cpwd-subtitle"></p>
+        <p style="margin:0 0 8px;font-size:0.8rem;color:var(--text-muted);" id="admin-cpwd-subtitle"></p>
+        <div style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:8px;padding:8px 12px;margin-bottom:14px;font-size:0.74rem;color:var(--text-muted);line-height:1.6;">
+            <strong style="color:var(--text-main);display:block;margin-bottom:2px;">Password Rules:</strong>
+            Min 8 chars &nbsp;·&nbsp; At least one letter (A–Z) &nbsp;·&nbsp; At least one number (0–9) &nbsp;·&nbsp; Common passwords not accepted
+        </div>
         <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">New Password</label>
         <div style="position:relative;margin-bottom:8px;">
             <input type="password" id="admin-cpwd-new" class="input" placeholder="Min 8 chars, letters + numbers" style="margin:0;padding-right:44px;" autocomplete="new-password">
@@ -2503,7 +2508,7 @@
          ════════════════════════════════════════════════════════ -->
     <div id="screen-menu" class="screen">
 
-        <div id="main-notification" class="notification-banner notif-shimmer" onclick="buildDashboard()">
+        <div id="main-notification" class="notification-banner notif-shimmer shimmer-critical" onclick="openUnclearPendingDashboard()">
             <svg style="width:16px; height:16px; flex-shrink:0; stroke:currentColor; stroke-width:2; fill:none;"
                 viewBox="0 0 24 24">
                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
@@ -4032,37 +4037,28 @@
         }
 
         async function openSuspenseFilter() {
-            // Find the key that has suspense urgent items — prefer most recent
             const keys = Object.keys(dbIndex);
-            let targetKey = null;
+            if (keys.length === 0) return showAppAlert("No audits saved.");
 
-            // Check all sessions for suspense urgent items
-            for (const k of keys) {
-                const s = await localforage.getItem(k);
-                if (!s || !s.audit_data) continue;
-                const hasSuspense = Object.values(s.audit_data).some(e => e.suspense_pending && e.suspense_sent === 'no');
-                if (hasSuspense) { targetKey = k; break; }
-            }
+            // Build dashboard options
+            const optContainer = document.getElementById('options-dash-scope');
+            optContainer.innerHTML = '';
+            optContainer.innerHTML = '<div class="custom-option" data-value="__all__">All Months Combined</div>';
+            keys.forEach(k => { optContainer.innerHTML += `<div class="custom-option" data-value="${k}">${dbIndex[k].month}${dbIndex[k].audit_number ? ' [' + dbIndex[k].audit_number + ']' : ''} ${dbIndex[k].finalized ? '(Closed)' : '(Draft)'}</div>`; });
 
-            // If none found, just open dashboard normally
-            if (!targetKey) { buildDashboard(); return; }
+            showScreen('screen-dashboard');
 
-            // Build the dashboard dropdown with all sessions
-            buildDashboard();
-
-            // Wait for screen to render, then select the correct session and apply suspense filter
+            // Always use All Months Combined so suspense items from ALL months are visible
             setTimeout(async () => {
-                const optContainer = document.getElementById('options-dash-scope');
-                if (!optContainer) return;
-                const matchOpt = optContainer.querySelector(`[data-value="${targetKey}"]`);
-                if (matchOpt) {
-                    document.getElementById('dash-scope').value = targetKey;
-                    document.getElementById('wrap-dash-scope').querySelector('.trigger-text').innerText = matchOpt.innerText;
+                const allOpt = optContainer.querySelector('[data-value="__all__"]');
+                if (allOpt) {
+                    document.getElementById('dash-scope').value = '__all__';
+                    document.getElementById('wrap-dash-scope').querySelector('.trigger-text').innerText = 'All Months Combined';
                     optContainer.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
-                    matchOpt.classList.add('selected');
-                    sessionStorage.setItem('dash_last_key', targetKey);
+                    allOpt.classList.add('selected');
+                    sessionStorage.setItem('dash_last_key', '__all__');
                 }
-                await loadDashboardMonth(targetKey);
+                await loadDashboardMonth('__all__');
                 setDashFilter('suspense');
             }, 150);
         }
@@ -4106,6 +4102,7 @@
             let tunclear = 0; let tpending = 0; let pendingDrafts = 0;
             let tsuspense = 0; // Track urgent Suspense(P) items
             let actionMonths = [];
+            let actionMonthKeys = []; // track session keys for smart click
             let suspenseMonths = [];
 
             for (const key of Object.keys(dbIndex)) {
@@ -4133,6 +4130,7 @@
                             tunclear += u; tpending += p;
                             if (!actionMonths.includes(dbIndex[key].month)) {
                                 actionMonths.push(dbIndex[key].month);
+                                actionMonthKeys.push(key);
                             }
                         }
                         if (susp > 0) {
@@ -4208,7 +4206,8 @@
             if (tunclear > 0 || tpending > 0) {
                 const monthsStr = actionMonths.join(', ');
                 document.getElementById('notif-text').innerHTML = `<strong style="font-size:0.78rem; display:block; margin-bottom:2px; color:var(--danger);">Action Required</strong> <span style="color:var(--text-muted);">You have ${tunclear} Unclear & ${tpending} Pending claims in <b>${monthsStr}</b>. Click to view.</span>`;
-                banner.className = 'notification-banner alert-mode';
+                banner.className = 'notification-banner notif-shimmer shimmer-critical alert-mode';
+                banner.dataset.monthKeys = JSON.stringify(actionMonthKeys);
                 banner.style.display = 'flex'; // Permanent — cannot be dismissed until resolved
             } else if (pendingDrafts > 0) {
                 document.getElementById('notif-text').innerHTML = `<strong style="font-size:0.78rem; display:block; margin-bottom:2px; color:var(--accent);">Draft Pending</strong> <span style="color:var(--text-muted);">You have ${pendingDrafts} Draft session(s) pending completion. Click to view.</span>`;
@@ -4270,6 +4269,37 @@
                     allOpt.classList.add('selected');
                 }
                 loadDashboardMonth('__all__');
+            }, 80);
+        }
+
+        // Smart click for unclear/pending notification: single month → that month; multiple → All Months Combined
+        function openUnclearPendingDashboard() {
+            const banner = document.getElementById('main-notification');
+            let monthKeys = [];
+            try { monthKeys = JSON.parse(banner.dataset.monthKeys || '[]'); } catch(e) {}
+
+            const optContainer = document.getElementById('options-dash-scope'); optContainer.innerHTML = '';
+            const keys = Object.keys(dbIndex);
+            if (keys.length === 0) return showAppAlert("No audits saved. Please create an audit first.");
+
+            optContainer.innerHTML = '<div class="custom-option" data-value="__all__">All Months Combined</div>';
+            keys.forEach(k => { optContainer.innerHTML += `<div class="custom-option" data-value="${k}">${dbIndex[k].month}${dbIndex[k].audit_number ? ' [' + dbIndex[k].audit_number + ']' : ''} ${dbIndex[k].finalized ? '(Closed)' : '(Draft)'}</div>`; });
+
+            showScreen('screen-dashboard');
+
+            // Single affected month → load just that; multiple → All Months Combined
+            const targetKey = (monthKeys.length === 1 && dbIndex[monthKeys[0]]) ? monthKeys[0] : '__all__';
+
+            setTimeout(() => {
+                const opt = optContainer.querySelector(`[data-value="${targetKey}"]`);
+                if (opt) {
+                    document.getElementById('dash-scope').value = targetKey;
+                    document.getElementById('wrap-dash-scope').querySelector('.trigger-text').innerText = opt.innerText;
+                    optContainer.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+                    opt.classList.add('selected');
+                    sessionStorage.setItem('dash_last_key', targetKey);
+                }
+                loadDashboardMonth(targetKey);
             }, 80);
         }
 
@@ -5665,19 +5695,41 @@ Upload the correct file.`);
                             doc.setFont(undefined, 'normal');
                         }
                         const headers = combinedUnclear.length > 0 ? Object.keys(combinedUnclear[0]) : Object.keys(combinedClear[0]);
-                        const tableStyles = { fontSize: 5.5, cellPadding: 1.5, overflow: 'linebreak', lineColor: [203, 213, 225], lineWidth: 0.1 };
-                        const tableHeadStyles = { fontSize: 6, fontStyle: 'bold', halign: 'center', cellPadding: 2 };
-                        // Build column styles: give "Audit Status" and small columns fixed widths to prevent overflow
-                        const auditStatusIdx = headers.indexOf('Audit Status');
-                        const discFoundIdx = headers.indexOf('Discrepancy Found');
+                        const tableStyles = { fontSize: 5, cellPadding: 1.2, overflow: 'linebreak', lineColor: [203, 213, 225], lineWidth: 0.1, minCellWidth: 8 };
+                        const tableHeadStyles = { fontSize: 5.5, fontStyle: 'bold', halign: 'center', cellPadding: 1.5 };
+                        // Build column styles to prevent text overflow — fixed widths for key columns
                         const colStyles = {};
-                        if (auditStatusIdx !== -1) colStyles[auditStatusIdx] = { cellWidth: 18, halign: 'center' };
-                        if (discFoundIdx !== -1) colStyles[discFoundIdx] = { cellWidth: 14, halign: 'center' };
-                        // Give findings/remarks more room
-                        const findingsIdx = headers.indexOf('Discrepancy Details');
-                        const remarkIdx = headers.indexOf('Optional Remark');
-                        if (findingsIdx !== -1) colStyles[findingsIdx] = { cellWidth: 40 };
-                        if (remarkIdx !== -1) colStyles[remarkIdx] = { cellWidth: 30 };
+                        const auditStatusIdx = headers.indexOf('Audit Status');
+                        const discFoundIdx   = headers.indexOf('Discrepancy Found');
+                        const findingsIdx    = headers.indexOf('Discrepancy Details');
+                        const remarkIdx      = headers.indexOf('Optional Remark');
+                        const urgentIdx      = headers.indexOf('Urgent Action Required');
+                        const auditorIdx     = headers.indexOf('Auditor');
+                        const auditTimeIdx   = headers.indexOf('Audit Time');
+                        const podIdx         = headers.indexOf('POD Number');
+                        const suspStatusIdx  = headers.indexOf('Suspense Status');
+                        const suspPodIdx     = headers.indexOf('Suspense POD');
+                        const missingPartIdx = headers.indexOf('Missing Part Name');
+                        if (auditStatusIdx  !== -1) colStyles[auditStatusIdx]  = { cellWidth: 16, halign: 'center', fontStyle: 'bold' };
+                        if (discFoundIdx    !== -1) colStyles[discFoundIdx]    = { cellWidth: 12, halign: 'center' };
+                        if (findingsIdx     !== -1) colStyles[findingsIdx]     = { cellWidth: 36 };
+                        if (remarkIdx       !== -1) colStyles[remarkIdx]       = { cellWidth: 24 };
+                        if (urgentIdx       !== -1) colStyles[urgentIdx]       = { cellWidth: 28 };
+                        if (auditorIdx      !== -1) colStyles[auditorIdx]      = { cellWidth: 18 };
+                        if (auditTimeIdx    !== -1) colStyles[auditTimeIdx]    = { cellWidth: 22 };
+                        if (podIdx          !== -1) colStyles[podIdx]          = { cellWidth: 16 };
+                        if (suspStatusIdx   !== -1) colStyles[suspStatusIdx]   = { cellWidth: 14, halign: 'center' };
+                        if (suspPodIdx      !== -1) colStyles[suspPodIdx]      = { cellWidth: 14 };
+                        if (missingPartIdx  !== -1) colStyles[missingPartIdx]  = { cellWidth: 22 };
+
+                        // Color "Audit Status" cells by value
+                        const didParseCell = (data) => {
+                            if (data.column.index === auditStatusIdx && data.section === 'body') {
+                                const val = String(data.cell.raw || '');
+                                if (val === 'Pending') { data.cell.styles.textColor = [100, 116, 139]; data.cell.styles.fontStyle = 'bold'; }
+                                else if (val === 'Audited') { data.cell.styles.textColor = [16, 185, 129]; data.cell.styles.fontStyle = 'bold'; }
+                            }
+                        };
 
                         // ── UNCLEAR / PENDING first (priority view) ──
                         if (combinedUnclear.length > 0) {
@@ -5691,6 +5743,7 @@ Upload the correct file.`);
                                 headStyles: { ...tableHeadStyles, fillColor: [220, 38, 38], textColor: 255 },
                                 alternateRowStyles: { fillColor: [255, 251, 235] },
                                 columnStyles: colStyles,
+                                didParseCell: didParseCell,
                                 margin: { left: 14, right: 14 }
                             });
                             startY = doc.lastAutoTable.finalY + 12;
@@ -5707,6 +5760,7 @@ Upload the correct file.`);
                                 headStyles: { ...tableHeadStyles, fillColor: [16, 185, 129], textColor: 255 },
                                 alternateRowStyles: { fillColor: [240, 253, 244] },
                                 columnStyles: colStyles,
+                                didParseCell: didParseCell,
                                 margin: { left: 14, right: 14 }
                             });
                         }
@@ -7164,9 +7218,12 @@ Upload the correct file.`);
         let _adminPwdUid = null, _adminPwdDealerID = null;
 
         function openAdminChangePwd(uid, dealerID) {
+            if (!uid) return showAppAlert('Cannot determine user ID. Please refresh and try again.');
             _adminPwdUid = uid; _adminPwdDealerID = dealerID;
-            document.getElementById('admin-cpwd-title').innerText = 'Set Password — ' + dealerID;
-            document.getElementById('admin-cpwd-subtitle').innerText = 'User will log in with this new password on their next login.';
+            // Store uid in hidden field as a reliable fallback
+            document.getElementById('admin-cpwd-uid').value = uid;
+            document.getElementById('admin-cpwd-title').innerText = 'Set Password — ' + (dealerID || uid);
+            document.getElementById('admin-cpwd-subtitle').innerText = 'Setting password for: ' + (dealerID || uid) + ' (' + uid + '). User will log in with this new password on their next login.';
             document.getElementById('admin-cpwd-new').value = '';
             document.getElementById('admin-cpwd-confirm').value = '';
             document.getElementById('admin-change-pwd-backdrop').style.display = 'block';
@@ -7177,12 +7234,17 @@ Upload the correct file.`);
         function closeAdminChangePwdSheet() {
             document.getElementById('admin-change-pwd-backdrop').style.display = 'none';
             document.getElementById('admin-change-pwd-sheet').style.display = 'none';
+            document.getElementById('admin-cpwd-uid').value = '';
             _adminPwdUid = null; _adminPwdDealerID = null;
         }
 
         function submitAdminChangePwd() {
+            // Always read uid from the hidden field — most reliable source
+            const uid = (document.getElementById('admin-cpwd-uid').value || '').trim() || _adminPwdUid;
+            const dealerID = _adminPwdDealerID || uid;
             const pwd = document.getElementById('admin-cpwd-new').value.trim();
             const conf = document.getElementById('admin-cpwd-confirm').value.trim();
+            if (!uid) return showToast('Cannot detect user ID. Please close and reopen Change Password.', 'danger', 4000);
             if (!pwd) return showToast('Please enter a new password.', 'warning', 3000);
             if (pwd.length < 8) return showToast('Password must be at least 8 characters.', 'warning', 3000);
             if (!/[a-zA-Z]/.test(pwd)) return showToast('Password must contain at least one letter (A–Z).', 'warning', 3000);
@@ -7191,7 +7253,7 @@ Upload the correct file.`);
             if (commonPasswords.includes(pwd.toLowerCase())) return showToast('This password is too common. Choose a more unique password.', 'warning', 4000);
             if (pwd !== conf) return showToast('Passwords do not match.', 'warning', 3000);
             closeAdminChangePwdSheet();
-            _adminSetUserPassword(_adminPwdUid, _adminPwdDealerID, pwd);
+            _adminSetUserPassword(uid, dealerID, pwd);
         }
 
         async function _adminSetUserPassword(uid, dealerID, newPwd) {
