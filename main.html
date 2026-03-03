@@ -139,6 +139,10 @@
 
                     // 1. MASTER CHECK FIRST
                     if (user.email && user.email.toLowerCase() === 'n3235wrty@warrantyauditor.app') {
+                        // Clear dismissed notifications on fresh login so they reappear each session
+                        sessionStorage.removeItem('notif_main_dismissed');
+                        sessionStorage.removeItem('notif_suspense_dismissed');
+                        sessionStorage.removeItem('notif_analytics_dismissed');
                         window._fbUserPerms = ['screen-new-audit', 'screen-archive', 'screen-dashboard', 'screen-reports', 'screen-backup', 'screen-settings', 'screen-security', 'screen-users'];
                     } else {
                         // 2. REGULAR USER CHECK
@@ -154,6 +158,10 @@
                             }
                             window._fbUserPerms = Array.isArray(data.permissions) ? data.permissions : Object.values(data.permissions || []);
                         } else {
+                            // Clear dismissed notifications on fresh login
+                            sessionStorage.removeItem('notif_main_dismissed');
+                            sessionStorage.removeItem('notif_suspense_dismissed');
+                            sessionStorage.removeItem('notif_analytics_dismissed');
                             window._fbUserPerms = ['screen-new-audit', 'screen-archive'];
                         }
                     }
@@ -1217,12 +1225,8 @@
 
         /* Notification Banner */
         @keyframes shimmerLeft {
-            0% { background-position: -400px 0; }
-            100% { background-position: 400px 0; }
-        }
-        @keyframes shimmerFast {
-            0% { background-position: -400px 0; }
-            100% { background-position: 400px 0; }
+            0% { background-position: -600px 0; }
+            100% { background-position: 600px 0; }
         }
         .notif-shimmer {
             position: relative;
@@ -1232,36 +1236,56 @@
             content: '';
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
-            background-size: 400px 100%;
-            animation: shimmerLeft 2.2s ease-in-out infinite;
+            background: linear-gradient(90deg, transparent 20%, rgba(255,255,255,0.04) 50%, transparent 80%);
+            background-size: 600px 100%;
+            animation: shimmerLeft 4s ease-in-out infinite;
             pointer-events: none;
             border-radius: inherit;
         }
         .notif-shimmer.shimmer-critical::after {
-            animation-duration: 1s;
+            background: linear-gradient(90deg, transparent 20%, rgba(255,255,255,0.055) 50%, transparent 80%);
+            animation-duration: 2.5s;
         }
         .notif-shimmer.shimmer-general::after {
-            animation-duration: 3.5s;
+            animation-duration: 6s;
         }
         .notification-banner {
             background: rgba(245, 158, 11, 0.1);
             border: 1px solid rgba(245, 158, 11, 0.3);
             color: var(--warning);
-            padding: 14px 16px;
-            border-radius: 8px;
+            padding: 7px 10px;
+            border-radius: 7px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
             font-weight: 600;
-            font-size: 0.85rem;
-            margin: 0 0 20px 0;
+            font-size: 0.78rem;
+            margin: 0 0 10px 0;
             max-width: 100%;
             width: 100%;
             display: none;
             cursor: pointer;
             animation: slideFadeUp 0.4s ease;
+            line-height: 1.3;
         }
+        .notif-close-btn {
+            margin-left: auto;
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: inherit;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+            padding: 0;
+        }
+        .notif-close-btn:hover { opacity: 1; }
 
         /* Dashboard & Stats */
         .stat-card {
@@ -2428,6 +2452,31 @@
 
     <!-- Change Password Bottom Sheet -->
     <div id="change-pwd-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:4000;" onclick="closeChangePwdSheet()"></div>
+    <div id="admin-change-pwd-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:4002;" onclick="closeAdminChangePwdSheet()"></div>
+    <div id="admin-change-pwd-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px 40px;z-index:4003;max-width:480px;margin:0 auto;box-shadow:0 -8px 32px rgba(0,0,0,0.2);animation:slideFadeUp 0.25s ease;">
+        <div style="width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px;"></div>
+        <h3 style="margin:0 0 6px;font-size:1.1rem;" id="admin-cpwd-title">Set Password</h3>
+        <p style="margin:0 0 20px;font-size:0.8rem;color:var(--text-muted);" id="admin-cpwd-subtitle"></p>
+        <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">New Password</label>
+        <div style="position:relative;margin-bottom:8px;">
+            <input type="password" id="admin-cpwd-new" class="input" placeholder="Minimum 6 characters" style="margin:0;padding-right:44px;" autocomplete="new-password">
+            <button onclick="togglePwdVisibility('admin-cpwd-new',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);padding:4px;" title="Show/Hide">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+        </div>
+        <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Confirm Password</label>
+        <div style="position:relative;margin-bottom:20px;">
+            <input type="password" id="admin-cpwd-confirm" class="input" placeholder="Re-enter new password" style="margin:0;padding-right:44px;" autocomplete="new-password">
+            <button onclick="togglePwdVisibility('admin-cpwd-confirm',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);padding:4px;" title="Show/Hide">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+        </div>
+        <div style="display:flex;gap:12px;">
+            <button class="btn" onclick="closeAdminChangePwdSheet()" style="flex:1;">Cancel</button>
+            <button class="btn primary" onclick="submitAdminChangePwd()" style="flex:2;">Set Password</button>
+        </div>
+    </div>
+
     <div id="change-pwd-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px 40px;z-index:4001;max-width:480px;margin:0 auto;box-shadow:0 -8px 32px rgba(0,0,0,0.2);animation:slideFadeUp 0.25s ease;">
         <div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px;"></div>
         <h3 style="margin:0 0 4px;font-size:1.05rem;">Change Password</h3>
@@ -2451,32 +2500,40 @@
     <div id="screen-menu" class="screen">
 
         <div id="main-notification" class="notification-banner notif-shimmer" onclick="buildDashboard()">
-            <svg style="width:24px; height:24px; flex-shrink:0; stroke:currentColor; stroke-width:2; fill:none;"
+            <svg style="width:16px; height:16px; flex-shrink:0; stroke:currentColor; stroke-width:2; fill:none;"
                 viewBox="0 0 24 24">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
-                </path>
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
                 <line x1="12" y1="9" x2="12" y2="13"></line>
                 <line x1="12" y1="17" x2="12.01" y2="17"></line>
             </svg>
             <span id="notif-text">Loading notifications...</span>
+            <button class="notif-close-btn" title="Dismiss" onclick="dismissNotif(event,'main-notification','notif_main')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
         </div>
 
         <div id="analytics-notification" class="notification-banner notif-shimmer shimmer-general"
-            style="background: var(--surface); border: 1px solid var(--border); color: var(--text-main); display: none; flex-direction:column; align-items:flex-start; cursor:pointer;"
+            style="background: var(--surface); border: 1px solid var(--border); color: var(--text-main); display: none; flex-direction:column; align-items:flex-start; cursor:pointer; position:relative;"
             onclick="buildDashboard()">
-            <span id="analytics-notif-text"></span>
+            <span id="analytics-notif-text" style="width:100%;"></span>
+            <button class="notif-close-btn" title="Dismiss" style="position:absolute;top:8px;right:8px;" onclick="dismissNotif(event,'analytics-notification','notif_analytics')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
         </div>
 
         <div id="suspense-notification" class="notification-banner notif-shimmer shimmer-critical"
             style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.4); color: var(--danger); display: none;"
             onclick="openSuspenseFilter()">
-            <svg style="width:24px; height:24px; flex-shrink:0; stroke:currentColor; stroke-width:2; fill:none;"
+            <svg style="width:16px; height:16px; flex-shrink:0; stroke:currentColor; stroke-width:2; fill:none;"
                 viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="10"></circle>
                 <line x1="12" y1="8" x2="12" y2="12"></line>
                 <line x1="12" y1="16" x2="12.01" y2="16"></line>
             </svg>
             <span id="suspense-notif-text">Loading suspense notifications...</span>
+            <button class="notif-close-btn" title="Dismiss" onclick="dismissNotif(event,'suspense-notification','notif_suspense')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
         </div>
 
         <div class="menu-grid">
@@ -2660,8 +2717,9 @@
 
             <div id="dash-amount-stats" style="margin-bottom:20px;"></div>
 
-            <div id="dash-suspense-notif" class="notification-banner"
-                style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.4); color: var(--danger); display: none; max-width: 100%; margin-bottom: 16px;">
+            <div id="dash-suspense-notif" class="notification-banner notif-shimmer shimmer-critical"
+                style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.4); color: var(--danger); display: none; max-width: 100%; margin-bottom: 16px; cursor:pointer;"
+                onclick="setDashFilter('suspense')">
                 <svg style="width:20px; height:20px; flex-shrink:0; stroke:currentColor; stroke-width:2; fill:none;"
                     viewBox="0 0 24 24">
                     <circle cx="12" cy="12" r="10"></circle>
@@ -2669,6 +2727,9 @@
                     <line x1="12" y1="16" x2="12.01" y2="16"></line>
                 </svg>
                 <span id="dash-suspense-text"></span>
+                <button class="notif-close-btn" title="Dismiss" onclick="dismissNotif(event,'dash-suspense-notif','dash_suspense_notif')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
             </div>
 
             <button class="btn" id="btn-toggle-chart" onclick="toggleDashChart()"
@@ -3375,8 +3436,9 @@
 
         <div id="workspace-stats" style="margin-bottom: 16px;"></div>
 
-        <div id="workspace-suspense-notif" class="notification-banner"
-            style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.4); color: var(--danger); display: none; max-width: 100%; margin-bottom: 16px;">
+        <div id="workspace-suspense-notif" class="notification-banner notif-shimmer shimmer-critical"
+            style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.4); color: var(--danger); display: none; max-width: 100%; margin-bottom: 16px; cursor:pointer;"
+            onclick="setWorkspaceFilter('suspense')">
             <svg style="width:20px; height:20px; flex-shrink:0; stroke:currentColor; stroke-width:2; fill:none;"
                 viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="10"></circle>
@@ -3384,6 +3446,9 @@
                 <line x1="12" y1="16" x2="12.01" y2="16"></line>
             </svg>
             <span id="workspace-suspense-text"></span>
+            <button class="notif-close-btn" title="Dismiss" onclick="dismissNotif(event,'workspace-suspense-notif','ws_suspense_notif')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
         </div>
 
         <div style="position:relative; margin-bottom:16px; width: 100%;">
@@ -3964,6 +4029,13 @@
         // JS § 5 — CORE: showLoader, showScreen (base)
         // ════════════════════════════════════════════════════════
         function showLoader(show) { document.getElementById('loader').style.display = show ? 'flex' : 'none'; }
+        function dismissNotif(e, id, key) {
+            e.stopPropagation(); // don't trigger parent onclick
+            const el = document.getElementById(id);
+            if (el) { el.style.opacity = '0'; el.style.transition = 'opacity 0.25s'; setTimeout(() => { el.style.display = 'none'; el.style.opacity = ''; el.style.transition = ''; }, 260); }
+            sessionStorage.setItem(key + '_dismissed', '1');
+        }
+
         async function openSuspenseFilter() {
             // Find the key that has suspense urgent items — prefer most recent
             const keys = Object.keys(dbIndex);
@@ -4086,8 +4158,8 @@
             // Show Suspense(P) urgent notification
             if (tsuspense > 0) {
                 const suspenseMonthsStr = suspenseMonths.join(', ');
-                document.getElementById('suspense-notif-text').innerHTML = `<strong style="font-size:1rem; display:block; margin-bottom:4px; color:var(--danger);">Suspense(P) — Action Required</strong> <span style="color:var(--text-muted);">You have <b>${tsuspense}</b> Suspense(P) part(s) not yet sent to Technical Centre in <b>${suspenseMonthsStr}</b>. Click to view.</span>`;
-                suspenseBanner.style.display = 'flex';
+                document.getElementById('suspense-notif-text').innerHTML = `<strong style="font-size:0.78rem; display:block; margin-bottom:2px; color:var(--danger);">Suspense(P) — Action Required</strong> <span style="color:var(--text-muted);">You have <b>${tsuspense}</b> Suspense(P) part(s) not yet sent to Technical Centre in <b>${suspenseMonthsStr}</b>. Click to view.</span>`;
+                if (!sessionStorage.getItem('notif_suspense_dismissed')) suspenseBanner.style.display = 'flex';
             } else {
                 suspenseBanner.style.display = 'none';
             }
@@ -4126,27 +4198,27 @@
             if (totalAllClaims > 0) {
                 const analyticsEl = document.getElementById('analytics-notification');
                 if (analyticsEl) {
-                    analyticsEl.style.display = 'flex';
+                    if (!sessionStorage.getItem('notif_analytics_dismissed')) analyticsEl.style.display = 'flex';
                     document.getElementById('analytics-notif-text').innerHTML =
-                        `<strong style="font-size:0.9rem;display:block;margin-bottom:6px;">Audit Analytics — <span style="color:${zoneColor};">${zoneLabel}</span></strong>
+                        `<strong style="font-size:0.75rem;display:block;margin-bottom:4px;">Audit Analytics — <span style="color:${zoneColor};">${zoneLabel}</span></strong>
                         <div style="display:flex;gap:10px;flex-wrap:wrap;">
                             <span style="background:rgba(16,185,129,0.15);color:var(--success);padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:700;">Clean ${clearPct}%</span>
                             <span style="background:rgba(245,158,11,0.15);color:var(--warning);padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:700;">Unclear ${unclearPct}%</span>
                             <span style="background:rgba(100,116,139,0.15);color:var(--text-muted);padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:700;">Pending ${pendingPct}%</span>
                         </div>
-                        <span style="font-size:0.72rem;color:var(--text-muted);display:block;margin-top:4px;">Click to view detailed analytics</span>`;
+                        <span style="font-size:0.68rem;color:var(--text-muted);display:block;margin-top:3px;">Click to view detailed analytics</span>`;
                 }
             }
 
             if (tunclear > 0 || tpending > 0) {
                 const monthsStr = actionMonths.join(', ');
-                document.getElementById('notif-text').innerHTML = `<strong style="font-size:1rem; display:block; margin-bottom:4px; color:var(--danger);">Action Required</strong> <span style="color:var(--text-muted);">You have ${tunclear} Unclear & ${tpending} Pending claims in <b>${monthsStr}</b>. Click to view.</span>`;
+                document.getElementById('notif-text').innerHTML = `<strong style="font-size:0.78rem; display:block; margin-bottom:2px; color:var(--danger);">Action Required</strong> <span style="color:var(--text-muted);">You have ${tunclear} Unclear & ${tpending} Pending claims in <b>${monthsStr}</b>. Click to view.</span>`;
                 banner.className = 'notification-banner alert-mode';
-                banner.style.display = 'flex';
+                if (!sessionStorage.getItem('notif_main_dismissed')) banner.style.display = 'flex';
             } else if (pendingDrafts > 0) {
-                document.getElementById('notif-text').innerHTML = `<strong style="font-size:1rem; display:block; margin-bottom:4px; color:var(--accent);">Draft Pending</strong> <span style="color:var(--text-muted);">You have ${pendingDrafts} Draft session(s) pending completion. Click to view.</span>`;
+                document.getElementById('notif-text').innerHTML = `<strong style="font-size:0.78rem; display:block; margin-bottom:2px; color:var(--accent);">Draft Pending</strong> <span style="color:var(--text-muted);">You have ${pendingDrafts} Draft session(s) pending completion. Click to view.</span>`;
                 banner.className = 'notification-banner info-mode';
-                banner.style.display = 'flex';
+                if (!sessionStorage.getItem('notif_main_dismissed')) banner.style.display = 'flex';
             } else {
                 banner.style.display = 'none';
             }
@@ -4591,6 +4663,7 @@
                 if (workspaceCurrentFilter === 'clean') return isClear;
                 if (workspaceCurrentFilter === 'unclear') return isAudited && !isClear;
                 if (workspaceCurrentFilter === 'pending') return !isAudited;
+                if (workspaceCurrentFilter === 'suspense') { const e2 = currentAuditData[claimNo] || {}; return e2.suspense_pending && e2.suspense_sent === 'no'; }
                 return true;
             });
             currentPage = 1;
@@ -4641,6 +4714,7 @@
                 <div class="stat-card claim-card ws-filter-btn ${workspaceCurrentFilter === 'pending' ? 'active-filter' : ''}" id="ws-filter-pending" onclick="setWorkspaceFilter('pending')" style="border-top: 3px solid var(--text-muted); padding: 14px; cursor: pointer; min-width: 0;">
                     <div class="stat-value" style="font-size:1.5rem; margin-bottom:2px;">${currentData.length - audited}</div><div class="stat-label" style="font-size:0.65rem;">Claims Pending</div>
                 </div>
+                ${suspenseUrgent > 0 ? `<div class="stat-card claim-card ws-filter-btn ${workspaceCurrentFilter === 'suspense' ? 'active-filter' : ''}" id="ws-filter-suspense" onclick="setWorkspaceFilter('suspense')" style="border-top: 3px solid var(--danger); padding: 14px; cursor: pointer; min-width: 0; grid-column: span 2;"><div class="stat-value" style="font-size:1.5rem; color:var(--danger); margin-bottom:2px;">${suspenseUrgent}</div><div class="stat-label" style="font-size:0.65rem;">⚠ Suspense Urgent</div></div>` : ''}
             </div>
             
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
@@ -5789,7 +5863,7 @@ Upload the correct file.`);
         // ════════════════════════════════════════════════════════
         function showToast(msg, type, dur) {
             let t = document.getElementById('gist-toast');
-            if (!t) { t = document.createElement('div'); t.id = 'gist-toast'; t.classList.add('notif-shimmer'); t.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;max-width:92vw;width:380px;padding:14px 18px;border-radius:12px;font-size:0.8rem;font-weight:600;line-height:1.5;box-shadow:0 8px 32px rgba(0,0,0,0.22);cursor:pointer;transition:opacity 0.3s;'; t.onclick = () => { t.style.opacity = '0'; setTimeout(() => { if (t.parentNode) t.remove(); }, 300); }; document.body.appendChild(t); }
+            if (!t) { t = document.createElement('div'); t.id = 'gist-toast';  t.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;max-width:92vw;width:380px;padding:14px 18px;border-radius:12px;font-size:0.8rem;font-weight:600;line-height:1.5;box-shadow:0 8px 32px rgba(0,0,0,0.22);cursor:pointer;transition:opacity 0.3s;'; t.onclick = () => { t.style.opacity = '0'; setTimeout(() => { if (t.parentNode) t.remove(); }, 300); }; document.body.appendChild(t); }
             const S = { danger: { bg: 'rgba(239,68,68,0.97)', b: '#ef4444', c: '#fff', icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>' }, warning: { bg: 'rgba(245,158,11,0.97)', b: '#f59e0b', c: '#111', icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' }, success: { bg: 'rgba(16,185,129,0.97)', b: '#10b981', c: '#fff', icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' } };
             const s = S[type] || S.success; t.style.background = s.bg; t.style.border = '1px solid ' + s.b; t.style.color = s.c; t.style.opacity = '1'; t.style.display = 'flex'; t.style.alignItems = 'center'; t.style.gap = '10px'; t.innerHTML = s.icon + '<span>' + msg + '</span>';
             if (t._x) clearTimeout(t._x); t._x = setTimeout(() => { t.style.opacity = '0'; setTimeout(() => { if (t.parentNode) t.remove(); }, 300); }, (dur || 5000));
@@ -5994,9 +6068,9 @@ Upload the correct file.`);
                         setTimeout(() => window.location.reload(), 2000);
                     });
                 } else {
+                    // restoreFromGoogleDrive handles its own confirm + loader + toast
                     btn.classList.remove('loading');
                     await restoreFromGoogleDrive();
-                    showToast('Restore initiated!', 'success', 3000);
                 }
             } catch (e) {
                 btn.classList.remove('loading');
@@ -6645,9 +6719,26 @@ Upload the correct file.`);
             if (!window._fbUser) return showAppAlert("Please sign in with Google first.");
             showLoader(true);
             try {
+                // Build backup — strip raw_data and filtered_data (Excel rows) to stay
+                // under Firestore's 1MB per-document limit. Audit results (audit_data)
+                // are all that matters. Excel can be re-uploaded from the original file.
                 let bk = {};
                 const ks = await localforage.keys();
-                for (let k of ks) bk[k] = await localforage.getItem(k);
+                for (let k of ks) {
+                    const item = await localforage.getItem(k);
+                    if (item && typeof item === 'object' && !Array.isArray(item)) {
+                        // Strip large Excel row arrays — keep only audit metadata
+                        const slim = {};
+                        for (let f in item) {
+                            if (f !== 'raw_data' && f !== 'filtered_data') {
+                                slim[f] = item[f];
+                            }
+                        }
+                        bk[k] = slim;
+                    } else {
+                        bk[k] = item;
+                    }
+                }
                 bk['_secConfig'] = localStorage.getItem('auditor_sec') || '{}';
                 bk['_theme'] = localStorage.getItem('auditor_theme') || 'light';
                 bk['_customCodes'] = localStorage.getItem('auditor_custom_codes') || '{}';
@@ -6685,17 +6776,33 @@ Upload the correct file.`);
                     }
 
                     const data = snap.data();
+
+                    // Clear local storage first
                     await localforage.clear();
+
+                    const SKIP = new Set(['_secConfig','_theme','_customCodes','_savedAt','_autosync']);
                     for (let k in data) {
-                        if (k === '_secConfig') localStorage.setItem('auditor_sec', data[k]);
-                        else if (k === '_theme') { localStorage.setItem('auditor_theme', data[k]); applyTheme(data[k]); }
-                        else if (k === '_customCodes') localStorage.setItem('auditor_custom_codes', data[k]);
-                        else if (k === '_savedAt') { /* skip */ }
-                        else await localforage.setItem(k, data[k]);
+                        if (k === '_secConfig') {
+                            localStorage.setItem('auditor_sec', typeof data[k] === 'string' ? data[k] : JSON.stringify(data[k]));
+                        } else if (k === '_theme') {
+                            localStorage.setItem('auditor_theme', data[k]);
+                            applyTheme(data[k]);
+                        } else if (k === '_customCodes') {
+                            localStorage.setItem('auditor_custom_codes', typeof data[k] === 'string' ? data[k] : JSON.stringify(data[k]));
+                        } else if (k === '_autosync') {
+                            localStorage.setItem('gist_autosync', data[k]);
+                        } else if (k === '_savedAt') {
+                            // skip — metadata only
+                        } else {
+                            // Restore session data — raw_data and filtered_data were stripped at backup
+                            // so the session will load empty rows (user re-uploads Excel as normal)
+                            await localforage.setItem(k, data[k]);
+                        }
                     }
+
                     localStorage.setItem('gdrive_connected', 'true');
                     showLoader(false);
-                    showAppAlert("Restore complete! Reloading...");
+                    showToast('Restore complete! Reloading...', 'success', 3000);
                     setTimeout(() => window.location.reload(), 2000);
                 } catch (e) {
                     showLoader(false);
@@ -7021,16 +7128,33 @@ Upload the correct file.`);
             }
         }
 
+        let _adminPwdUid = null, _adminPwdDealerID = null;
+
         function openAdminChangePwd(uid, dealerID) {
-            showAppConfirm(
-                'Set a new password for ' + dealerID + '?\nEnter the new password below.',
-                () => {
-                    const pwd = prompt('New password for ' + dealerID + ' (min 6 chars):');
-                    if (!pwd) return;
-                    if (pwd.length < 6) return showAppAlert('Password must be at least 6 characters.');
-                    _adminSetUserPassword(uid, dealerID, pwd);
-                }
-            );
+            _adminPwdUid = uid; _adminPwdDealerID = dealerID;
+            document.getElementById('admin-cpwd-title').innerText = 'Set Password — ' + dealerID;
+            document.getElementById('admin-cpwd-subtitle').innerText = 'User will log in with this new password on their next login.';
+            document.getElementById('admin-cpwd-new').value = '';
+            document.getElementById('admin-cpwd-confirm').value = '';
+            document.getElementById('admin-change-pwd-backdrop').style.display = 'block';
+            document.getElementById('admin-change-pwd-sheet').style.display = 'block';
+            setTimeout(() => document.getElementById('admin-cpwd-new').focus(), 100);
+        }
+
+        function closeAdminChangePwdSheet() {
+            document.getElementById('admin-change-pwd-backdrop').style.display = 'none';
+            document.getElementById('admin-change-pwd-sheet').style.display = 'none';
+            _adminPwdUid = null; _adminPwdDealerID = null;
+        }
+
+        function submitAdminChangePwd() {
+            const pwd = document.getElementById('admin-cpwd-new').value.trim();
+            const conf = document.getElementById('admin-cpwd-confirm').value.trim();
+            if (!pwd) return showToast('Please enter a new password.', 'warning', 3000);
+            if (pwd.length < 6) return showToast('Password must be at least 6 characters.', 'warning', 3000);
+            if (pwd !== conf) return showToast('Passwords do not match.', 'warning', 3000);
+            closeAdminChangePwdSheet();
+            _adminSetUserPassword(_adminPwdUid, _adminPwdDealerID, pwd);
         }
 
         async function _adminSetUserPassword(uid, dealerID, newPwd) {
