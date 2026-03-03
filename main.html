@@ -230,6 +230,9 @@
             margin: 0;
             padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
         }
 
         body {
@@ -243,6 +246,9 @@
             flex-direction: column;
             transition: background-color 0.4s ease, color 0.4s ease;
             overflow-x: hidden;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+            font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
         }
 
         .card {
@@ -2711,8 +2717,11 @@
                     <div class="stat-value" id="dash-pending">0</div>
                     <div class="stat-label">Total Claims Pending</div>
                 </div>
+            </div>
+            <!-- Suspense Urgent Card — centred in its own row -->
+            <div id="dash-suspense-row" style="display:none; margin-bottom:8px;">
                 <div class="stat-card claim-card" id="dash-card-suspense"
-                    style="border-top: 4px solid var(--danger); display:none;" onclick="setDashFilter('suspense')">
+                    style="border-top: 4px solid var(--danger); max-width:260px; margin:0 auto;" onclick="setDashFilter('suspense')">
                     <div class="stat-value" id="dash-suspense-count" style="color:var(--danger)">0</div>
                     <div class="stat-label">⚠ Suspense Urgent</div>
                 </div>
@@ -2742,7 +2751,7 @@
             </button>
             <div id="dash-chart-container"
                 style="display:block; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:20px;">
-                <canvas id="auditChart" height="220"></canvas>
+                <canvas id="auditChart" height="260"></canvas>
             </div>
 
             <div style="position:relative; margin-bottom:16px; width: 100%;">
@@ -3962,10 +3971,18 @@
             try {
                 let backupObj = {}; const keys = await localforage.keys();
                 for (let k of keys) { backupObj[k] = await localforage.getItem(k); }
-                backupObj['_secConfig'] = localStorage.getItem('auditor_sec') || "{}";
-                backupObj['_autosync'] = localStorage.getItem('gist_autosync') || 'false';
-                backupObj['_theme'] = localStorage.getItem('auditor_theme') || 'light';
-                backupObj['_customCodes'] = localStorage.getItem('auditor_custom_codes') || '{}';
+                // Core app settings
+                backupObj['_secConfig']     = localStorage.getItem('auditor_sec') || "{}";
+                backupObj['_autosync']      = localStorage.getItem('gist_autosync') || 'false';
+                backupObj['_theme']         = localStorage.getItem('auditor_theme') || 'light';
+                backupObj['_customCodes']   = localStorage.getItem('auditor_custom_codes') || '{}';
+                // GitHub Gist connection (token encrypted — safe to back up)
+                backupObj['_gistTokenEnc']  = localStorage.getItem('gist_token_enc') || '';
+                backupObj['_gistId']        = localStorage.getItem('gist_id') || '';
+                backupObj['_gistLastSync']  = localStorage.getItem('gist_last_sync') || '';
+                backupObj['_gistLastSyncIso'] = localStorage.getItem('gist_last_sync_iso') || '';
+                // Google Drive / Firebase last sync
+                backupObj['_gdriveLastSync'] = localStorage.getItem('gdrive_last_sync') || '';
                 const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupObj));
                 const dlAnchorElem = document.createElement('a'); dlAnchorElem.setAttribute("href", dataStr);
                 dlAnchorElem.setAttribute("download", `WarrantyAuditor_Backup_${new Date().toISOString().split('T')[0]}.json`);
@@ -3980,7 +3997,18 @@
                 reader.onload = async (e) => {
                     try {
                         const data = JSON.parse(e.target.result); await localforage.clear();
-                        for (let key in data) { if (key === '_secConfig') { localStorage.setItem('auditor_sec', data[key]); } else if (key === '_autosync') { localStorage.setItem('gist_autosync', data[key]); } else if (key === '_theme') { localStorage.setItem('auditor_theme', data[key]); applyTheme(data[key]); } else if (key === '_customCodes') { localStorage.setItem('auditor_custom_codes', data[key]); } else { await localforage.setItem(key, data[key]); } }
+                        for (let key in data) {
+                            if      (key === '_secConfig')      { localStorage.setItem('auditor_sec', data[key]); }
+                            else if (key === '_autosync')       { localStorage.setItem('gist_autosync', data[key]); }
+                            else if (key === '_theme')          { localStorage.setItem('auditor_theme', data[key]); applyTheme(data[key]); }
+                            else if (key === '_customCodes')    { localStorage.setItem('auditor_custom_codes', data[key]); }
+                            else if (key === '_gistTokenEnc')   { if (data[key]) localStorage.setItem('gist_token_enc', data[key]); }
+                            else if (key === '_gistId')         { if (data[key]) localStorage.setItem('gist_id', data[key]); }
+                            else if (key === '_gistLastSync')   { if (data[key]) localStorage.setItem('gist_last_sync', data[key]); }
+                            else if (key === '_gistLastSyncIso'){ if (data[key]) localStorage.setItem('gist_last_sync_iso', data[key]); }
+                            else if (key === '_gdriveLastSync') { if (data[key]) localStorage.setItem('gdrive_last_sync', data[key]); }
+                            else { await localforage.setItem(key, data[key]); }
+                        }
                         showLoader(false); showAppAlert("Database Restored Successfully! App will reload."); setTimeout(() => window.location.reload(), 2000);
                     } catch (err) { showLoader(false); showAppAlert("Restore failed. Invalid backup."); document.getElementById('restore-file').value = ''; }
                 }; reader.readAsText(file);
@@ -4368,12 +4396,15 @@
 
             document.getElementById('dash-total').innerText = dashCurrentData.length; document.getElementById('dash-clean').innerText = clr;
             document.getElementById('dash-unclear').innerText = aud - clr; document.getElementById('dash-pending').innerText = dashCurrentData.length - aud;
-            // Update suspense card
+            // Update suspense card — show in centred row
             const suspCard = document.getElementById('dash-card-suspense');
+            const suspRow = document.getElementById('dash-suspense-row');
             const suspCountEl = document.getElementById('dash-suspense-count');
             if (suspCard && suspCountEl) {
                 suspCountEl.innerText = suspenseUrgent;
-                suspCard.style.display = suspenseUrgent > 0 ? 'block' : 'none';
+                const show = suspenseUrgent > 0;
+                suspCard.style.display = show ? 'block' : 'none';
+                if (suspRow) suspRow.style.display = show ? 'block' : 'none';
             }
 
             document.getElementById('dash-amount-stats').innerHTML = `
@@ -4749,21 +4780,27 @@
             }
 
             const html = `
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px;">
-                <div class="stat-card claim-card ws-filter-btn ${workspaceCurrentFilter === 'all' ? 'active-filter' : ''}" id="ws-filter-all" onclick="setWorkspaceFilter('all')" style="border-top: 3px solid var(--accent); padding: 14px; cursor: pointer; min-width: 0;">
-                    <div class="stat-value" style="font-size:1.5rem; margin-bottom:2px;">${currentData.length}</div><div class="stat-label" style="font-size:0.65rem;">Total Claims</div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 8px;">
+                <div class="stat-card claim-card ws-filter-btn ${workspaceCurrentFilter === 'all' ? 'active-filter' : ''}" id="ws-filter-all" onclick="setWorkspaceFilter('all')" style="border-top: 3px solid var(--accent); padding: 12px; cursor: pointer; min-width: 0;">
+                    <div class="stat-value" style="font-size:1.4rem; margin-bottom:2px;">${currentData.length}</div><div class="stat-label" style="font-size:0.62rem;">Total Claims</div>
                 </div>
-                <div class="stat-card claim-card ws-filter-btn ${workspaceCurrentFilter === 'clean' ? 'active-filter' : ''}" id="ws-filter-clean" onclick="setWorkspaceFilter('clean')" style="border-top: 3px solid var(--success); padding: 14px; cursor: pointer; min-width: 0;">
-                    <div class="stat-value" style="font-size:1.5rem; color:var(--success); margin-bottom:2px;">${clear}</div><div class="stat-label" style="font-size:0.65rem;">Claims Clean</div>
+                <div class="stat-card claim-card ws-filter-btn ${workspaceCurrentFilter === 'clean' ? 'active-filter' : ''}" id="ws-filter-clean" onclick="setWorkspaceFilter('clean')" style="border-top: 3px solid var(--success); padding: 12px; cursor: pointer; min-width: 0;">
+                    <div class="stat-value" style="font-size:1.4rem; color:var(--success); margin-bottom:2px;">${clear}</div><div class="stat-label" style="font-size:0.62rem;">Claims Clean</div>
                 </div>
-                <div class="stat-card claim-card ws-filter-btn ${workspaceCurrentFilter === 'unclear' ? 'active-filter' : ''}" id="ws-filter-unclear" onclick="setWorkspaceFilter('unclear')" style="border-top: 3px solid var(--warning); padding: 14px; cursor: pointer; min-width: 0;">
-                    <div class="stat-value" style="font-size:1.5rem; color:var(--warning); margin-bottom:2px;">${audited - clear}</div><div class="stat-label" style="font-size:0.65rem;">Claims Unclear</div>
+                <div class="stat-card claim-card ws-filter-btn ${workspaceCurrentFilter === 'unclear' ? 'active-filter' : ''}" id="ws-filter-unclear" onclick="setWorkspaceFilter('unclear')" style="border-top: 3px solid var(--warning); padding: 12px; cursor: pointer; min-width: 0;">
+                    <div class="stat-value" style="font-size:1.4rem; color:var(--warning); margin-bottom:2px;">${audited - clear}</div><div class="stat-label" style="font-size:0.62rem;">Claims Unclear</div>
                 </div>
-                <div class="stat-card claim-card ws-filter-btn ${workspaceCurrentFilter === 'pending' ? 'active-filter' : ''}" id="ws-filter-pending" onclick="setWorkspaceFilter('pending')" style="border-top: 3px solid var(--text-muted); padding: 14px; cursor: pointer; min-width: 0;">
-                    <div class="stat-value" style="font-size:1.5rem; margin-bottom:2px;">${currentData.length - audited}</div><div class="stat-label" style="font-size:0.65rem;">Claims Pending</div>
+                <div class="stat-card claim-card ws-filter-btn ${workspaceCurrentFilter === 'pending' ? 'active-filter' : ''}" id="ws-filter-pending" onclick="setWorkspaceFilter('pending')" style="border-top: 3px solid var(--text-muted); padding: 12px; cursor: pointer; min-width: 0;">
+                    <div class="stat-value" style="font-size:1.4rem; margin-bottom:2px;">${currentData.length - audited}</div><div class="stat-label" style="font-size:0.62rem;">Claims Pending</div>
                 </div>
-                ${suspenseUrgent > 0 ? `<div class="stat-card claim-card ws-filter-btn ${workspaceCurrentFilter === 'suspense' ? 'active-filter' : ''}" id="ws-filter-suspense" onclick="setWorkspaceFilter('suspense')" style="border-top: 3px solid var(--danger); padding: 14px; cursor: pointer; min-width: 0; grid-column: span 2;"><div class="stat-value" style="font-size:1.5rem; color:var(--danger); margin-bottom:2px;">${suspenseUrgent}</div><div class="stat-label" style="font-size:0.65rem;">⚠ Suspense Urgent</div></div>` : ''}
             </div>
+            ${suspenseUrgent > 0 ? `
+            <div style="display:flex; justify-content:center; margin-bottom:8px;">
+                <div class="stat-card claim-card ws-filter-btn ${workspaceCurrentFilter === 'suspense' ? 'active-filter' : ''}" id="ws-filter-suspense" onclick="setWorkspaceFilter('suspense')" style="border-top: 3px solid var(--danger); padding: 12px; cursor: pointer; width:200px; text-align:center;">
+                    <div class="stat-value" style="font-size:1.4rem; color:var(--danger); margin-bottom:2px;">${suspenseUrgent}</div>
+                    <div class="stat-label" style="font-size:0.62rem;">⚠ Suspense Urgent</div>
+                </div>
+            </div>` : ''}
             
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
                 <div class="stat-card" style="border-top: 2px solid var(--accent); padding: 12px; min-width: 0; cursor:pointer;" onclick="setWorkspaceFilter('all')" title="Show All Claims">
@@ -5206,9 +5243,27 @@ Upload the correct file.`);
         async function openArchive(showFinalized) {
             showLoader(true); const tbody = document.getElementById('archive-tbody'); tbody.innerHTML = '';
             document.getElementById('archive-title').innerText = showFinalized ? "Previous Audits" : "Drafts"; let found = false;
-            for (const [key, meta] of Object.entries(dbIndex)) {
+
+            // Sort entries by month — newest first
+            const sortedEntries = Object.entries(dbIndex).sort(([, a], [, b]) => {
+                const parseMonth = m => {
+                    if (!m) return 0;
+                    const months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+                    // Try "Month YYYY" e.g. "March 2025"
+                    const match = m.match(/([a-zA-Z]+)[^0-9]*(\d{4})/);
+                    if (match) {
+                        const mi = months.indexOf(match[1].toLowerCase().substring(0, 3));
+                        return new Date(parseInt(match[2]), mi >= 0 ? mi : 0).getTime();
+                    }
+                    // Fallback: try direct date parse
+                    const d = new Date(m); return isNaN(d) ? 0 : d.getTime();
+                };
+                return parseMonth(b.month) - parseMonth(a.month); // newest first
+            });
+
+            for (const [key, meta] of sortedEntries) {
                 if (meta.finalized === showFinalized) {
-                    found = true; const tr = document.createElement('tr');
+                    const tr = document.createElement('tr');
                     const auditNum = meta.audit_number || '';
                     const isFrozen = !!meta.audit_number; // Audit number generated = frozen
 
@@ -5252,7 +5307,8 @@ Upload the correct file.`);
                     </td>
                     <td><span class="badge ${meta.finalized ? 'status-clear' : 'status-unclear'}">${meta.finalized ? 'Cls' : 'Drf'}</span></td>
                     <td><div style="display:flex; gap:5px; flex-wrap:wrap;">${actionBtns}</div></td>
-                `; tbody.appendChild(tr);
+                    `; tbody.appendChild(tr);
+                    found = true;
                 }
             }
             if (!found) tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding: 20px;">No records found.</td></tr>`;
@@ -6668,28 +6724,106 @@ Upload the correct file.`);
             if (!ctx) return;
             if (dashChartInstance) dashChartInstance.destroy();
 
-            let cln = parseInt(document.getElementById('dash-clean').innerText) || 0;
-            let unc = parseInt(document.getElementById('dash-unclear').innerText) || 0;
-            let pen = parseInt(document.getElementById('dash-pending').innerText) || 0;
+            const cln = parseInt(document.getElementById('dash-clean').innerText) || 0;
+            const unc = parseInt(document.getElementById('dash-unclear').innerText) || 0;
+            const pen = parseInt(document.getElementById('dash-pending').innerText) || 0;
+            const total = cln + unc + pen;
 
+            // Read CSS variables for theme-aware colours
+            const style = getComputedStyle(document.documentElement);
+            const textMain  = style.getPropertyValue('--text-main').trim()  || '#0f172a';
+            const textMuted = style.getPropertyValue('--text-muted').trim() || '#64748b';
+            const surface   = style.getPropertyValue('--surface').trim()    || '#ffffff';
+            const border    = style.getPropertyValue('--border').trim()     || '#e2e8f0';
+
+            const clnPct = total > 0 ? Math.round(cln / total * 100) : 0;
+            const uncPct = total > 0 ? Math.round(unc / total * 100) : 0;
+            const penPct = total > 0 ? Math.round(pen / total * 100) : 0;
+
+            // Stacked bar + doughnut combined via two datasets on a doughnut
             dashChartInstance = new Chart(ctx.getContext('2d'), {
                 type: 'doughnut',
                 data: {
-                    labels: ['Clean', 'Unclear', 'Pending'],
+                    labels: [
+                        `Clean (${clnPct}%)`,
+                        `Unclear (${uncPct}%)`,
+                        `Pending (${penPct}%)`
+                    ],
                     datasets: [{
+                        label: 'Claims',
                         data: [cln, unc, pen],
-                        backgroundColor: ['#10b981', '#f59e0b', '#64748b'],
-                        borderWidth: 0,
-                        hoverOffset: 4
+                        backgroundColor: [
+                            'rgba(16,185,129,0.85)',
+                            'rgba(245,158,11,0.85)',
+                            'rgba(100,116,139,0.75)'
+                        ],
+                        borderColor: [
+                            'rgba(16,185,129,1)',
+                            'rgba(245,158,11,1)',
+                            'rgba(100,116,139,1)'
+                        ],
+                        borderWidth: 2,
+                        hoverOffset: 10,
+                        hoverBorderWidth: 3,
+                        borderRadius: 4
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    cutout: '62%',
+                    animation: { animateRotate: true, animateScale: true, duration: 600, easing: 'easeInOutQuart' },
                     plugins: {
-                        legend: { position: 'right', labels: { color: 'var(--text-main)' } }
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: textMain,
+                                padding: 18,
+                                font: { size: 12, weight: '600', family: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: surface,
+                            titleColor: textMain,
+                            bodyColor: textMuted,
+                            borderColor: border,
+                            borderWidth: 1,
+                            padding: 12,
+                            cornerRadius: 10,
+                            titleFont: { size: 13, weight: '700' },
+                            bodyFont: { size: 12 },
+                            callbacks: {
+                                label: ctx => {
+                                    const val = ctx.parsed;
+                                    const pct = total > 0 ? Math.round(val / total * 100) : 0;
+                                    return `  ${val} claims  (${pct}%)`;
+                                }
+                            }
+                        }
+                    },
+                    // Centre text plugin
+                    elements: { arc: { borderAlign: 'inner' } }
+                },
+                plugins: [{
+                    id: 'centreText',
+                    afterDraw(chart) {
+                        const { ctx: c, chartArea: { left, top, right, bottom } } = chart;
+                        const cx = (left + right) / 2, cy = (top + bottom) / 2;
+                        c.save();
+                        // Total number
+                        c.textAlign = 'center'; c.textBaseline = 'middle';
+                        c.fillStyle = textMain;
+                        c.font = `800 ${Math.round((right - left) * 0.13)}px -apple-system, sans-serif`;
+                        c.fillText(total, cx, cy - 8);
+                        // Label
+                        c.fillStyle = textMuted;
+                        c.font = `600 ${Math.round((right - left) * 0.055)}px -apple-system, sans-serif`;
+                        c.fillText('Total Claims', cx, cy + 14);
+                        c.restore();
                     }
-                }
+                }]
             });
         }
 
@@ -7569,6 +7703,50 @@ Upload the correct file.`);
         // Pehle yahan tha: setTimeout(updateMenuRBAC, 1500) — woh blank permissions ke saath
         // menu reset kar deta tha, isliye Master ke sare menu cards gayab ho jaate the.
         setTimeout(updateHeaderUserBadge, 1600);
+
+        // ── GLOBAL PASSWORD VISIBILITY TOGGLE ──
+        // Used by all password input eye buttons throughout the app
+        const _eyeShow = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+        const _eyeHide = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+
+        function togglePwdVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            const isHidden = input.type === 'password';
+            input.type = isHidden ? 'text' : 'password';
+            btn.innerHTML = isHidden ? _eyeHide : _eyeShow;
+            btn.title = isHidden ? 'Hide Password' : 'Show Password';
+        }
+
+        // Also add eye buttons to the self-change-password sheet inputs (they don't have them)
+        (function addSelfChangePwdEyes() {
+            const fields = [
+                { id: 'cpwd-current', label: 'Current Password' },
+                { id: 'cpwd-new',     label: 'New Password' },
+                { id: 'cpwd-confirm', label: 'Confirm Password' }
+            ];
+            fields.forEach(f => {
+                const inp = document.getElementById(f.id);
+                if (!inp) return;
+                const wrapper = inp.parentElement;
+                // Only wrap if not already wrapped
+                if (wrapper && wrapper.style.position !== 'relative') {
+                    const div = document.createElement('div');
+                    div.style.cssText = 'position:relative;margin-bottom:14px;';
+                    inp.parentNode.insertBefore(div, inp);
+                    div.appendChild(inp);
+                    inp.style.marginBottom = '0';
+                    inp.style.paddingRight = '44px';
+                    const eyeBtn = document.createElement('button');
+                    eyeBtn.type = 'button';
+                    eyeBtn.title = 'Show Password';
+                    eyeBtn.style.cssText = 'position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);padding:4px;';
+                    eyeBtn.innerHTML = _eyeShow;
+                    eyeBtn.addEventListener('click', () => togglePwdVisibility(f.id, eyeBtn));
+                    div.appendChild(eyeBtn);
+                }
+            });
+        })();
 
     </script>
 </body>
