@@ -2651,6 +2651,11 @@
                     <div class="stat-value" id="dash-pending">0</div>
                     <div class="stat-label">Total Claims Pending</div>
                 </div>
+                <div class="stat-card claim-card" id="dash-card-suspense"
+                    style="border-top: 4px solid var(--danger); display:none;" onclick="setDashFilter('suspense')">
+                    <div class="stat-value" id="dash-suspense-count" style="color:var(--danger)">0</div>
+                    <div class="stat-label">⚠ Suspense Urgent</div>
+                </div>
             </div>
 
             <div id="dash-amount-stats" style="margin-bottom:20px;"></div>
@@ -3959,11 +3964,40 @@
         // JS § 5 — CORE: showLoader, showScreen (base)
         // ════════════════════════════════════════════════════════
         function showLoader(show) { document.getElementById('loader').style.display = show ? 'flex' : 'none'; }
-        function openSuspenseFilter() {
-            // Build dashboard then filter to show all (suspense items are mixed in unclear)
+        async function openSuspenseFilter() {
+            // Find the key that has suspense urgent items — prefer most recent
+            const keys = Object.keys(dbIndex);
+            let targetKey = null;
+
+            // Check all sessions for suspense urgent items
+            for (const k of keys) {
+                const s = await localforage.getItem(k);
+                if (!s || !s.audit_data) continue;
+                const hasSuspense = Object.values(s.audit_data).some(e => e.suspense_pending && e.suspense_sent === 'no');
+                if (hasSuspense) { targetKey = k; break; }
+            }
+
+            // If none found, just open dashboard normally
+            if (!targetKey) { buildDashboard(); return; }
+
+            // Build the dashboard dropdown with all sessions
             buildDashboard();
-            // After dashboard loads, apply unclear filter to highlight suspense items
-            setTimeout(() => { setDashFilter('unclear'); }, 400);
+
+            // Wait for screen to render, then select the correct session and apply suspense filter
+            setTimeout(async () => {
+                const optContainer = document.getElementById('options-dash-scope');
+                if (!optContainer) return;
+                const matchOpt = optContainer.querySelector(`[data-value="${targetKey}"]`);
+                if (matchOpt) {
+                    document.getElementById('dash-scope').value = targetKey;
+                    document.getElementById('wrap-dash-scope').querySelector('.trigger-text').innerText = matchOpt.innerText;
+                    optContainer.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+                    matchOpt.classList.add('selected');
+                    sessionStorage.setItem('dash_last_key', targetKey);
+                }
+                await loadDashboardMonth(targetKey);
+                setDashFilter('suspense');
+            }, 150);
         }
 
         function updateAuditPeriodDisplay() {
@@ -4214,6 +4248,13 @@
 
             document.getElementById('dash-total').innerText = dashCurrentData.length; document.getElementById('dash-clean').innerText = clr;
             document.getElementById('dash-unclear').innerText = aud - clr; document.getElementById('dash-pending').innerText = dashCurrentData.length - aud;
+            // Update suspense card
+            const suspCard = document.getElementById('dash-card-suspense');
+            const suspCountEl = document.getElementById('dash-suspense-count');
+            if (suspCard && suspCountEl) {
+                suspCountEl.innerText = suspenseUrgent;
+                suspCard.style.display = suspenseUrgent > 0 ? 'block' : 'none';
+            }
 
             document.getElementById('dash-amount-stats').innerHTML = `
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
@@ -4284,6 +4325,7 @@
                 if (dashCurrentFilter === 'clean') return isClear;
                 if (dashCurrentFilter === 'unclear') return isAudited && !isClear;
                 if (dashCurrentFilter === 'pending') return !isAudited;
+                if (dashCurrentFilter === 'suspense') return entry.suspense_pending && entry.suspense_sent === 'no';
                 return true;
             });
             dashCurrentPage = 1;
