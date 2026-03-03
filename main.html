@@ -3115,7 +3115,7 @@
                             5,000 req/hr limit. Auto-sync uses ~18/hr.</div>
                         <div id="autosync-triggers"
                             style="display:none; margin-top:10px; font-size:0.72rem; color:var(--text-muted); line-height:1.8;">
-                            ⚡ Close Audit · Tab close · Every 3 min</div>
+                            Close Audit · Tab close · Every 3 min</div>
                     </div>
                     <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
                         <span id="gist-sync-indicator"
@@ -4306,7 +4306,7 @@
                             showLoader(false);
                             const selectedPeriod = fromStr === toStr ? fromStr : `${fromStr} to ${toStr}`;
                             return showAppAlert(
-                                `❌ Wrong File — Month Mismatch!\n\n` +
+                                `Wrong File — Month Mismatch!\n\n` +
                                 `You selected audit period: ${selectedPeriod}\n` +
                                 `But this file contains data for: ${fileMonthName}\n\n` +
                                 `Column detected: "${dateCheck.colUsed}" (${dateCheck.matchCount} rows matched)\n\n` +
@@ -4804,7 +4804,7 @@
                                 if (fileDate < fromMonth || fileDate > toMonth) {
                                     showLoader(false);
                                     const fileMon = new Date(dateCheck.fileYear, dateCheck.fileMonth, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
-                                    return showAppAlert(`❌ Wrong File!
+                                    return showAppAlert(`Wrong File!
 
 This file: ${fileMon}
 This audit: ${sessionRef.month}
@@ -4926,7 +4926,7 @@ Audit: ${session.month}
                     // Cancellation count badge
                     const cancelCount = meta.audit_cancel_count || 0;
                     const cancelBadge = cancelCount > 0
-                        ? `<span style="display:inline-flex;align-items:center;gap:3px;margin-left:6px;padding:2px 7px;border-radius:10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--danger);font-size:0.65rem;font-weight:700;" title="Audit number cancelled ${cancelCount} time(s)">✕${cancelCount} cancelled</span>` : '';
+                        ? `<span style="display:inline-flex;align-items:center;gap:3px;margin-left:6px;padding:2px 7px;border-radius:10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--danger);font-size:0.65rem;font-weight:700;" title="Audit number cancelled ${cancelCount} time(s)">${cancelCount}x cancelled</span>` : '';
 
                     tr.innerHTML = `
                     <td style="font-weight:600;">${meta.month}<br>
@@ -4952,7 +4952,7 @@ Audit: ${session.month}
 
             const newNum = _generateAuditNumber();
             showAppConfirm(
-                `Generate Audit Number?\n\nAudit: ${meta.month}\nNumber: ${newNum}\n\n⚠️ Once generated, this audit will be FROZEN.\nNo changes can be made without cancelling the number.\n\nAre you sure?`,
+                `Generate Audit Number?\n\nAudit: ${meta.month}\nNumber: ${newNum}\n\nOnce generated, this audit will be FROZEN.\nNo changes can be made without cancelling the number.\n\nAre you sure?`,
                 async () => {
                     showLoader(true);
                     try {
@@ -4964,7 +4964,7 @@ Audit: ${session.month}
                         if (session) { session.audit_number = newNum; await localforage.setItem(key, session); }
                         showLoader(false);
                         // Animated success toast
-                        showToast(`✅ Audit Number Generated: ${newNum} — Audit is now FROZEN.`, 'success', 5000);
+                        showToast(`Audit Number Generated: ${newNum} — Audit is now FROZEN.`, 'success', 5000);
                         openArchive(true);
                     } catch (e) {
                         showLoader(false);
@@ -4985,7 +4985,7 @@ Audit: ${session.month}
                 if (await sha256(attempt) !== secConfig.masterHash) return showAppAlert("Incorrect Password. Cancellation denied.");
 
                 showAppConfirm(
-                    `Confirm Cancel Audit Number?\n\nNumber: ${numToCancel}\nAudit: ${meta.month}\n\n⚠️ This will UNFREEZE the audit and remove the audit number.\nThis cancellation will be permanently recorded.`,
+                    `Confirm Cancel Audit Number?\n\nNumber: ${numToCancel}\nAudit: ${meta.month}\n\nThis will UNFREEZE the audit and remove the audit number.\nThis cancellation will be permanently recorded.`,
                     async () => {
                         showLoader(true);
                         try {
@@ -6663,14 +6663,14 @@ Audit: ${session.month}
 
                     const userPerms = Array.isArray(u.permissions) ? u.permissions : Object.values(u.permissions || {});
                     const allScreens = [
-                        { id: 'screen-new-audit',  label: '📝 New Audit' },
-                        { id: 'screen-archive',    label: '📁 Drafts & Archives' },
-                        { id: 'screen-dashboard',  label: '📊 Dashboard' },
-                        { id: 'screen-reports',    label: '📈 Reports Export' },
-                        { id: 'screen-backup',     label: '☁️ Backup & Restore' },
-                        { id: 'screen-settings',   label: '⚙️ Custom Codes' },
-                        { id: 'screen-security',   label: '🔒 Security Settings' },
-                        { id: 'screen-users',      label: '👥 User Management' },
+                        { id: 'screen-new-audit',  label: 'New Audit' },
+                        { id: 'screen-archive',    label: 'Drafts & Archives' },
+                        { id: 'screen-dashboard',  label: 'Dashboard' },
+                        { id: 'screen-reports',    label: 'Reports Export' },
+                        { id: 'screen-backup',     label: 'Backup & Restore' },
+                        { id: 'screen-settings',   label: 'Custom Codes' },
+                        { id: 'screen-security',   label: 'Security Settings' },
+                        { id: 'screen-users',      label: 'User Management' },
                     ];
                     // Check if this is a master-level user (has all 8 permissions)
                     const effectivePerms = (u.email && u.email.toLowerCase() === 'n3235wrty@warrantyauditor.app')
@@ -6697,10 +6697,10 @@ Audit: ${session.month}
                         </div>
                         ${u.pendingPasswordReset ? `
                         <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:9px 12px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                            <div style="font-size:0.78rem;color:#f59e0b;font-weight:700;">⏳ Password Reset Requested</div>
+                            <div style="font-size:0.78rem;color:#f59e0b;font-weight:700;">Password Reset Requested</div>
                             <button onclick="approvePasswordReset('${uid}', '${u.dealerID}', this)"
                                 style="padding:5px 12px;border-radius:6px;border:none;background:#f59e0b;color:#000;font-size:0.75rem;font-weight:800;cursor:pointer;white-space:nowrap;flex-shrink:0;">
-                                ✓ Approve
+                                Approve
                             </button>
                         </div>` : ''}
                         <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:10px;">
@@ -6712,7 +6712,7 @@ Audit: ${session.month}
                         <div style="background:var(--bg-base);border-radius:10px;border:1px solid var(--border);overflow:hidden;margin-bottom:12px;">
                             <button onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'; this.querySelector('.perm-arrow').style.transform=this.nextElementSibling.style.display==='none'?'rotate(0deg)':'rotate(180deg)';"
                                 style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:transparent;border:none;cursor:pointer;font-size:0.82rem;font-weight:700;color:var(--text-main);">
-                                <span>🔑 Screen Permissions (${effectivePerms.length} / ${allScreens.length})</span>
+                                <span>Screen Permissions (${effectivePerms.length} / ${allScreens.length})</span>
                                 <svg class="perm-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s ease;flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
                             </button>
                             <div style="display:none;padding:4px 14px 12px;border-top:1px solid var(--border);">
@@ -6721,7 +6721,7 @@ Audit: ${session.month}
                                 </div>
                                 <button onclick="saveUserPermissions('${uid}', this.closest('.user-card'))"
                                     style="margin-top:12px;width:100%;padding:9px;border-radius:8px;border:none;background:var(--primary);color:var(--primary-text);font-size:0.82rem;font-weight:700;cursor:pointer;">
-                                    💾 Save Permissions
+                                    Save Permissions
                                 </button>
                             </div>
                         </div>
