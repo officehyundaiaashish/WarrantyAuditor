@@ -5296,18 +5296,24 @@ Audit: ${session.month}
                         const tTotal = tAud + tPen;
 
                         // ── Header Bar ──
+                        // Extend header height if audit number is present
+                        const scopeAuditNum = scope !== 'master' && dbIndex[scope] && dbIndex[scope].audit_number ? dbIndex[scope].audit_number : null;
+                        const headerH = scopeAuditNum ? 34 : 28;
                         doc.setFillColor(30, 41, 59);
-                        doc.rect(0, 0, pageW, 28, 'F');
+                        doc.rect(0, 0, pageW, headerH, 'F');
                         doc.setTextColor(255, 255, 255);
                         doc.setFontSize(16); doc.setFont(undefined, 'bold');
                         doc.text('WARRANTY AUDIT REPORT', 14, 11);
                         doc.setFontSize(8); doc.setFont(undefined, 'normal');
                         doc.text(`Period: ${periodLabel}`, 14, 18);
                         doc.text(`Generated: ${now}`, 14, 23);
-                        // Show audit number if available
-                        const scopeAuditNum = scope !== 'master' && dbIndex[scope] && dbIndex[scope].audit_number ? dbIndex[scope].audit_number : null;
+                        // Show audit number — highlighted, bigger, fully inside header bar
                         if (scopeAuditNum) {
-                            doc.text(`Audit No: ${scopeAuditNum}`, 14, 28);
+                            doc.setFontSize(10); doc.setFont(undefined, 'bold');
+                            doc.setTextColor(250, 204, 21); // bright yellow highlight
+                            doc.text(`Audit No: ${scopeAuditNum}`, 14, 30);
+                            doc.setFont(undefined, 'normal');
+                            doc.setTextColor(255, 255, 255);
                         }
                         doc.setFontSize(8);
                         doc.text(`Auditor: Aashish Giri H`, pageW - 14, 18, { align: 'right' });
@@ -5315,7 +5321,7 @@ Audit: ${session.month}
 
                         // ── Amount Summary Cards ──
                         doc.setTextColor(30, 41, 59);
-                        const cardY = 34; const cardH = 22; const cardW = (pageW - 28 - 12) / 4; const cardX = [14, 14 + cardW + 4, 14 + (cardW + 4) * 2, 14 + (cardW + 4) * 3];
+                        const cardY = headerH + 6; const cardH = 22; const cardW = (pageW - 28 - 12) / 4; const cardX = [14, 14 + cardW + 4, 14 + (cardW + 4) * 2, 14 + (cardW + 4) * 3];
                         const cards = [
                             { label: 'TOTAL AMOUNT', value: pdfAmt(tTotal), color: [30, 41, 59], text: [255, 255, 255] },
                             { label: 'AUDITED AMOUNT', value: pdfAmt(tAud), color: [16, 185, 129], text: [255, 255, 255] },
@@ -5346,24 +5352,11 @@ Audit: ${session.month}
                             startY += 7;
                             doc.setFont(undefined, 'normal');
                         }
-                        const headers = combinedClear.length > 0 ? Object.keys(combinedClear[0]) : Object.keys(combinedUnclear[0]);
+                        const headers = combinedUnclear.length > 0 ? Object.keys(combinedUnclear[0]) : Object.keys(combinedClear[0]);
                         const tableStyles = { fontSize: 5.5, cellPadding: 1.5, overflow: 'linebreak', lineColor: [203, 213, 225], lineWidth: 0.1 };
                         const tableHeadStyles = { fontSize: 6, fontStyle: 'bold', halign: 'center', cellPadding: 2 };
 
-                        if (combinedClear.length > 0) {
-                            doc.setFontSize(10); doc.setFont(undefined, 'bold'); doc.setTextColor(16, 185, 129);
-                            doc.text(`CLEAR CLAIMS  (${combinedClear.length})`, 14, startY);
-                            doc.autoTable({
-                                startY: startY + 4,
-                                head: [headers],
-                                body: combinedClear.map(r => Object.values(r)),
-                                styles: tableStyles,
-                                headStyles: { ...tableHeadStyles, fillColor: [16, 185, 129], textColor: 255 },
-                                alternateRowStyles: { fillColor: [240, 253, 244] },
-                                margin: { left: 14, right: 14 }
-                            });
-                            startY = doc.lastAutoTable.finalY + 12;
-                        }
+                        // ── UNCLEAR / PENDING first (priority view) ──
                         if (combinedUnclear.length > 0) {
                             doc.setFontSize(10); doc.setFont(undefined, 'bold'); doc.setTextColor(245, 158, 11);
                             doc.text(`UNCLEAR / PENDING CLAIMS  (${combinedUnclear.length})`, 14, startY);
@@ -5374,6 +5367,21 @@ Audit: ${session.month}
                                 styles: tableStyles,
                                 headStyles: { ...tableHeadStyles, fillColor: [220, 38, 38], textColor: 255 },
                                 alternateRowStyles: { fillColor: [255, 251, 235] },
+                                margin: { left: 14, right: 14 }
+                            });
+                            startY = doc.lastAutoTable.finalY + 12;
+                        }
+                        // ── CLEAR CLAIMS second ──
+                        if (combinedClear.length > 0) {
+                            doc.setFontSize(10); doc.setFont(undefined, 'bold'); doc.setTextColor(16, 185, 129);
+                            doc.text(`CLEAR CLAIMS  (${combinedClear.length})`, 14, startY);
+                            doc.autoTable({
+                                startY: startY + 4,
+                                head: [headers],
+                                body: combinedClear.map(r => Object.values(r)),
+                                styles: tableStyles,
+                                headStyles: { ...tableHeadStyles, fillColor: [16, 185, 129], textColor: 255 },
+                                alternateRowStyles: { fillColor: [240, 253, 244] },
                                 margin: { left: 14, right: 14 }
                             });
                         }
@@ -5774,8 +5782,8 @@ Audit: ${session.month}
             }
         }
 
-        async function headerUploadNow() { showMethodPicker('backup', 'header-upload-btn'); }
-        async function headerRestoreNow() { showMethodPicker('restore', 'header-restore-btn'); }
+        async function headerUploadNow() { showMethodPicker('backup', 'header-menu-btn'); }
+        async function headerRestoreNow() { showMethodPicker('restore', 'header-menu-btn'); }
 
         // Update header buttons visibility based on connection state
         function updateHeaderUploadBtn() {
@@ -6945,13 +6953,9 @@ Audit: ${session.month}
 
                 const backupBtn = document.getElementById('sheet-backup-btn');
                 const restoreBtn = document.getElementById('sheet-restore-btn');
-                if (isMaster) {
-                    backupBtn.classList.add('dp-disabled');
-                    restoreBtn.classList.add('dp-disabled');
-                } else {
-                    backupBtn.classList.remove('dp-disabled');
-                    restoreBtn.classList.remove('dp-disabled');
-                }
+                // Both master and regular users can backup/restore
+                backupBtn.classList.remove('dp-disabled');
+                restoreBtn.classList.remove('dp-disabled');
             }
 
             // Position under the button
