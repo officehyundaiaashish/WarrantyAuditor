@@ -60,25 +60,30 @@
                 try {
                     // ── TOTP SESSION CHECK (3-hour) ──
                     // Priority order:
-                    // 1. sessionStorage flag — fastest, same tab
+                    // 1. sessionStorage flag — fastest, same tab (UID must also match)
                     // 2. localStorage timestamp — survives tab/browser close
                     // 3. Firestore totpVerifiedAt — last resort, costs a read
-                    const totpOk = sessionStorage.getItem('totp_verified') === 'true';
+                    const isMasterEmail = user.email && user.email.toLowerCase() === 'n3235wrty@warrantyauditor.app';
+                    const dealerIDCheck = user.email.split('@')[0].toUpperCase();
+                    const expectedUid = isMasterEmail ? 'N3235WRTY' : dealerIDCheck;
+
+                    // sessionStorage check MUST also confirm it belongs to the current user.
+                    // Without UID check, a different user opening the same tab would skip TOTP.
+                    const totpOk = sessionStorage.getItem('totp_verified') === 'true' &&
+                                   sessionStorage.getItem('totp_verified_uid') === expectedUid;
                     if (!totpOk) {
                         let sessionValid = false;
 
                         // Check localStorage first — no Firestore read needed
                         const localVerifiedAt = localStorage.getItem('totp_verified_at');
                         const localVerifiedUid = localStorage.getItem('totp_verified_uid');
-                        const isMasterEmail = user.email && user.email.toLowerCase() === 'n3235wrty@warrantyauditor.app';
-                        const dealerIDCheck = user.email.split('@')[0].toUpperCase();
-                        const expectedUid = isMasterEmail ? 'N3235WRTY' : dealerIDCheck;
 
                         if (localVerifiedAt && localVerifiedUid === expectedUid) {
                             const elapsed = Date.now() - new Date(localVerifiedAt).getTime();
                             if (elapsed < 3 * 60 * 60 * 1000) {
                                 sessionValid = true;
                                 sessionStorage.setItem('totp_verified', 'true');
+                                sessionStorage.setItem('totp_verified_uid', expectedUid);
                             }
                         }
 
@@ -88,13 +93,17 @@
                                 const checkRef = doc(db, 'users', expectedUid);
                                 const checkSnap = await getDoc(checkRef);
                                 if (checkSnap.exists()) {
-                                    const tvAt = checkSnap.data().totpVerifiedAt;
+                                    const tvAtRaw = checkSnap.data().totpVerifiedAt;
+                                    // Firestore may return a Timestamp object (with .toDate()) or a plain ISO string.
+                                    // new Date(TimestampObject) returns Invalid Date, so we normalise here.
+                                    const tvAt = tvAtRaw?.toDate ? tvAtRaw.toDate().toISOString() : tvAtRaw;
                                     if (tvAt) {
                                         const elapsed = Date.now() - new Date(tvAt).getTime();
                                         if (elapsed < 3 * 60 * 60 * 1000) {
                                             sessionValid = true;
-                                            // Restore both flags so next check hits localStorage
+                                            // Restore all flags so next check hits localStorage/sessionStorage
                                             sessionStorage.setItem('totp_verified', 'true');
+                                            sessionStorage.setItem('totp_verified_uid', expectedUid);
                                             localStorage.setItem('totp_verified_at', tvAt);
                                             localStorage.setItem('totp_verified_uid', expectedUid);
                                         }
@@ -6903,6 +6912,7 @@ Audit: ${session.month}
         async function logoutUser() {
             showAppConfirm("Are you sure you want to logout?", async () => {
                 sessionStorage.removeItem('totp_verified');
+                sessionStorage.removeItem('totp_verified_uid');
                 sessionStorage.removeItem('wau_uid');
                 localStorage.removeItem('wa_last_uid');
                 localStorage.removeItem('totp_verified_at');
