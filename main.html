@@ -1253,26 +1253,26 @@
             background: rgba(245, 158, 11, 0.1);
             border: 1px solid rgba(245, 158, 11, 0.3);
             color: var(--warning);
-            padding: 7px 10px;
+            padding: 5px 10px;
             border-radius: 7px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 7px;
             font-weight: 600;
-            font-size: 0.78rem;
-            margin: 0 0 10px 0;
+            font-size: 0.74rem;
+            margin: 0 0 7px 0;
             max-width: 100%;
             width: 100%;
             display: none;
             cursor: pointer;
             animation: slideFadeUp 0.4s ease;
-            line-height: 1.3;
+            line-height: 1.25;
         }
         .notif-close-btn {
             margin-left: auto;
             flex-shrink: 0;
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             background: transparent;
             border: none;
@@ -2459,7 +2459,7 @@
         <p style="margin:0 0 20px;font-size:0.8rem;color:var(--text-muted);" id="admin-cpwd-subtitle"></p>
         <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">New Password</label>
         <div style="position:relative;margin-bottom:8px;">
-            <input type="password" id="admin-cpwd-new" class="input" placeholder="Minimum 6 characters" style="margin:0;padding-right:44px;" autocomplete="new-password">
+            <input type="password" id="admin-cpwd-new" class="input" placeholder="Min 8 chars, letters + numbers" style="margin:0;padding-right:44px;" autocomplete="new-password">
             <button onclick="togglePwdVisibility('admin-cpwd-new',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);padding:4px;" title="Show/Hide">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
@@ -2480,7 +2480,11 @@
     <div id="change-pwd-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px 40px;z-index:4001;max-width:480px;margin:0 auto;box-shadow:0 -8px 32px rgba(0,0,0,0.2);animation:slideFadeUp 0.25s ease;">
         <div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px;"></div>
         <h3 style="margin:0 0 4px;font-size:1.05rem;">Change Password</h3>
-        <p style="color:var(--text-muted);font-size:0.8rem;margin:0 0 20px;">Your new password will be updated in Firebase immediately.</p>
+        <p style="color:var(--text-muted);font-size:0.8rem;margin:0 0 8px;">Your new password will be updated in Firebase immediately.</p>
+        <div style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:8px;padding:8px 12px;margin-bottom:16px;font-size:0.74rem;color:var(--text-muted);line-height:1.6;">
+            <strong style="color:var(--text-main);display:block;margin-bottom:2px;">Password Rules:</strong>
+            Minimum 8 characters &nbsp;·&nbsp; Must include at least one letter (A–Z) &nbsp;·&nbsp; Must include at least one number (0–9) &nbsp;·&nbsp; Common passwords not accepted
+        </div>
         <label style="font-size:0.78rem;color:var(--text-muted);margin-bottom:6px;display:block;">Current Password</label>
         <input type="password" id="cpwd-current" class="input" placeholder="Enter current password..." style="margin-bottom:14px;">
         <label style="font-size:0.78rem;color:var(--text-muted);margin-bottom:6px;display:block;">New Password</label>
@@ -2507,14 +2511,11 @@
                 <line x1="12" y1="17" x2="12.01" y2="17"></line>
             </svg>
             <span id="notif-text">Loading notifications...</span>
-            <button class="notif-close-btn" title="Dismiss" onclick="dismissNotif(event,'main-notification','notif_main')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
         </div>
 
         <div id="analytics-notification" class="notification-banner notif-shimmer shimmer-general"
             style="background: var(--surface); border: 1px solid var(--border); color: var(--text-main); display: none; flex-direction:column; align-items:flex-start; cursor:pointer; position:relative;"
-            onclick="buildDashboard()">
+            onclick="buildDashboardAllMonths()">
             <span id="analytics-notif-text" style="width:100%;"></span>
             <button class="notif-close-btn" title="Dismiss" style="position:absolute;top:8px;right:8px;" onclick="dismissNotif(event,'analytics-notification','notif_analytics')">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -2531,9 +2532,6 @@
                 <line x1="12" y1="16" x2="12.01" y2="16"></line>
             </svg>
             <span id="suspense-notif-text">Loading suspense notifications...</span>
-            <button class="notif-close-btn" title="Dismiss" onclick="dismissNotif(event,'suspense-notification','notif_suspense')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
         </div>
 
         <div class="menu-grid">
@@ -3446,9 +3444,6 @@
                 <line x1="12" y1="16" x2="12.01" y2="16"></line>
             </svg>
             <span id="workspace-suspense-text"></span>
-            <button class="notif-close-btn" title="Dismiss" onclick="dismissNotif(event,'workspace-suspense-notif','ws_suspense_notif')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
         </div>
 
         <div style="position:relative; margin-bottom:16px; width: 100%;">
@@ -4159,7 +4154,7 @@
             if (tsuspense > 0) {
                 const suspenseMonthsStr = suspenseMonths.join(', ');
                 document.getElementById('suspense-notif-text').innerHTML = `<strong style="font-size:0.78rem; display:block; margin-bottom:2px; color:var(--danger);">Suspense(P) — Action Required</strong> <span style="color:var(--text-muted);">You have <b>${tsuspense}</b> Suspense(P) part(s) not yet sent to Technical Centre in <b>${suspenseMonthsStr}</b>. Click to view.</span>`;
-                if (!sessionStorage.getItem('notif_suspense_dismissed')) suspenseBanner.style.display = 'flex';
+                suspenseBanner.style.display = 'flex'; // Permanent — cannot be dismissed
             } else {
                 suspenseBanner.style.display = 'none';
             }
@@ -4214,7 +4209,7 @@
                 const monthsStr = actionMonths.join(', ');
                 document.getElementById('notif-text').innerHTML = `<strong style="font-size:0.78rem; display:block; margin-bottom:2px; color:var(--danger);">Action Required</strong> <span style="color:var(--text-muted);">You have ${tunclear} Unclear & ${tpending} Pending claims in <b>${monthsStr}</b>. Click to view.</span>`;
                 banner.className = 'notification-banner alert-mode';
-                if (!sessionStorage.getItem('notif_main_dismissed')) banner.style.display = 'flex';
+                banner.style.display = 'flex'; // Permanent — cannot be dismissed until resolved
             } else if (pendingDrafts > 0) {
                 document.getElementById('notif-text').innerHTML = `<strong style="font-size:0.78rem; display:block; margin-bottom:2px; color:var(--accent);">Draft Pending</strong> <span style="color:var(--text-muted);">You have ${pendingDrafts} Draft session(s) pending completion. Click to view.</span>`;
                 banner.className = 'notification-banner info-mode';
@@ -4253,6 +4248,29 @@
                 document.getElementById('dash-scope').value = "";
                 document.getElementById('wrap-dash-scope').querySelector('.trigger-text').innerText = "Select an Audit to View...";
             }
+        }
+
+        // Opens dashboard with "All Months Combined" pre-selected (used by analytics notification)
+        function buildDashboardAllMonths() {
+            const optContainer = document.getElementById('options-dash-scope'); optContainer.innerHTML = '';
+            const keys = Object.keys(dbIndex);
+            if (keys.length === 0) return showAppAlert("No audits saved. Please create an audit first.");
+
+            optContainer.innerHTML = '<div class="custom-option" data-value="__all__">All Months Combined</div>';
+            keys.forEach(k => { optContainer.innerHTML += `<div class="custom-option" data-value="${k}">${dbIndex[k].month}${dbIndex[k].audit_number ? ' [' + dbIndex[k].audit_number + ']' : ''} ${dbIndex[k].finalized ? '(Closed)' : '(Draft)'}</div>`; });
+
+            showScreen('screen-dashboard');
+
+            // Force All Months Combined
+            setTimeout(() => {
+                const allOpt = optContainer.querySelector('[data-value="__all__"]');
+                if (allOpt) {
+                    document.getElementById('dash-scope').value = '__all__';
+                    document.getElementById('wrap-dash-scope').querySelector('.trigger-text').innerText = 'All Months Combined';
+                    allOpt.classList.add('selected');
+                }
+                loadDashboardMonth('__all__');
+            }, 80);
         }
 
         async function loadDashboardMonth(sessionKey) {
@@ -5649,6 +5667,17 @@ Upload the correct file.`);
                         const headers = combinedUnclear.length > 0 ? Object.keys(combinedUnclear[0]) : Object.keys(combinedClear[0]);
                         const tableStyles = { fontSize: 5.5, cellPadding: 1.5, overflow: 'linebreak', lineColor: [203, 213, 225], lineWidth: 0.1 };
                         const tableHeadStyles = { fontSize: 6, fontStyle: 'bold', halign: 'center', cellPadding: 2 };
+                        // Build column styles: give "Audit Status" and small columns fixed widths to prevent overflow
+                        const auditStatusIdx = headers.indexOf('Audit Status');
+                        const discFoundIdx = headers.indexOf('Discrepancy Found');
+                        const colStyles = {};
+                        if (auditStatusIdx !== -1) colStyles[auditStatusIdx] = { cellWidth: 18, halign: 'center' };
+                        if (discFoundIdx !== -1) colStyles[discFoundIdx] = { cellWidth: 14, halign: 'center' };
+                        // Give findings/remarks more room
+                        const findingsIdx = headers.indexOf('Discrepancy Details');
+                        const remarkIdx = headers.indexOf('Optional Remark');
+                        if (findingsIdx !== -1) colStyles[findingsIdx] = { cellWidth: 40 };
+                        if (remarkIdx !== -1) colStyles[remarkIdx] = { cellWidth: 30 };
 
                         // ── UNCLEAR / PENDING first (priority view) ──
                         if (combinedUnclear.length > 0) {
@@ -5661,6 +5690,7 @@ Upload the correct file.`);
                                 styles: tableStyles,
                                 headStyles: { ...tableHeadStyles, fillColor: [220, 38, 38], textColor: 255 },
                                 alternateRowStyles: { fillColor: [255, 251, 235] },
+                                columnStyles: colStyles,
                                 margin: { left: 14, right: 14 }
                             });
                             startY = doc.lastAutoTable.finalY + 12;
@@ -5676,6 +5706,7 @@ Upload the correct file.`);
                                 styles: tableStyles,
                                 headStyles: { ...tableHeadStyles, fillColor: [16, 185, 129], textColor: 255 },
                                 alternateRowStyles: { fillColor: [240, 253, 244] },
+                                columnStyles: colStyles,
                                 margin: { left: 14, right: 14 }
                             });
                         }
@@ -6018,29 +6049,27 @@ Upload the correct file.`);
 
         async function _doHeaderBackup(method) {
             const btn = document.getElementById('header-upload-btn');
-            btn.classList.add('syncing');
+            if (btn) btn.classList.add('syncing');
             try {
                 if (method === 'github') {
                     await syncToGist(false);
                 } else {
                     await uploadToGoogleDrive();
                 }
-                btn.classList.remove('syncing');
-                btn.classList.add('done');
-                setTimeout(() => btn.classList.remove('done'), 600);
+                if (btn) { btn.classList.remove('syncing'); btn.classList.add('done'); setTimeout(() => btn.classList.remove('done'), 600); }
                 showToast('Backup successful!', 'success', 3000);
             } catch (e) {
-                btn.classList.remove('syncing');
+                if (btn) btn.classList.remove('syncing');
                 showToast('Backup failed: ' + e.message, 'danger', 4000);
             }
         }
 
         async function _doHeaderRestore(method) {
             const btn = document.getElementById('header-restore-btn');
-            btn.classList.add('loading');
+            if (btn) btn.classList.add('loading');
             try {
                 if (method === 'github') {
-                    const tok = await getDecryptedToken(); if (!tok) { btn.classList.remove('loading'); return; }
+                    const tok = await getDecryptedToken(); if (!tok) { if (btn) btn.classList.remove('loading'); return; }
                     let gid = localStorage.getItem('gist_id');
                     if (!gid) {
                         let page = 1, found = false;
@@ -6063,17 +6092,17 @@ Upload the correct file.`);
                         const data = JSON.parse(ct); await localforage.clear();
                         for (let k in data) { if (k === '_secConfig') localStorage.setItem('auditor_sec', data[k]); else if (k === '_autosync') localStorage.setItem('gist_autosync', data[k]); else if (k === '_theme') { localStorage.setItem('auditor_theme', data[k]); applyTheme(data[k]); } else if (k === '_customCodes') { localStorage.setItem('auditor_custom_codes', data[k]); } else await localforage.setItem(k, data[k]); }
                         localStorage.setItem('gist_id', gid);
-                        btn.classList.remove('loading'); btn.classList.add('done');
+                        if (btn) { btn.classList.remove('loading'); btn.classList.add('done'); }
                         showToast('Restore Successful! Reloading...', 'success', 3000);
                         setTimeout(() => window.location.reload(), 2000);
                     });
                 } else {
                     // restoreFromGoogleDrive handles its own confirm + loader + toast
-                    btn.classList.remove('loading');
+                    if (btn) btn.classList.remove('loading');
                     await restoreFromGoogleDrive();
                 }
             } catch (e) {
-                btn.classList.remove('loading');
+                if (btn) btn.classList.remove('loading');
                 showToast('Restore failed: ' + e.message, 'danger', 4000);
             }
         }
@@ -7049,12 +7078,16 @@ Upload the correct file.`);
 
                         <div class="user-actions">
                             <button class="btn" onclick="resetUserTOTP('${uid}', '${u.dealerID}')">Reset TOTP</button>
-                            <button class="btn" style="color:var(--accent);border-color:var(--accent);" onclick="openAdminChangePwd('${uid}', '${u.dealerID}')">Change Password</button>
+                            <button class="btn" style="color:var(--accent);border-color:var(--accent);"
+                                data-uid="${uid}" data-dealerid="${u.dealerID || ''}"
+                                onclick="openAdminChangePwd(this.dataset.uid, this.dataset.dealerid)">Change Password</button>
                             ${isBlocked
                             ? `<button class="btn" style="color:var(--success); border-color:var(--success);" onclick="toggleUserBlock('${uid}', false)">Unblock</button>`
                             : `<button class="btn danger" onclick="toggleUserBlock('${uid}', true)">Block</button>`
                         }
-                            <button class="btn danger" onclick="deleteUserAccount('${uid}', '${u.dealerID}')">Delete</button>
+                            <button class="btn danger"
+                                data-uid="${uid}" data-dealerid="${u.dealerID || ''}"
+                                onclick="deleteUserAccount(this.dataset.uid, this.dataset.dealerid)">Delete</button>
                         </div>
                     `;
                     container.appendChild(card);
@@ -7151,17 +7184,22 @@ Upload the correct file.`);
             const pwd = document.getElementById('admin-cpwd-new').value.trim();
             const conf = document.getElementById('admin-cpwd-confirm').value.trim();
             if (!pwd) return showToast('Please enter a new password.', 'warning', 3000);
-            if (pwd.length < 6) return showToast('Password must be at least 6 characters.', 'warning', 3000);
+            if (pwd.length < 8) return showToast('Password must be at least 8 characters.', 'warning', 3000);
+            if (!/[a-zA-Z]/.test(pwd)) return showToast('Password must contain at least one letter (A–Z).', 'warning', 3000);
+            if (!/[0-9]/.test(pwd)) return showToast('Password must contain at least one number (0–9).', 'warning', 3000);
+            const commonPasswords = ['password','password1','password123','123456','12345678','1234567890','qwerty','abc123','letmein','welcome','admin','admin123','iloveyou','sunshine','monkey','shadow','master','dragon','passw0rd','111111','000000'];
+            if (commonPasswords.includes(pwd.toLowerCase())) return showToast('This password is too common. Choose a more unique password.', 'warning', 4000);
             if (pwd !== conf) return showToast('Passwords do not match.', 'warning', 3000);
             closeAdminChangePwdSheet();
             _adminSetUserPassword(_adminPwdUid, _adminPwdDealerID, pwd);
         }
 
         async function _adminSetUserPassword(uid, dealerID, newPwd) {
+            if (!uid || !newPwd) return showAppAlert('Missing user ID or password. Cannot proceed.');
             // Store pending password in Firestore. On next login, Firebase Auth updates it via reauthentication.
             showLoader(true);
             try {
-                const ref = window._fbDoc(window._fbDb, 'users', uid);
+                const ref = window._fbDoc(window._fbDb, 'users', String(uid));
                 await window._fbUpdateDoc(ref, {
                     pendingNewPassword: newPwd,
                     pendingPasswordReset: true,
@@ -7198,9 +7236,11 @@ Upload the correct file.`);
             const permissions = Array.from(permBoxes).map(cb => cb.value);
 
             if (!dealerID || !password) return showAppAlert("Please enter both User ID and Password.");
-            if (password.length < 6) return showAppAlert("Password must be at least 6 characters.");
-            if (!/[a-zA-Z]/.test(password)) return showAppAlert("Password must contain at least one letter.");
-            if (!/[0-9]/.test(password))    return showAppAlert("Password must contain at least one number.");
+            if (password.length < 8) return showAppAlert("Password must be at least 8 characters.");
+            if (!/[a-zA-Z]/.test(password)) return showAppAlert("Password must contain at least one letter (A–Z).");
+            if (!/[0-9]/.test(password))    return showAppAlert("Password must contain at least one number (0–9).");
+            const _commonPwds = ['password','password1','password123','123456','12345678','1234567890','qwerty','abc123','letmein','welcome','admin','admin123','iloveyou','sunshine','monkey','shadow','master','dragon','passw0rd','111111','000000'];
+            if (_commonPwds.includes(password.toLowerCase())) return showAppAlert("This password is too common. Please choose a more unique password.");
 
             showLoader(true);
             try {
@@ -7333,7 +7373,11 @@ Upload the correct file.`);
             const newPwd = document.getElementById('cpwd-new').value;
             const confirm = document.getElementById('cpwd-confirm').value;
             if (!current || !newPwd || !confirm) return showAppAlert('All fields are required.');
-            if (newPwd.length < 6) return showAppAlert('New password must be at least 6 characters.');
+            if (newPwd.length < 8) return showAppAlert('New password must be at least 8 characters.');
+            if (!/[a-zA-Z]/.test(newPwd)) return showAppAlert('Password must contain at least one letter (A–Z).');
+            if (!/[0-9]/.test(newPwd)) return showAppAlert('Password must contain at least one number (0–9).');
+            const commonPasswords = ['password','password1','password123','123456','12345678','1234567890','qwerty','abc123','letmein','welcome','admin','admin123','iloveyou','sunshine','monkey','shadow','master','dragon','passw0rd','111111','000000'];
+            if (commonPasswords.includes(newPwd.toLowerCase())) return showAppAlert('This password is too common. Please choose a more unique password.');
             if (newPwd !== confirm) return showAppAlert('New passwords do not match.');
             showLoader(true);
             try {
