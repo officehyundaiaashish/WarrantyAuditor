@@ -84,19 +84,39 @@
 
                         // localStorage expired or missing — fallback to Firestore
                         if (!sessionValid) {
-                            const checkRef = doc(db, 'users', expectedUid);
-                            const checkSnap = await getDoc(checkRef);
-                            if (checkSnap.exists()) {
-                                const tvAt = checkSnap.data().totpVerifiedAt;
-                                if (tvAt) {
-                                    const elapsed = Date.now() - new Date(tvAt).getTime();
-                                    if (elapsed < 3 * 60 * 60 * 1000) {
-                                        sessionValid = true;
-                                        // Restore both flags so next check hits localStorage
-                                        sessionStorage.setItem('totp_verified', 'true');
-                                        localStorage.setItem('totp_verified_at', tvAt);
-                                        localStorage.setItem('totp_verified_uid', expectedUid);
+                            try {
+                                const checkRef = doc(db, 'users', expectedUid);
+                                const checkSnap = await getDoc(checkRef);
+                                if (checkSnap.exists()) {
+                                    const tvAt = checkSnap.data().totpVerifiedAt;
+                                    if (tvAt) {
+                                        const elapsed = Date.now() - new Date(tvAt).getTime();
+                                        if (elapsed < 3 * 60 * 60 * 1000) {
+                                            sessionValid = true;
+                                            // Restore both flags so next check hits localStorage
+                                            sessionStorage.setItem('totp_verified', 'true');
+                                            localStorage.setItem('totp_verified_at', tvAt);
+                                            localStorage.setItem('totp_verified_uid', expectedUid);
+                                        }
                                     }
+                                }
+                            } catch (firestoreErr) {
+                                // Firestore read failed — network issue or cold start.
+                                // NEVER kick the user out just because Firestore is slow/down.
+                                // If they have a valid localVerifiedAt that is within 3 hours
+                                // (but uid didn't match earlier), give benefit of doubt.
+                                // Only truly invalid if both localStorage AND Firestore fail.
+                                console.warn('Firestore TOTP check failed (non-fatal):', firestoreErr.message);
+                                // Do not set sessionValid = true here — let it fall through
+                                // to the kick-out only if localStorage also had nothing valid.
+                                // But if localVerifiedAt existed and expired, still kick out.
+                                if (localVerifiedAt && localVerifiedUid === expectedUid) {
+                                    // uid matched but elapsed was > 3h — genuinely expired, kick out
+                                } else if (!localVerifiedAt) {
+                                    // No localStorage at all — Firestore is our only hope but it failed
+                                    // Still kick out — we can't verify identity
+                                } else {
+                                    // localStorage uid mismatch — different user? Still kick out
                                 }
                             }
                         }
@@ -129,11 +149,17 @@
                         }
                     }
                 } catch (e) {
-                    console.error("Error fetching perms:", e);
+                    // Firestore read failed (network blip, rules issue, etc.)
+                    // Do NOT kick the user out — that causes the "keeps asking TOTP" loop.
+                    // If localStorage has a valid session, we already passed the TOTP check above.
+                    // Just log the error and let the user stay in.
+                    console.warn("Firestore perms fetch failed (non-fatal):", e.message);
+                } finally {
+                    // ALWAYS run UI init — even if Firestore had an error.
+                    // Putting this in finally ensures menu/UI never stays blank.
+                    if (typeof initGdriveUI === 'function') setTimeout(initGdriveUI, 100);
+                    if (typeof updateMenuRBAC === 'function') updateMenuRBAC();
                 }
-
-                if (typeof initGdriveUI === 'function') setTimeout(initGdriveUI, 100);
-                if (typeof updateMenuRBAC === 'function') updateMenuRBAC();
             } else {
                 window._fbUser = null;
                 window._fbUserPerms = [];
