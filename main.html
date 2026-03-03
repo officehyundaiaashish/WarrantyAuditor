@@ -6290,8 +6290,8 @@ Audit: ${session.month}
             statusBody.innerHTML = '<div style="color:var(--text-muted);font-size:0.78rem;">Checking Firestore...</div>';
 
             try {
-                const uid = window._fbUser.uid;
-                const docRef = window._fbDoc(window._fbDb, 'backups', uid);
+                const dealerID = window._fbUser.email.split('@')[0].toUpperCase();
+                const docRef = window._fbDoc(window._fbDb, 'users', dealerID, 'backups', 'latest');
                 const snap = await window._fbGetDoc(docRef);
 
                 if (snap.exists()) {
@@ -6347,8 +6347,8 @@ Audit: ${session.month}
                 bk['_customCodes'] = localStorage.getItem('auditor_custom_codes') || '{}';
                 bk['_savedAt'] = new Date().toISOString();
 
-                const uid = window._fbUser.uid;
-                const docRef = window._fbDoc(window._fbDb, 'backups', uid);
+                const dealerID = window._fbUser.email.split('@')[0].toUpperCase();
+                const docRef = window._fbDoc(window._fbDb, 'users', dealerID, 'backups', 'latest');
                 await window._fbSetDoc(docRef, bk);
 
                 const ds = new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -6369,8 +6369,8 @@ Audit: ${session.month}
             showAppConfirm("Restore from Cloud?\n\nThis will overwrite all local data on this device.", async () => {
                 showLoader(true);
                 try {
-                    const uid = window._fbUser.uid;
-                    const docRef = window._fbDoc(window._fbDb, 'backups', uid);
+                    const dealerID = window._fbUser.email.split('@')[0].toUpperCase();
+                    const docRef = window._fbDoc(window._fbDb, 'users', dealerID, 'backups', 'latest');
                     const snap = await window._fbGetDoc(docRef);
 
                     if (!snap.exists()) {
@@ -6851,12 +6851,15 @@ Audit: ${session.month}
         // JS § 19 — AUTH: LOGOUT, DROPDOWN MENU, INACTIVITY
         // ════════════════════════════════════════════════════════
         async function logoutUser() {
-            sessionStorage.removeItem('totp_verified');
-            sessionStorage.removeItem('wau_uid');
-            if (window._fbSignOut && window._fbAuth) {
-                try { await window._fbSignOut(window._fbAuth); } catch(e) {}
-            }
-            window.location.href = 'index.html';
+            showAppConfirm("Are you sure you want to logout?", async () => {
+                sessionStorage.removeItem('totp_verified');
+                sessionStorage.removeItem('wau_uid');
+                localStorage.removeItem('wa_last_uid');
+                if (window._fbSignOut && window._fbAuth) {
+                    try { await window._fbSignOut(window._fbAuth); } catch(e) {}
+                }
+                window.location.href = 'index.html';
+            });
         }
 
         // ══ DROPDOWN POPUP FUNCTIONS ══
