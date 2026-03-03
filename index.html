@@ -511,7 +511,7 @@
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                         <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                     </svg>
-                    <input type="password" id="fp-pwd" placeholder="New Password (min 6 chars)" class="login-input">
+                    <input type="password" id="fp-pwd" placeholder="New Password (letters + numbers)" class="login-input">
                 </div>
                 <div class="input-area">
                     <svg viewBox="0 0 24 24">
@@ -955,6 +955,8 @@
             if (!uid)               return showFpErr('Please enter your User ID.');
             if (uid === 'N3235WRTY') return showFpErr('Master account cannot use this feature.');
             if (!pwd || pwd.length < 6) return showFpErr('Password must be at least 6 characters.');
+                if (!/[a-zA-Z]/.test(pwd)) return showFpErr('Password must contain at least one letter.');
+                if (!/[0-9]/.test(pwd))    return showFpErr('Password must contain at least one number.');
             if (pwd !== pwd2)       return showFpErr('Passwords do not match.');
 
             showLoading();
