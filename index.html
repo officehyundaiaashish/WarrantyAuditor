@@ -866,32 +866,34 @@
                     const _now = new Date().toISOString();
                     const _uidSave = document.getElementById('usrId').value.trim().toUpperCase();
 
+                    // STEP 1: Save session locally FIRST — before anything else.
+                    // Even if Firestore write fails, user is still valid.
+                    // localStorage survives tab close, browser restart, page reload.
+                    localStorage.removeItem('wa_fail_' + _uidSave);
+                    localStorage.setItem('wa_last_uid', _uidSave);
+                    localStorage.setItem('totp_verified_at', _now);
+                    localStorage.setItem('totp_verified_uid', _uidSave);
+                    sessionStorage.setItem('totp_verified', 'true');
+                    sessionStorage.setItem('wau_uid', currentUserId);
+
+                    // STEP 2: Write to Firestore — fire and forget, do NOT await.
+                    // If it fails silently, localStorage above is the fallback.
+                    // If it succeeds, Firestore becomes fallback for new/other devices.
                     if (isFirstTime) {
-                        await window._fbUpdateDoc(userDocRef, {
+                        window._fbUpdateDoc(userDocRef, {
                             totpSecret: currentTempSecret,
                             pendingTotpSecret: window._fbDeleteField(),
                             lastLogin: _now,
                             totpVerifiedAt: _now
-                        });
+                        }).catch(e => console.warn('Firestore TOTP write (non-fatal):', e.message));
                     } else {
-                        await window._fbUpdateDoc(userDocRef, {
+                        window._fbUpdateDoc(userDocRef, {
                             lastLogin: _now,
                             totpVerifiedAt: _now
-                        });
+                        }).catch(e => console.warn('Firestore TOTP write (non-fatal):', e.message));
                     }
 
-                    // Clear fail counter, save UID for welcome back
-                    localStorage.removeItem('wa_fail_' + _uidSave);
-                    localStorage.setItem('wa_last_uid', _uidSave);
-
-                    // Save TOTP verified timestamp to localStorage so it
-                    // survives tab close, browser restart, and page reload.
-                    // sessionStorage dies on tab close — that was the bug.
-                    localStorage.setItem('totp_verified_at', _now);
-                    localStorage.setItem('totp_verified_uid', _uidSave);
-
-                    sessionStorage.setItem('totp_verified', 'true');
-                    sessionStorage.setItem('wau_uid', currentUserId);
+                    // STEP 3: Redirect immediately — don't wait for Firestore.
                     window.location.href = "main.html";
                 } else {
                     // Wrong OTP
