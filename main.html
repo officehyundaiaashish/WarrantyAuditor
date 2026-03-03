@@ -2135,26 +2135,6 @@
             </div>
         </h1>
         <div style="display:flex;gap:6px;align-items:center;">
-            <!-- Logged in as badge -->
-            <span id="header-user-badge" style="display:none; font-size:0.72rem; font-weight:700; color:var(--text-muted); background:var(--bg-base); border:1px solid var(--border); border-radius:7px; padding:0 10px; height:36px; align-items:center; gap:5px; white-space:nowrap; overflow:hidden; max-width:110px; text-overflow:ellipsis;"></span>
-            <button id="header-upload-btn" class="header-action-btn upload-shortcut" onclick="headerUploadNow()"
-                title="Upload to GitHub Cloud">
-                <svg viewBox="0 0 24 24">
-                    <polyline points="16 16 12 12 8 16" />
-                    <line x1="12" y1="12" x2="12" y2="21" />
-                    <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
-                </svg>
-                <span class="btn-label">Backup</span>
-            </button>
-            <button id="header-restore-btn" class="header-action-btn restore-shortcut" onclick="headerRestoreNow()"
-                title="Restore from GitHub Cloud">
-                <svg viewBox="0 0 24 24">
-                    <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
-                    <polyline points="8 13 12 17 16 13" />
-                    <line x1="12" y1="17" x2="12" y2="9" />
-                </svg>
-                <span class="btn-label">Restore</span>
-            </button>
             <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
                 <svg class="icon-sun" viewBox="0 0 24 24">
                     <circle cx="12" cy="12" r="5"></circle>
@@ -2171,15 +2151,131 @@
                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                 </svg>
             </button>
-            <!-- Logout button -->
-            <button class="theme-toggle" onclick="logoutUser()" title="Logout" style="color:var(--danger); border-color: rgba(239,68,68,0.3);">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                    <polyline points="16 17 21 12 16 7"></polyline>
-                    <line x1="21" y1="12" x2="9" y2="12"></line>
+            <!-- Menu button -->
+            <button class="theme-toggle" onclick="openUserSheet()" title="Menu" id="header-menu-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;position:relative;">
+                    <circle cx="12" cy="5" r="1.2" fill="currentColor" stroke="none"/>
+                    <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/>
+                    <circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none"/>
                 </svg>
             </button>
         </div>
+    </div>
+
+    <!-- ══ DROPDOWN POPUP MENU ══ -->
+    <style>
+        #user-sheet-backdrop {
+            display: none;
+            position: fixed; inset: 0; z-index: 9998;
+        }
+        #user-sheet {
+            display: none;
+            position: fixed;
+            top: 56px; right: 12px;
+            z-index: 9999;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08);
+            width: 240px;
+            overflow: hidden;
+            transform-origin: top right;
+            transform: scale(0.88) translateY(-8px);
+            opacity: 0;
+            transition:
+                transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+                opacity 0.15s ease;
+            will-change: transform, opacity;
+        }
+        #user-sheet.active {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+        .dp-user-row {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 14px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .dp-avatar {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; font-weight: 800; color: #fff;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(99,102,241,0.35);
+        }
+        .dp-name {
+            font-size: 0.85rem; font-weight: 800;
+            color: var(--text-main); line-height: 1.2;
+        }
+        .dp-email {
+            font-size: 0.68rem; color: var(--text-muted);
+            margin-top: 2px; font-family: monospace;
+            white-space: nowrap; overflow: hidden;
+            text-overflow: ellipsis; max-width: 160px;
+        }
+        .dp-item {
+            display: flex; align-items: center; gap: 12px;
+            width: 100%; padding: 11px 14px;
+            border: none; background: transparent;
+            cursor: pointer; text-align: left;
+            -webkit-tap-highlight-color: transparent;
+            transition: background 0.1s ease;
+        }
+        .dp-item:hover { background: var(--bg-base); }
+        .dp-item:active { background: var(--border); }
+        .dp-icon {
+            width: 32px; height: 32px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .dp-label { font-size: 0.83rem; font-weight: 700; color: var(--text-main); }
+        .dp-divider { height: 1px; background: var(--border); margin: 2px 0; }
+        .dp-item.dp-disabled {
+            opacity: 0.35; cursor: not-allowed; pointer-events: none;
+        }
+    </style>
+
+    <div id="user-sheet-backdrop" onclick="closeUserSheet()"></div>
+    <div id="user-sheet">
+        <!-- User info -->
+        <div class="dp-user-row">
+            <div class="dp-avatar" id="sheet-avatar">?</div>
+            <div style="min-width:0;">
+                <div class="dp-name" id="sheet-dealer-id">Loading...</div>
+                <div class="dp-email" id="sheet-email"></div>
+            </div>
+        </div>
+        <!-- Actions -->
+        <button class="dp-item" id="sheet-backup-btn" onclick="closeUserSheet();setTimeout(headerUploadNow,180);">
+            <span class="dp-icon" style="background:rgba(16,185,129,0.12);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/>
+                    <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+                </svg>
+            </span>
+            <span class="dp-label">Backup to Cloud</span>
+        </button>
+        <button class="dp-item" id="sheet-restore-btn" onclick="closeUserSheet();setTimeout(headerRestoreNow,180);">
+            <span class="dp-icon" style="background:rgba(59,130,246,0.12);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+                    <polyline points="8 13 12 17 16 13"/><line x1="12" y1="17" x2="12" y2="9"/>
+                </svg>
+            </span>
+            <span class="dp-label">Restore from Cloud</span>
+        </button>
+        <div class="dp-divider"></div>
+        <button class="dp-item" onclick="closeUserSheet();setTimeout(logoutUser,180);">
+            <span class="dp-icon" style="background:rgba(239,68,68,0.1);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+            </span>
+            <span class="dp-label" style="color:#ef4444;">Logout</span>
+        </button>
+        <div style="height:4px;"></div>
     </div>
 
     <div id="screen-menu" class="screen active">
@@ -6226,21 +6322,28 @@ Audit: ${session.month}
             const perms = window._fbUserPerms || [];
 
             // ── RACE CONDITION FIX ──
-            // Agar permissions abhi Firebase se load nahi huin hain (empty array),
-            // toh menu ko mat chhuo — onAuthStateChanged ke baad automatically call hoga.
             if (perms.length === 0) return;
 
-            const isMaster = window._fbUser && window._fbUser.email === 'n3235wrty@warrantyauditor.app';
+            const isMaster = window._fbUser && window._fbUser.email &&
+                window._fbUser.email.toLowerCase() === 'n3235wrty@warrantyauditor.app';
 
-            // Show/Hide Menu Tiles based on permissions
-            // Note: Tile IDs should match screen IDs for simplicity
+            // ── MASTER: show all tiles ──
+            if (isMaster) {
+                document.querySelectorAll('.menu-card').forEach(c => c.style.display = 'flex');
+                const tileSec = document.getElementById('tile-security');
+                const tileUser = document.getElementById('tile-user-management');
+                if (tileSec) tileSec.style.display = 'flex';
+                if (tileUser) tileUser.style.display = 'flex';
+                return;
+            }
+
+            // ── REGULAR USER: show only permitted tiles ──
             const cards = document.querySelectorAll('.menu-card');
             cards.forEach(card => {
                 const onClickStr = card.getAttribute('onclick') || '';
                 const screenMatch = onClickStr.match(/showScreen\('([^']+)'\)/);
                 const screenId = screenMatch ? screenMatch[1] : null;
 
-                // Special handling for functions
                 if (onClickStr.includes('openArchive')) {
                     card.style.display = perms.includes('screen-archive') ? 'flex' : 'none';
                 } else if (onClickStr.includes('buildDashboard')) {
@@ -6256,7 +6359,6 @@ Audit: ${session.month}
                 }
             });
 
-            // Master specific tiles (Security, Users)
             const tileSec = document.getElementById('tile-security');
             const tileUser = document.getElementById('tile-user-management');
             if (tileSec) tileSec.style.display = perms.includes('screen-security') ? 'flex' : 'none';
@@ -6265,10 +6367,16 @@ Audit: ${session.month}
 
         const _oSS_RBAC = showScreen;
         showScreen = function (id) {
-            const perms = window._fbUserPerms || [];
-            // Basic screens always allowed
+            // screen-menu always allowed
             if (id === 'screen-menu') return _oSS_RBAC(id);
 
+            // Master ID bypass — full access to everything
+            const isMaster = window._fbUser && window._fbUser.email &&
+                window._fbUser.email.toLowerCase() === 'n3235wrty@warrantyauditor.app';
+            if (isMaster) return _oSS_RBAC(id);
+
+            // Regular users — check permissions
+            const perms = window._fbUserPerms || [];
             if (!perms.includes(id)) {
                 return showAppAlert("Access Denied: You do not have permission to access this area.");
             }
@@ -6302,6 +6410,25 @@ Audit: ${session.month}
                     const card = document.createElement('div');
                     card.className = `user-card ${isBlocked ? 'blocked' : 'active-user'}`;
 
+                    const userPerms = Array.isArray(u.permissions) ? u.permissions : Object.values(u.permissions || {});
+                    const allScreens = [
+                        { id: 'screen-new-audit',  label: '📝 New Audit' },
+                        { id: 'screen-archive',    label: '📁 Drafts & Archives' },
+                        { id: 'screen-dashboard',  label: '📊 Dashboard' },
+                        { id: 'screen-reports',    label: '📈 Reports Export' },
+                        { id: 'screen-backup',     label: '☁️ Backup & Restore' },
+                        { id: 'screen-settings',   label: '⚙️ Custom Codes' },
+                        { id: 'screen-security',   label: '🔒 Security Settings' },
+                        { id: 'screen-users',      label: '👥 User Management' },
+                    ];
+                    const permCheckboxes = allScreens.map(s => `
+                        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;font-size:0.82rem;color:var(--text-main);">
+                            <input type="checkbox" value="${s.id}" ${userPerms.includes(s.id) ? 'checked' : ''}
+                                style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer;">
+                            ${s.label}
+                        </label>
+                    `).join('');
+
                     card.innerHTML = `
                         <div class="user-card-header">
                             <div style="display:flex; align-items:center;">
@@ -6313,11 +6440,29 @@ Audit: ${session.month}
                             </div>
                             <span class="user-status-badge ${isBlocked ? 'badge-blocked' : 'badge-active'}">${isBlocked ? 'Blocked' : 'Active'}</span>
                         </div>
-                        <div style="font-size:0.75rem; color:var(--text-muted);">
-                            <b>Perms:</b> ${(Array.isArray(u.permissions) ? u.permissions : Object.values(u.permissions || {})).map(p => p.replace('screen-', '')).join(', ')}<br>
-                            <b>TOTP:</b> ${hasTotp ? '<span style="color:var(--success)">Configured</span>' : (u.pendingTotpSecret ? '<span style="color:var(--warning)">Pending Setup</span>' : '<span style="color:var(--danger)">Not Setup</span>')}<br>
+                        <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:10px;">
+                            <b>TOTP:</b> ${hasTotp ? '<span style="color:var(--success)">Configured</span>' : (u.pendingTotpSecret ? '<span style="color:var(--warning)">Pending Setup</span>' : '<span style="color:var(--danger)">Not Setup</span>')}&nbsp;&nbsp;
                             <b>Last Login:</b> ${u.lastLogin ? new Date(u.lastLogin).toLocaleString('en-IN', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'}) : '<span style="color:var(--text-muted)">Never</span>'}
                         </div>
+
+                        <!-- Permissions section -->
+                        <div style="background:var(--bg-base);border-radius:10px;border:1px solid var(--border);overflow:hidden;margin-bottom:12px;">
+                            <button onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'; this.querySelector('.perm-arrow').style.transform=this.nextElementSibling.style.display==='none'?'rotate(0deg)':'rotate(180deg)';"
+                                style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:transparent;border:none;cursor:pointer;font-size:0.82rem;font-weight:700;color:var(--text-main);">
+                                <span>🔑 Screen Permissions (${userPerms.length} / ${allScreens.length})</span>
+                                <svg class="perm-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s ease;flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
+                            </button>
+                            <div style="display:none;padding:4px 14px 12px;border-top:1px solid var(--border);">
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+                                    ${permCheckboxes}
+                                </div>
+                                <button onclick="saveUserPermissions('${uid}', this.closest('.user-card'))"
+                                    style="margin-top:12px;width:100%;padding:9px;border-radius:8px;border:none;background:var(--primary);color:var(--primary-text);font-size:0.82rem;font-weight:700;cursor:pointer;">
+                                    💾 Save Permissions
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="user-actions">
                             <button class="btn" onclick="resetUserTOTP('${uid}', '${u.dealerID}')">Reset TOTP</button>
                             ${isBlocked
@@ -6334,6 +6479,21 @@ Audit: ${session.month}
                 showAppAlert("Failed to load users: " + e.message);
             }
             showScreen('screen-users');
+        }
+
+        async function saveUserPermissions(uid, cardEl) {
+            const checked = Array.from(cardEl.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+            if (checked.length === 0) return showAppAlert("User must have at least 1 permission.");
+            showLoader(true);
+            try {
+                const docRef = window._fbDoc(window._fbDb, 'users', uid);
+                await window._fbUpdateDoc(docRef, { permissions: checked });
+                showLoader(false);
+                showToast('Permissions saved for ' + uid, 'success', 3000);
+            } catch(e) {
+                showLoader(false);
+                showAppAlert("Failed to save: " + e.message);
+            }
         }
 
         async function createNewUser() {
@@ -6458,15 +6618,72 @@ Audit: ${session.month}
             window.location.href = 'index.html';
         }
 
-        // Show "Logged in as X" in header once user is known
-        function updateHeaderUserBadge() {
-            const badge = document.getElementById('header-user-badge');
-            if (!badge) return;
-            if (window._fbUser && window._fbUser.email) {
-                const dealerID = window._fbUser.email.split('@')[0].toUpperCase();
-                badge.textContent = dealerID;
-                badge.classList.add('visible');
+        // ══ DROPDOWN POPUP FUNCTIONS ══
+        function openUserSheet() {
+            const menu = document.getElementById('user-sheet');
+            const backdrop = document.getElementById('user-sheet-backdrop');
+            if (!menu) return;
+
+            // Populate user info
+            const email = (window._fbUser && window._fbUser.email) || localStorage.getItem('gdrive_user_email') || '';
+            if (email) {
+                const dealerID = email.split('@')[0].toUpperCase();
+                const isMaster = email.toLowerCase() === 'n3235wrty@warrantyauditor.app';
+                document.getElementById('sheet-dealer-id').textContent = isMaster ? 'Master Admin' : dealerID;
+                document.getElementById('sheet-email').textContent = email;
+                const av = document.getElementById('sheet-avatar');
+                av.textContent = isMaster ? 'M' : dealerID.charAt(0);
+                av.style.background = isMaster
+                    ? 'linear-gradient(135deg,#f59e0b,#ef4444)'
+                    : 'linear-gradient(135deg,#3b82f6,#8b5cf6)';
+
+                const backupBtn = document.getElementById('sheet-backup-btn');
+                const restoreBtn = document.getElementById('sheet-restore-btn');
+                if (isMaster) {
+                    backupBtn.classList.add('dp-disabled');
+                    restoreBtn.classList.add('dp-disabled');
+                } else {
+                    backupBtn.classList.remove('dp-disabled');
+                    restoreBtn.classList.remove('dp-disabled');
+                }
             }
+
+            // Position under the button
+            const btn = document.getElementById('header-menu-btn');
+            if (btn) {
+                const rect = btn.getBoundingClientRect();
+                menu.style.top = (rect.bottom + 8) + 'px';
+                menu.style.right = (window.innerWidth - rect.right) + 'px';
+            }
+
+            menu.style.display = 'block';
+            backdrop.style.display = 'block';
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    menu.classList.add('active');
+                });
+            });
+        }
+
+        function closeUserSheet() {
+            const menu = document.getElementById('user-sheet');
+            const backdrop = document.getElementById('user-sheet-backdrop');
+            if (!menu) return;
+            menu.classList.remove('active');
+            backdrop.classList.remove('active');
+            setTimeout(() => {
+                menu.style.display = 'none';
+                backdrop.style.display = 'none';
+            }, 200);
+        }
+
+        // Close on Escape key or outside click already handled by backdrop
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeUserSheet();
+        });
+
+        function updateHeaderUserBadge() {
+            // User info shown in dropdown only
         }
 
         // Auto-logout after 30 minutes of inactivity
