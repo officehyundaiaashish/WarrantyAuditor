@@ -874,6 +874,7 @@
                     localStorage.setItem('totp_verified_at', _now);
                     localStorage.setItem('totp_verified_uid', _uidSave);
                     sessionStorage.setItem('totp_verified', 'true');
+                    sessionStorage.setItem('totp_verified_uid', _uidSave);
                     sessionStorage.setItem('wau_uid', currentUserId);
 
                     // STEP 2: Write to Firestore — fire and forget, do NOT await.
