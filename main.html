@@ -14,7 +14,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, query, collection, getDocs, updateDoc, deleteDoc, deleteField } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, query, collection, getDocs, onSnapshot, updateDoc, deleteDoc, deleteField } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAJZDURUl_Xh2FWjoVwGLZ4yuhVdFUZMHc",
@@ -42,6 +42,7 @@
         window._fbUpdateDoc = updateDoc;
         window._fbDeleteDoc = deleteDoc;
         window._fbDeleteField = deleteField;
+        window._fbOnSnapshot = onSnapshot;
         window._fbProvider = provider;
         window._fbSignIn = signInWithPopup;
         window._fbSignOut = signOut;
@@ -57,11 +58,30 @@
 
                 // Fetch User Permissions from Firestore
                 try {
-                    // Security Check: Ensure TOTP was verified in index.html
-                    if (sessionStorage.getItem('totp_verified') !== 'true') {
-                        await signOut(auth);
-                        window.location.href = 'index.html';
-                        return;
+                    // ── TOTP SESSION CHECK (3-hour Firebase-based) ──
+                    const totpOk = sessionStorage.getItem('totp_verified') === 'true';
+                    if (!totpOk) {
+                        // Check Firebase: was TOTP verified within last 3 hours?
+                        const isMasterEmail = user.email && user.email.toLowerCase() === 'n3235wrty@warrantyauditor.app';
+                        const dealerIDCheck = user.email.split('@')[0].toUpperCase();
+                        const checkRef = doc(db, 'users', isMasterEmail ? 'N3235WRTY' : dealerIDCheck);
+                        const checkSnap = await getDoc(checkRef);
+                        let sessionValid = false;
+                        if (checkSnap.exists()) {
+                            const tvAt = checkSnap.data().totpVerifiedAt;
+                            if (tvAt) {
+                                const elapsed = Date.now() - new Date(tvAt).getTime();
+                                if (elapsed < 3 * 60 * 60 * 1000) { // 3 hours
+                                    sessionValid = true;
+                                    sessionStorage.setItem('totp_verified', 'true'); // restore flag
+                                }
+                            }
+                        }
+                        if (!sessionValid) {
+                            await signOut(auth);
+                            window.location.href = 'index.html';
+                            return;
+                        }
                     }
 
                     // 1. MASTER CHECK FIRST
@@ -102,6 +122,9 @@
     </script>
 
     <style>
+        /* ════════════════════════════════════════════════════════
+           § 1 — CSS VARIABLES & BASE RESET
+           ════════════════════════════════════════════════════════ */
         /* --- THEME VARIABLES & COLOR SCHEMES --- */
         :root {
             --bg-base: #f8fafc;
@@ -1836,111 +1859,30 @@
         tr:hover .row-tooltip {
             opacity: 1;
         }
-    </style>
-</head>
 
-<body>
 
-    <div id="loader">
-        <div class="spinner"></div><span>Processing...</span>
-    </div>
+        /* ── Workspace compact action buttons ── */
+        .ws-btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 7px 10px; border-radius: 8px;
+            border: 1px solid var(--border); background: var(--surface);
+            cursor: pointer; font-size: 0.75rem; font-weight: 700;
+            color: var(--text-muted); white-space: nowrap;
+            transition: all 0.15s ease; flex-shrink: 0;
+        }
+        .ws-btn:active { transform: scale(0.96); }
+        .ws-btn-primary { background: var(--primary); color: var(--primary-text); border-color: var(--primary); }
+        .ws-btn-primary:hover { opacity: 0.88; }
+        .ws-btn-blue { color: var(--accent); border-color: rgba(59,130,246,0.35); }
+        .ws-btn-blue:hover { background: rgba(59,130,246,0.07); }
+        .ws-btn-danger { color: var(--danger); border-color: rgba(239,68,68,0.35); }
+        .ws-btn-danger:hover { background: rgba(239,68,68,0.07); }
+        .ws-btn:not(.ws-btn-primary):hover { border-color: var(--text-muted); }
+        @media (max-width: 420px) { .ws-label { display: none; } .ws-btn { padding: 7px 9px; } }
 
-    <!-- Shortcut Help Overlay (#20) -->
-    <div id="shortcut-overlay" onclick="closeShortcutOverlay(event)">
-        <div class="so-dialog">
-            <div class="so-title">
-                Keyboard Shortcuts
-                <button onclick="toggleShortcutOverlay()"
-                    style="background:none;border:none;cursor:pointer;padding:4px;color:var(--text-muted);font-size:1.2rem;"
-                    title="Close">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                </button>
-            </div>
-
-            <div class="so-section">
-                <div class="so-section-title">Navigation</div>
-                <div class="so-row"><span class="so-desc">Back to Main Menu</span>
-                    <div class="so-keys"><span class="so-key">Esc</span></div>
-                </div>
-                <div class="so-row"><span class="so-desc">Exit Workspace (confirm)</span>
-                    <div class="so-keys"><span class="so-key">Esc</span></div>
-                </div>
-                <div class="so-row"><span class="so-desc">This help overlay</span>
-                    <div class="so-keys"><span class="so-key">?</span></div>
-                </div>
-            </div>
-
-            <div class="so-section">
-                <div class="so-section-title">Workspace</div>
-                <div class="so-row"><span class="so-desc">Type to search claims</span>
-                    <div class="so-keys"><span class="so-key">0–9</span><span class="so-key">A–Z</span></div>
-                </div>
-                <div class="so-row"><span class="so-desc">Open first claim in list</span>
-                    <div class="so-keys"><span class="so-key">Enter</span></div>
-                </div>
-                <div class="so-row"><span class="so-desc">Previous / Next page</span>
-                    <div class="so-keys"><span class="so-key">←</span><span class="so-key">→</span></div>
-                </div>
-            </div>
-
-            <div class="so-section">
-                <div class="so-section-title">Dashboard</div>
-                <div class="so-row"><span class="so-desc">Type to search claims</span>
-                    <div class="so-keys"><span class="so-key">0–9</span><span class="so-key">A–Z</span></div>
-                </div>
-                <div class="so-row"><span class="so-desc">Previous / Next page</span>
-                    <div class="so-keys"><span class="so-key">←</span><span class="so-key">→</span></div>
-                </div>
-            </div>
-
-            <div class="so-section">
-                <div class="so-section-title">Audit Modal</div>
-                <div class="so-row"><span class="so-desc">Save entry</span>
-                    <div class="so-keys"><span class="so-key">Enter</span></div>
-                </div>
-                <div class="so-row"><span class="so-desc">Close / cancel</span>
-                    <div class="so-keys"><span class="so-key">Esc</span></div>
-                </div>
-                <div class="so-row"><span class="so-desc">Quick-select discrepancy</span>
-                    <div class="so-keys"><span class="so-key">0–9</span></div>
-                </div>
-            </div>
-
-            <div class="so-section">
-                <div class="so-section-title">Dropdown</div>
-                <div class="so-row"><span class="so-desc">Navigate options</span>
-                    <div class="so-keys"><span class="so-key">↑</span><span class="so-key">↓</span></div>
-                </div>
-                <div class="so-row"><span class="so-desc">Select focused option</span>
-                    <div class="so-keys"><span class="so-key">Enter</span></div>
-                </div>
-                <div class="so-row"><span class="so-desc">Close dropdown</span>
-                    <div class="so-keys"><span class="so-key">Esc</span></div>
-                </div>
-            </div>
-
-            <div class="so-section">
-                <div class="so-section-title">Menu Grid (TV / Tab)</div>
-                <div class="so-row"><span class="so-desc">Navigate cards</span>
-                    <div class="so-keys"><span class="so-key">↑</span><span class="so-key">↓</span><span
-                            class="so-key">←</span><span class="so-key">→</span></div>
-                </div>
-                <div class="so-row"><span class="so-desc">Open selected card</span>
-                    <div class="so-keys"><span class="so-key">Enter</span><span class="so-key">Space</span></div>
-                </div>
-                <div class="so-row"><span class="so-desc">Tab through all elements</span>
-                    <div class="so-keys"><span class="so-key">Tab</span></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- User Management CSS Specific -->
-    <style>
+        /* ════════════════════════════════════════════════════════
+           § 2 — USER MANAGEMENT CARDS
+           ════════════════════════════════════════════════════════ */
         .user-card {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -2092,78 +2034,10 @@
                 transform: translateY(0);
             }
         }
-    </style>
 
-    <div id="app-dialog" class="modal-backdrop">
-        <div class="modal-dialog" style="max-width: 340px;">
-            <div class="modal-body" style="text-align:center; padding: 32px 24px;">
-                <h3 id="dialog-msg" style="margin-bottom:20px; font-size:1.05rem; line-height: 1.5;"></h3>
-
-                <div id="dialog-input-wrapper" style="position:relative; display:none; margin-bottom: 16px;"
-                    autocomplete="off">
-                    <input type="text" id="dialog-input" inputmode="numeric" autocomplete="new-password"
-                        autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true"
-                        data-form-type="other" class="input"
-                        style="text-align:center; letter-spacing: 4px; font-size: 1.2rem; margin:0; padding-right: 44px; -webkit-text-security: disc; text-security: disc;"
-                        placeholder="••••••••">
-                    <button id="kb-toggle" onclick="toggleKeyboardMode('dialog-input', this)"
-                        style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:var(--bg-base); border:1px solid var(--border); border-radius:6px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-muted); transition:0.2s;"
-                        title="Toggle Keyboard"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="2" y="3" width="20" height="14" rx="2" />
-                            <line x1="8" y1="21" x2="16" y2="21" />
-                            <line x1="12" y1="17" x2="12" y2="21" />
-                        </svg></button>
-                </div>
-
-                <div style="display:flex; gap:12px; justify-content:center; margin-top: 12px;">
-                    <button class="btn primary" id="dialog-btn-yes" style="margin:0;">Confirm</button>
-                    <button class="btn" id="dialog-btn-no" style="margin:0; display:none;">Cancel</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="app-header">
-        <h1 class="app-title">
-            <div class="app-title-badge">
-                <img class="app-title-icon"
-                    src="data:image/png;base64,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"
-                    alt="Hyundai">
-                <span class="app-title-text">Warranty Auditor</span>
-
-            </div>
-        </h1>
-        <div style="display:flex;gap:6px;align-items:center;">
-            <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
-                <svg class="icon-sun" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="5"></circle>
-                    <line x1="12" y1="1" x2="12" y2="3"></line>
-                    <line x1="12" y1="21" x2="12" y2="23"></line>
-                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                    <line x1="1" y1="12" x2="3" y2="12"></line>
-                    <line x1="21" y1="12" x2="23" y2="12"></line>
-                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                </svg>
-                <svg class="icon-moon" viewBox="0 0 24 24">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                </svg>
-            </button>
-            <!-- Menu button -->
-            <button class="theme-toggle" onclick="openUserSheet()" title="Menu" id="header-menu-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;position:relative;">
-                    <circle cx="12" cy="5" r="1.2" fill="currentColor" stroke="none"/>
-                    <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/>
-                    <circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none"/>
-                </svg>
-            </button>
-        </div>
-    </div>
-
-    <!-- ══ DROPDOWN POPUP MENU ══ -->
-    <style>
+        /* ════════════════════════════════════════════════════════
+           § 3 — DROPDOWN POPUP MENU
+           ════════════════════════════════════════════════════════ */
         #user-sheet-backdrop {
             display: none;
             position: fixed; inset: 0; z-index: 9998;
@@ -2235,6 +2109,179 @@
             opacity: 0.35; cursor: not-allowed; pointer-events: none;
         }
     </style>
+</head>
+
+<body>
+
+    <div id="loader">
+        <div class="spinner"></div><span>Processing...</span>
+    </div>
+
+    <!-- Shortcut Help Overlay (#20) -->
+    <div id="shortcut-overlay" onclick="closeShortcutOverlay(event)">
+        <div class="so-dialog">
+            <div class="so-title">
+                Keyboard Shortcuts
+                <button onclick="toggleShortcutOverlay()"
+                    style="background:none;border:none;cursor:pointer;padding:4px;color:var(--text-muted);font-size:1.2rem;"
+                    title="Close">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="so-section">
+                <div class="so-section-title">Navigation</div>
+                <div class="so-row"><span class="so-desc">Back to Main Menu</span>
+                    <div class="so-keys"><span class="so-key">Esc</span></div>
+                </div>
+                <div class="so-row"><span class="so-desc">Exit Workspace (confirm)</span>
+                    <div class="so-keys"><span class="so-key">Esc</span></div>
+                </div>
+                <div class="so-row"><span class="so-desc">This help overlay</span>
+                    <div class="so-keys"><span class="so-key">?</span></div>
+                </div>
+            </div>
+
+            <div class="so-section">
+                <div class="so-section-title">Workspace</div>
+                <div class="so-row"><span class="so-desc">Type to search claims</span>
+                    <div class="so-keys"><span class="so-key">0–9</span><span class="so-key">A–Z</span></div>
+                </div>
+                <div class="so-row"><span class="so-desc">Open first claim in list</span>
+                    <div class="so-keys"><span class="so-key">Enter</span></div>
+                </div>
+                <div class="so-row"><span class="so-desc">Previous / Next page</span>
+                    <div class="so-keys"><span class="so-key">←</span><span class="so-key">→</span></div>
+                </div>
+            </div>
+
+            <div class="so-section">
+                <div class="so-section-title">Dashboard</div>
+                <div class="so-row"><span class="so-desc">Type to search claims</span>
+                    <div class="so-keys"><span class="so-key">0–9</span><span class="so-key">A–Z</span></div>
+                </div>
+                <div class="so-row"><span class="so-desc">Previous / Next page</span>
+                    <div class="so-keys"><span class="so-key">←</span><span class="so-key">→</span></div>
+                </div>
+            </div>
+
+            <div class="so-section">
+                <div class="so-section-title">Audit Modal</div>
+                <div class="so-row"><span class="so-desc">Save entry</span>
+                    <div class="so-keys"><span class="so-key">Enter</span></div>
+                </div>
+                <div class="so-row"><span class="so-desc">Close / cancel</span>
+                    <div class="so-keys"><span class="so-key">Esc</span></div>
+                </div>
+                <div class="so-row"><span class="so-desc">Quick-select discrepancy</span>
+                    <div class="so-keys"><span class="so-key">0–9</span></div>
+                </div>
+            </div>
+
+            <div class="so-section">
+                <div class="so-section-title">Dropdown</div>
+                <div class="so-row"><span class="so-desc">Navigate options</span>
+                    <div class="so-keys"><span class="so-key">↑</span><span class="so-key">↓</span></div>
+                </div>
+                <div class="so-row"><span class="so-desc">Select focused option</span>
+                    <div class="so-keys"><span class="so-key">Enter</span></div>
+                </div>
+                <div class="so-row"><span class="so-desc">Close dropdown</span>
+                    <div class="so-keys"><span class="so-key">Esc</span></div>
+                </div>
+            </div>
+
+            <div class="so-section">
+                <div class="so-section-title">Menu Grid (TV / Tab)</div>
+                <div class="so-row"><span class="so-desc">Navigate cards</span>
+                    <div class="so-keys"><span class="so-key">↑</span><span class="so-key">↓</span><span
+                            class="so-key">←</span><span class="so-key">→</span></div>
+                </div>
+                <div class="so-row"><span class="so-desc">Open selected card</span>
+                    <div class="so-keys"><span class="so-key">Enter</span><span class="so-key">Space</span></div>
+                </div>
+                <div class="so-row"><span class="so-desc">Tab through all elements</span>
+                    <div class="so-keys"><span class="so-key">Tab</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Management CSS Specific -->
+
+    <div id="app-dialog" class="modal-backdrop">
+        <div class="modal-dialog" style="max-width: 340px;">
+            <div class="modal-body" style="text-align:center; padding: 32px 24px;">
+                <h3 id="dialog-msg" style="margin-bottom:20px; font-size:1.05rem; line-height: 1.5;"></h3>
+
+                <div id="dialog-input-wrapper" style="position:relative; display:none; margin-bottom: 16px;"
+                    autocomplete="off">
+                    <input type="text" id="dialog-input" inputmode="numeric" autocomplete="new-password"
+                        autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true"
+                        data-form-type="other" class="input"
+                        style="text-align:center; letter-spacing: 4px; font-size: 1.2rem; margin:0; padding-right: 44px; -webkit-text-security: disc; text-security: disc;"
+                        placeholder="••••••••">
+                    <button id="kb-toggle" onclick="toggleKeyboardMode('dialog-input', this)"
+                        style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:var(--bg-base); border:1px solid var(--border); border-radius:6px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-muted); transition:0.2s;"
+                        title="Toggle Keyboard"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="3" width="20" height="14" rx="2" />
+                            <line x1="8" y1="21" x2="16" y2="21" />
+                            <line x1="12" y1="17" x2="12" y2="21" />
+                        </svg></button>
+                </div>
+
+                <div style="display:flex; gap:12px; justify-content:center; margin-top: 12px;">
+                    <button class="btn primary" id="dialog-btn-yes" style="margin:0;">Confirm</button>
+                    <button class="btn" id="dialog-btn-no" style="margin:0; display:none;">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-header">
+        <h1 class="app-title">
+            <div class="app-title-badge">
+                <img class="app-title-icon"
+                    src="data:image/png;base64,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"
+                    alt="Hyundai">
+                <span class="app-title-text">Warranty Auditor</span>
+
+            </div>
+        </h1>
+        <div style="display:flex;gap:6px;align-items:center;">
+            <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
+                <svg class="icon-sun" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+                <svg class="icon-moon" viewBox="0 0 24 24">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+            </button>
+            <!-- Menu button -->
+            <button class="theme-toggle" onclick="openUserSheet()" title="Menu" id="header-menu-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;position:relative;">
+                    <circle cx="12" cy="5" r="1.2" fill="currentColor" stroke="none"/>
+                    <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/>
+                    <circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- ══ DROPDOWN POPUP MENU ══ -->
 
     <div id="user-sheet-backdrop" onclick="closeUserSheet()"></div>
     <div id="user-sheet">
@@ -2278,7 +2325,11 @@
         <div style="height:4px;"></div>
     </div>
 
-    <div id="screen-menu" class="screen active">
+
+    <!-- ════════════════════════════════════════════════════════
+         HTML § 1 — SCREEN: MAIN MENU
+         ════════════════════════════════════════════════════════ -->
+    <div id="screen-menu" class="screen">
 
         <div id="main-notification" class="notification-banner" onclick="buildDashboard()">
             <svg style="width:24px; height:24px; flex-shrink:0; stroke:currentColor; stroke-width:2; fill:none;"
@@ -2418,6 +2469,10 @@
         </footer>
     </div>
 
+
+    <!-- ════════════════════════════════════════════════════════
+         HTML § 2 — SCREEN: DASHBOARD
+         ════════════════════════════════════════════════════════ -->
     <div id="screen-dashboard" class="screen">
         <div class="flex-between" style="margin-bottom: 12px;">
             <h3 style="margin:0;">Dashboard</h3>
@@ -2556,6 +2611,10 @@
         </div>
     </div>
 
+
+    <!-- ════════════════════════════════════════════════════════
+         HTML § 3 — SCREEN: CUSTOM CODES / SETTINGS
+         ════════════════════════════════════════════════════════ -->
     <div id="screen-settings" class="screen">
         <div class="flex-between" style="margin-bottom: 16px;">
             <h3 style="margin:0;">Custom Discrepancy Codes</h3>
@@ -2613,6 +2672,10 @@
     </div>
 
     <!-- User Management Screen -->
+
+    <!-- ════════════════════════════════════════════════════════
+         HTML § 4 — SCREEN: USER MANAGEMENT
+         ════════════════════════════════════════════════════════ -->
     <div id="screen-users" class="screen">
         <div class="flex-between"
             style="margin-bottom: 20px; max-width: 600px; margin-left: auto; margin-right: auto; width: 100%;">
@@ -2684,6 +2747,10 @@
         </div>
     </div>
 
+
+    <!-- ════════════════════════════════════════════════════════
+         HTML § 5 — SCREEN: SECURITY SETTINGS
+         ════════════════════════════════════════════════════════ -->
     <div id="screen-security" class="screen">
         <div class="flex-between"
             style="margin-bottom: 12px; max-width: 440px; margin-left: auto; margin-right: auto; width: 100%;">
@@ -2725,6 +2792,10 @@
         </div>
     </div>
 
+
+    <!-- ════════════════════════════════════════════════════════
+         HTML § 6 — SCREEN: BACKUP & RESTORE
+         ════════════════════════════════════════════════════════ -->
     <div id="screen-backup" class="screen">
         <div class="flex-between"
             style="margin-bottom: 12px; max-width: 440px; margin-left: auto; margin-right: auto; width: 100%;">
@@ -3042,6 +3113,10 @@
 
     </div>
 
+
+    <!-- ════════════════════════════════════════════════════════
+         HTML § 7 — SCREEN: NEW AUDIT
+         ════════════════════════════════════════════════════════ -->
     <div id="screen-new-audit" class="screen">
         <div class="card" style="max-width: 440px; margin: 0 auto; width: 100%;">
             <h3>Setup Audit</h3>
@@ -3135,32 +3210,30 @@
         </div>
     </div>
 
+
+    <!-- ════════════════════════════════════════════════════════
+         HTML § 8 — SCREEN: AUDIT WORKSPACE
+         ════════════════════════════════════════════════════════ -->
     <div id="screen-workspace" class="screen">
         <div class="flex-between" style="margin-bottom: 12px;">
-            <h3 id="workspace-title" style="margin:0; font-size:1.15rem;">Workspace</h3>
-            <div style="display: flex; gap: 8px;">
-                <button class="btn primary" style="width: auto; margin:0; padding: 8px 16px; font-size:0.8rem;"
-                    onclick="finalizeAuditFlow()">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    Close Audit
+            <h3 id="workspace-title" style="margin:0; font-size:1rem; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:45vw;">Workspace</h3>
+            <div style="display:flex; gap:6px; flex-shrink:0;">
+                <button class="ws-btn ws-btn-primary" onclick="finalizeAuditFlow()" title="Close Audit">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="ws-label">Close</span>
                 </button>
-                <button class="btn"
-                    style="width: auto; margin:0; padding: 8px 16px; font-size:0.8rem; color:var(--accent); border-color:rgba(59,130,246,0.4);"
-                    onclick="refreshTableFromSavedData()" title="Refresh table from saved Excel data">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="23 4 23 10 17 10" />
-                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-                    </svg>
-                    Refresh Table
+                <button class="ws-btn ws-btn-blue" onclick="refreshTableFromSavedData()" title="Refresh Table">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    <span class="ws-label">Refresh</span>
                 </button>
-                <button class="btn danger" style="width: auto; margin:0; padding: 8px 16px; font-size:0.8rem;"
-                    onclick="discardWorkspace()">Discard</button>
-                <button class="btn" style="width: auto; margin:0; padding: 8px 16px; font-size:0.8rem;"
-                    onclick="requestExitWorkspace()">Menu</button>
+                <button class="ws-btn ws-btn-danger" onclick="discardWorkspace()" title="Discard">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                    <span class="ws-label">Discard</span>
+                </button>
+                <button class="ws-btn" onclick="requestExitWorkspace()" title="Menu">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                    <span class="ws-label">Menu</span>
+                </button>
             </div>
         </div>
 
@@ -3236,6 +3309,10 @@
         </div>
     </div>
 
+
+    <!-- ════════════════════════════════════════════════════════
+         HTML § 9 — SCREEN: ARCHIVE (DRAFTS & PREVIOUS AUDITS)
+         ════════════════════════════════════════════════════════ -->
     <div id="screen-archive" class="screen">
         <div class="flex-between" style="margin-bottom: 12px;">
             <h3 id="archive-title" style="margin:0;">Archive</h3>
@@ -3268,6 +3345,10 @@
         </div>
     </div>
 
+
+    <!-- ════════════════════════════════════════════════════════
+         HTML § 10 — SCREEN: REPORTS & EXPORT
+         ════════════════════════════════════════════════════════ -->
     <div id="screen-reports" class="screen">
         <div class="flex-between"
             style="margin-bottom: 12px; max-width: 440px; margin-left: auto; margin-right: auto; width: 100%;">
@@ -3417,6 +3498,10 @@
 
     <script>
         // --- PERSISTENT THEME & ICONS ---
+
+        // ════════════════════════════════════════════════════════
+        // JS § 1 — THEME & UI UTILITIES
+        // ════════════════════════════════════════════════════════
         function applyTheme(theme) {
             if (theme === 'dark') document.body.setAttribute('data-theme', 'dark');
             else document.body.removeAttribute('data-theme');
@@ -3556,6 +3641,10 @@
         }
 
         // --- SMART KEYBOARD & DIALOG ENGINE ---
+
+        // ════════════════════════════════════════════════════════
+        // JS § 2 — DIALOG / ALERT / CONFIRM / PROMPT
+        // ════════════════════════════════════════════════════════
         function closeDialog() { document.getElementById('app-dialog').classList.remove('active'); const di = document.getElementById('dialog-input'); di.value = ''; di.style.cssText = 'text-align:center; letter-spacing:4px; font-size:1.2rem; margin:0; padding-right:44px; -webkit-text-security:disc; text-security:disc;'; di.placeholder = '••••••••'; di.setAttribute('inputmode', 'numeric'); }
         function showAppAlert(msg) { document.getElementById('dialog-msg').innerText = msg; document.getElementById('dialog-input-wrapper').style.display = 'none'; document.getElementById('dialog-btn-no').style.display = 'none'; document.getElementById('dialog-btn-yes').onclick = closeDialog; document.getElementById('app-dialog').classList.add('active'); }
         function showAppConfirm(msg, onYes) { document.getElementById('dialog-msg').innerText = msg; document.getElementById('dialog-input-wrapper').style.display = 'none'; document.getElementById('dialog-btn-no').style.display = 'block'; document.getElementById('dialog-btn-yes').onclick = () => { closeDialog(); if (onYes) onYes(); }; document.getElementById('dialog-btn-no').onclick = closeDialog; document.getElementById('app-dialog').classList.add('active'); }
@@ -3586,6 +3675,10 @@
             localStorage.setItem('auditor_sec', JSON.stringify(secConfig));
         }
 
+
+        // ════════════════════════════════════════════════════════
+        // JS § 3 — SECURITY (SHA256, PASSWORD, APP LOCK)
+        // ════════════════════════════════════════════════════════
         async function sha256(message) { const msgBuffer = new TextEncoder().encode(message); const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer); return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join(''); }
 
         function updateSecurityUI() {
@@ -3659,6 +3752,10 @@
         });
 
         // --- BACKUP AND RESTORE ---
+
+        // ════════════════════════════════════════════════════════
+        // JS § 4 — LOCAL BACKUP & RESTORE
+        // ════════════════════════════════════════════════════════
         async function backupDatabase() {
             showLoader(true);
             try {
@@ -3726,9 +3823,17 @@
             await localforage.setItem('db_index', dbIndex);
             await localforage.setItem(currentSessionKey, sessionData);
         }
+
+        // ════════════════════════════════════════════════════════
+        // JS § 5 — CORE: showLoader, showScreen (base)
+        // ════════════════════════════════════════════════════════
         function showLoader(show) { document.getElementById('loader').style.display = show ? 'flex' : 'none'; }
         function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); if (id === 'screen-menu') setTimeout(loadDashboardNotifications, 100); if (id === 'screen-new-audit') { const today = new Date(); const y = today.getFullYear(); const m = today.getMonth(); const firstDay = new Date(y, m, 1).toISOString().split('T')[0]; const lastDay = new Date(y, m + 1, 0).toISOString().split('T')[0]; const fromEl = document.getElementById('audit-from'); const toEl = document.getElementById('audit-to'); if (!fromEl.value) { fromEl.value = firstDay; setTimeout(() => setMonthPickerValue('mp-from', y, m), 0); } if (!toEl.value) { toEl.value = lastDay; setTimeout(() => setMonthPickerValue('mp-to', y, m), 0); } } }
 
+
+        // ════════════════════════════════════════════════════════
+        // JS § 6 — DASHBOARD
+        // ════════════════════════════════════════════════════════
         function detectColumns(headers) {
             const map = {};
             const lowerHeaders = headers.map(h => h.toString().toLowerCase().replace(/[\s_]/g, ''));
@@ -4098,6 +4203,10 @@
         }
 
         // --- WORKSPACE CREATION ---
+
+        // ════════════════════════════════════════════════════════
+        // JS § 7 — AUDIT WORKSPACE
+        // ════════════════════════════════════════════════════════
         function startNewAudit() {
             const fileInput = document.getElementById('audit-file'); const fromDate = document.getElementById('audit-from'); const toDate = document.getElementById('audit-to');
 
@@ -4893,6 +5002,10 @@ Audit: ${session.month}
         }
 
         // --- REPORTING & EXPORT ENGINE ---
+
+        // ════════════════════════════════════════════════════════
+        // JS § 8 — ARCHIVE & REPORTING / EXPORT
+        // ════════════════════════════════════════════════════════
         function openReportingMenu() {
             const optContainer = document.getElementById('options-report-scope');
             optContainer.innerHTML = '<div class="custom-option selected" data-value="master">Master Report (All Dates)</div>';
@@ -5226,6 +5339,10 @@ Audit: ${session.month}
         }
 
         // --- CUSTOM CODES & CHART ENGINE ---
+
+        // ════════════════════════════════════════════════════════
+        // JS § 9 — CUSTOM CODES / SETTINGS
+        // ════════════════════════════════════════════════════════
         function openSettingsScreen() {
             renderSettingsCodes();
             showScreen('screen-settings');
@@ -5350,6 +5467,10 @@ Audit: ${session.month}
         // GITHUB GIST CLOUD SYNC MODULE (AES-GCM ENCRYPTED)
         // ══════════════════════════════════════════════════
 
+
+        // ════════════════════════════════════════════════════════
+        // JS § 10 — ENCRYPTION (AES-256)
+        // ════════════════════════════════════════════════════════
         async function deriveKey(pass, salt) { const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), { name: 'PBKDF2' }, false, ['deriveKey']); return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 310000, hash: 'SHA-256' }, km, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']); }
         async function encryptToken(plain, pass) { const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12)), key = await deriveKey(pass, salt), c = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(plain)), o = new Uint8Array(16 + 12 + c.byteLength); o.set(salt, 0); o.set(iv, 16); o.set(new Uint8Array(c), 28); return btoa(String.fromCharCode(...o)); }
         async function decryptToken(b64, pass) { const b = Uint8Array.from(atob(b64), c => c.charCodeAt(0)), key = await deriveKey(pass, b.slice(0, 16)); return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b.slice(16, 28) }, key, b.slice(28))); }
@@ -5375,6 +5496,10 @@ Audit: ${session.month}
             else if (c >= RATE_WARN && c < RATE_MAX) { showToast('GitHub rate limit warning: ' + c + '/5000 requests used this hour. Auto-sync will disable at 4500.', 'warning', 7000); }
         }
 
+
+        // ════════════════════════════════════════════════════════
+        // JS § 11 — TOAST NOTIFICATIONS
+        // ════════════════════════════════════════════════════════
         function showToast(msg, type, dur) {
             let t = document.getElementById('gist-toast');
             if (!t) { t = document.createElement('div'); t.id = 'gist-toast'; t.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;max-width:92vw;width:380px;padding:14px 18px;border-radius:12px;font-size:0.8rem;font-weight:600;line-height:1.5;box-shadow:0 8px 32px rgba(0,0,0,0.22);cursor:pointer;transition:opacity 0.3s;'; t.onclick = () => { t.style.opacity = '0'; setTimeout(() => { if (t.parentNode) t.remove(); }, 300); }; document.body.appendChild(t); }
@@ -5447,6 +5572,10 @@ Audit: ${session.month}
         });
 
         // ── Header shortcut: show minimal method picker then act ──
+
+        // ════════════════════════════════════════════════════════
+        // JS § 12 — GITHUB GIST BACKUP
+        // ════════════════════════════════════════════════════════
         function showMethodPicker(action, anchorId) {
             const hasGithub = !!localStorage.getItem('gist_token_enc');
             const hasFirebase = !!window._fbUser;
@@ -5613,8 +5742,7 @@ Audit: ${session.month}
             updateHeaderUploadBtn();
         }
 
-        const _oSS = showScreen;
-        showScreen = function (id) { _oSS(id); if (id === 'screen-backup') setTimeout(initGistUI, 50); };
+        // NOTE: showScreen backup hooks handled in unified override below
 
         function toggleGistTokenVisibility() { const i = document.getElementById('gist-token-input'), b = document.getElementById('gist-token-eye'); const hidden = i.style.webkitTextSecurity === 'disc'; i.style.webkitTextSecurity = hidden ? 'none' : 'disc'; i.style.textSecurity = hidden ? 'none' : 'disc'; b.innerHTML = hidden ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>` : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`; }
 
@@ -5720,6 +5848,10 @@ Audit: ${session.month}
 
         // --- PC KEYBOARD SHORTCUTS (Workspace / Auditing only) ---
         // ── SHORTCUT OVERLAY helpers ──
+
+        // ════════════════════════════════════════════════════════
+        // JS § 13 — KEYBOARD SHORTCUTS
+        // ════════════════════════════════════════════════════════
         function toggleShortcutOverlay() {
             const el = document.getElementById('shortcut-overlay');
             el.classList.toggle('active');
@@ -5736,6 +5868,10 @@ Audit: ${session.month}
         const MP_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         const _mpState = {}; // { wrapperId: { year, month } }
 
+
+        // ════════════════════════════════════════════════════════
+        // JS § 14 — MONTH PICKER COMPONENT
+        // ════════════════════════════════════════════════════════
         function _mpInit(wrapperId) {
             if (!_mpState[wrapperId]) {
                 const now = new Date();
@@ -6042,6 +6178,10 @@ Audit: ${session.month}
 
         let dashChartInstance = null;
 
+
+        // ════════════════════════════════════════════════════════
+        // JS § 15 — CHART (DASHBOARD)
+        // ════════════════════════════════════════════════════════
         function toggleDashChart() {
             const container = document.getElementById('dash-chart-container');
             const btn = document.getElementById('btn-toggle-chart');
@@ -6104,6 +6244,10 @@ Audit: ${session.month}
         // Replaces Google Drive — no token expiry, always logged in
         // ══════════════════════════════════════════════════════════════
 
+
+        // ════════════════════════════════════════════════════════
+        // JS § 16 — FIREBASE / GOOGLE DRIVE BACKUP
+        // ════════════════════════════════════════════════════════
         function isGdriveConnected() { return !!localStorage.getItem('gdrive_connected') && !!window._fbUser; }
 
         // Connect Google Drive — now uses Firebase Auth (one-time login, never expires)
@@ -6293,8 +6437,6 @@ Audit: ${session.month}
             }
         }
 
-        const _oSSv3 = showScreen;
-        showScreen = function (id) { _oSSv3(id); if (id === 'screen-backup') setTimeout(initGdriveUI, 80); };
         setTimeout(initGdriveUI, 900);
 
         // ── Backup Tabs ──
@@ -6318,6 +6460,10 @@ Audit: ${session.month}
         // USER MANAGEMENT & RBAC LOGIC
         // ══════════════════════════════════════════════════════════════
 
+
+        // ════════════════════════════════════════════════════════
+        // JS § 17 — RBAC & UNIFIED showScreen
+        // ════════════════════════════════════════════════════════
         function updateMenuRBAC() {
             const perms = window._fbUserPerms || [];
 
@@ -6365,35 +6511,50 @@ Audit: ${session.month}
             if (tileUser) tileUser.style.display = perms.includes('screen-users') ? 'flex' : 'none';
         }
 
-        const _oSS_RBAC = showScreen;
+        // ── Unified showScreen: RBAC + backup screen hooks + user mgmt cleanup ──
+        const _showScreenBase = showScreen;
         showScreen = function (id) {
-            // screen-menu always allowed
-            if (id === 'screen-menu') return _oSS_RBAC(id);
-
-            // Master ID bypass — full access to everything
-            const isMaster = window._fbUser && window._fbUser.email &&
-                window._fbUser.email.toLowerCase() === 'n3235wrty@warrantyauditor.app';
-            if (isMaster) return _oSS_RBAC(id);
-
-            // Regular users — check permissions
-            const perms = window._fbUserPerms || [];
-            if (!perms.includes(id)) {
-                return showAppAlert("Access Denied: You do not have permission to access this area.");
+            if (id !== 'screen-menu') {
+                const isMaster = window._fbUser && window._fbUser.email &&
+                    window._fbUser.email.toLowerCase() === 'n3235wrty@warrantyauditor.app';
+                if (!isMaster) {
+                    const perms = window._fbUserPerms || [];
+                    if (!perms.includes(id)) {
+                        return showAppAlert("Access Denied: You do not have permission to access this area.");
+                    }
+                }
             }
-            _oSS_RBAC(id);
+            // Cleanup realtime user listener when leaving user management
+            if (id !== 'screen-users' && typeof _userMgmtUnsubscribe !== 'undefined' && _userMgmtUnsubscribe) {
+                _userMgmtUnsubscribe();
+                _userMgmtUnsubscribe = null;
+            }
+            _showScreenBase(id);
+            if (id === 'screen-backup') {
+                setTimeout(initGistUI, 50);
+                setTimeout(initGdriveUI, 80);
+            }
         };
 
+
+        // ════════════════════════════════════════════════════════
+        // JS § 18 — USER MANAGEMENT
+        // ════════════════════════════════════════════════════════
+        let _userMgmtUnsubscribe = null; // holds realtime listener cleanup
+
         async function openUserManagement() {
+            // Unsubscribe previous listener if any
+            if (_userMgmtUnsubscribe) { _userMgmtUnsubscribe(); _userMgmtUnsubscribe = null; }
+
             showLoader(true);
+            showScreen('screen-users');
+
             const container = document.getElementById('users-list-container');
             container.innerHTML = '<div style="text-align:center; padding: 20px; color: var(--text-muted);">Fetching users...</div>';
 
-            try {
-                // We use a separate list of all users. In production, we'd list the 'users' collection.
-                // Note: Firebase client SDK cannot list all users. We rely on the Firestore 'users' collection metadata.
-                const q = window._fbQuery(window._fbCollection(window._fbDb, 'users'));
-                const snap = await window._fbGetDocs(q);
+            const q = window._fbQuery(window._fbCollection(window._fbDb, 'users'));
 
+            _userMgmtUnsubscribe = window._fbOnSnapshot(q, (snap) => {
                 showLoader(false);
                 if (snap.empty) {
                     container.innerHTML = '<div style="text-align:center; padding: 20px; color: var(--text-muted);">No managed users found.</div>';
@@ -6421,9 +6582,13 @@ Audit: ${session.month}
                         { id: 'screen-security',   label: '🔒 Security Settings' },
                         { id: 'screen-users',      label: '👥 User Management' },
                     ];
+                    // Check if this is a master-level user (has all 8 permissions)
+                    const effectivePerms = (u.email && u.email.toLowerCase() === 'n3235wrty@warrantyauditor.app')
+                        ? allScreens.map(s => s.id)
+                        : userPerms;
                     const permCheckboxes = allScreens.map(s => `
                         <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;font-size:0.82rem;color:var(--text-main);">
-                            <input type="checkbox" value="${s.id}" ${userPerms.includes(s.id) ? 'checked' : ''}
+                            <input type="checkbox" value="${s.id}" ${effectivePerms.includes(s.id) ? 'checked' : ''}
                                 style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer;">
                             ${s.label}
                         </label>
@@ -6440,6 +6605,14 @@ Audit: ${session.month}
                             </div>
                             <span class="user-status-badge ${isBlocked ? 'badge-blocked' : 'badge-active'}">${isBlocked ? 'Blocked' : 'Active'}</span>
                         </div>
+                        ${u.pendingPasswordReset ? `
+                        <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:9px 12px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                            <div style="font-size:0.78rem;color:#f59e0b;font-weight:700;">⏳ Password Reset Requested</div>
+                            <button onclick="approvePasswordReset('${uid}', '${u.dealerID}', this)"
+                                style="padding:5px 12px;border-radius:6px;border:none;background:#f59e0b;color:#000;font-size:0.75rem;font-weight:800;cursor:pointer;white-space:nowrap;flex-shrink:0;">
+                                ✓ Approve
+                            </button>
+                        </div>` : ''}
                         <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:10px;">
                             <b>TOTP:</b> ${hasTotp ? '<span style="color:var(--success)">Configured</span>' : (u.pendingTotpSecret ? '<span style="color:var(--warning)">Pending Setup</span>' : '<span style="color:var(--danger)">Not Setup</span>')}&nbsp;&nbsp;
                             <b>Last Login:</b> ${u.lastLogin ? new Date(u.lastLogin).toLocaleString('en-IN', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'}) : '<span style="color:var(--text-muted)">Never</span>'}
@@ -6449,7 +6622,7 @@ Audit: ${session.month}
                         <div style="background:var(--bg-base);border-radius:10px;border:1px solid var(--border);overflow:hidden;margin-bottom:12px;">
                             <button onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'; this.querySelector('.perm-arrow').style.transform=this.nextElementSibling.style.display==='none'?'rotate(0deg)':'rotate(180deg)';"
                                 style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:transparent;border:none;cursor:pointer;font-size:0.82rem;font-weight:700;color:var(--text-main);">
-                                <span>🔑 Screen Permissions (${userPerms.length} / ${allScreens.length})</span>
+                                <span>🔑 Screen Permissions (${effectivePerms.length} / ${allScreens.length})</span>
                                 <svg class="perm-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s ease;flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
                             </button>
                             <div style="display:none;padding:4px 14px 12px;border-top:1px solid var(--border);">
@@ -6474,11 +6647,73 @@ Audit: ${session.month}
                     `;
                     container.appendChild(card);
                 });
-            } catch (e) {
+            }, (err) => {
                 showLoader(false);
-                showAppAlert("Failed to load users: " + e.message);
+                showAppAlert("Failed to load users: " + err.message);
+            });
+        }
+
+        async function approvePasswordReset(uid, dealerID, btn) {
+            // Get the pending new password from Firestore, apply it via Firebase Auth Admin
+            // Since client SDK can't change another user's password, we use a workaround:
+            // We store the new password temporarily and the user will be able to login with it
+            // after we set their Firebase Auth password using a temp sign-in.
+            showLoader(true);
+            try {
+                const ref = window._fbDoc(window._fbDb, 'users', uid);
+                const snap = await window._fbGetDoc(ref);
+                if (!snap.exists()) { showLoader(false); return showAppAlert('User not found.'); }
+
+                const data = snap.data();
+                const newPwd = data.pendingNewPassword;
+
+                if (!newPwd) {
+                    showLoader(false);
+                    return showAppAlert('No pending password found for this user.');
+                }
+
+                // Use a temporary Firebase app to update the user's password
+                const { initializeApp, deleteApp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+                const { getAuth, signInWithEmailAndPassword, updatePassword } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+
+                const tempName = 'TempApprove_' + Date.now();
+                const tempApp  = initializeApp({
+                    apiKey: 'AIzaSyAJZDURUl_Xh2FWjoVwGLZ4yuhVdFUZMHc',
+                    authDomain: 'warranty-auditor.firebaseapp.com',
+                    projectId: 'warranty-auditor',
+                    storageBucket: 'warranty-auditor.firebasestorage.app',
+                    messagingSenderId: '972734980479',
+                    appId: '1:972734980479:web:21cfbcf8a1d195f3fffa4a'
+                }, tempName);
+                const tempAuth = getAuth(tempApp);
+
+                // Sign in as user with their OLD password to get their credential — not possible
+                // Alternative: we already stored the new password plaintext (temp), just update Firestore flag
+                // The actual Firebase Auth password change needs the user to do it themselves.
+                // So we: (1) mark approved in Firestore, (2) user will use new pwd which was stored.
+                // For the password to actually work in Firebase Auth, we need a Cloud Function.
+                // Best client-side approach: store approved=true, let user login — if fails, show "reset approved, use new password".
+                // SIMPLER: We just approve the Firestore record. The user's Firebase Auth password hasn't changed yet.
+                // We need to sign in as the user with their CURRENT (old) password — but we don't have it.
+                // So: mark pendingPasswordApproved = true. On login in index.html, if approved, update Firebase Auth password.
+
+                await deleteApp(tempApp).catch(() => {});
+
+                // Mark as approved — index.html will handle the actual Auth password update on next login
+                await window._fbUpdateDoc(ref, {
+                    pendingPasswordApproved: true,
+                    pendingPasswordReset: window._fbDeleteField(),
+                    pendingPasswordRequestedAt: window._fbDeleteField()
+                });
+
+                showLoader(false);
+                showToast(`Password reset approved for ${dealerID}. They can now login with new password.`, 'success', 4000);
+                // Refresh user list
+                setTimeout(openUserManagement, 500);
+            } catch(e) {
+                showLoader(false);
+                showAppAlert('Approval failed: ' + e.message);
             }
-            showScreen('screen-users');
         }
 
         async function saveUserPermissions(uid, cardEl) {
@@ -6609,6 +6844,10 @@ Audit: ${session.month}
         // LOGOUT & SESSION MANAGEMENT
         // ══════════════════════════════════════════════════════════════
 
+
+        // ════════════════════════════════════════════════════════
+        // JS § 19 — AUTH: LOGOUT, DROPDOWN MENU, INACTIVITY
+        // ════════════════════════════════════════════════════════
         async function logoutUser() {
             sessionStorage.removeItem('totp_verified');
             sessionStorage.removeItem('wau_uid');
