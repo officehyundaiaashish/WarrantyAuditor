@@ -5321,30 +5321,53 @@ Audit: ${session.month}
 
                         // ── Amount Summary Cards ──
                         doc.setTextColor(30, 41, 59);
-                        const cardY = headerH + 6; const cardH = 22; const cardW = (pageW - 28 - 12) / 4; const cardX = [14, 14 + cardW + 4, 14 + (cardW + 4) * 2, 14 + (cardW + 4) * 3];
+                        const cardY = headerH + 6; const cardH = 26; const cardW = (pageW - 28 - 12) / 4; const cardX = [14, 14 + cardW + 4, 14 + (cardW + 4) * 2, 14 + (cardW + 4) * 3];
                         const cards = [
-                            { label: 'TOTAL AMOUNT', value: pdfAmt(tTotal), color: [30, 41, 59], text: [255, 255, 255] },
-                            { label: 'AUDITED AMOUNT', value: pdfAmt(tAud), color: [16, 185, 129], text: [255, 255, 255] },
-                            { label: 'UNCLEAR AMOUNT', value: pdfAmt(tUnc), color: [245, 158, 11], text: [255, 255, 255] },
-                            { label: 'PENDING AMOUNT', value: pdfAmt(tPen), color: [100, 116, 139], text: [255, 255, 255] },
+                            { abbr: 'TCA', label: 'Total Claim Amount', value: pdfAmt(tTotal), color: [30, 41, 59], text: [255, 255, 255] },
+                            { abbr: 'ACA', label: 'Audited Claim Amount', value: pdfAmt(tAud), color: [16, 185, 129], text: [255, 255, 255] },
+                            { abbr: 'UCA', label: 'Unclear Claim Amount', value: pdfAmt(tUnc), color: [245, 158, 11], text: [255, 255, 255] },
+                            { abbr: 'PCA', label: 'Pending Claim Amount', value: pdfAmt(tPen), color: [100, 116, 139], text: [255, 255, 255] },
                         ];
                         cards.forEach((c, i) => {
                             doc.setFillColor(...c.color);
                             doc.roundedRect(cardX[i], cardY, cardW, cardH, 2, 2, 'F');
                             doc.setTextColor(...c.text);
-                            doc.setFontSize(7); doc.setFont(undefined, 'normal');
-                            doc.text(c.label, cardX[i] + cardW / 2, cardY + 7, { align: 'center' });
+                            // Abbreviation — top left small
+                            doc.setFontSize(6.5); doc.setFont(undefined, 'bold');
+                            doc.text(c.abbr, cardX[i] + 4, cardY + 6);
+                            // Full label — center
+                            doc.setFontSize(6); doc.setFont(undefined, 'normal');
+                            doc.text(c.label, cardX[i] + cardW / 2, cardY + 13, { align: 'center' });
+                            // Amount value — big bold center
                             doc.setFontSize(11); doc.setFont(undefined, 'bold');
-                            doc.text(c.value, cardX[i] + cardW / 2, cardY + 16, { align: 'center' });
+                            doc.text(c.value, cardX[i] + cardW / 2, cardY + 21, { align: 'center' });
                         });
+
+                        // ── Abbreviation + Status Legend ──
+                        const legendY = cardY + cardH + 5;
+                        doc.setFillColor(241, 245, 249);
+                        doc.roundedRect(14, legendY - 3, pageW - 28, 16, 2, 2, 'F');
+                        doc.setFontSize(6.5); doc.setFont(undefined, 'bold'); doc.setTextColor(30, 41, 59);
+                        doc.text('Abbreviations:', 17, legendY + 2);
+                        doc.setFont(undefined, 'normal'); doc.setTextColor(71, 85, 105);
+                        doc.text('TCA = Total Claim Amount  |  ACA = Audited Claim Amount  |  UCA = Unclear Claim Amount  |  PCA = Pending Claim Amount', 50, legendY + 2);
+                        doc.setFont(undefined, 'bold'); doc.setTextColor(30, 41, 59);
+                        doc.text('Status Key:', 17, legendY + 9);
+                        doc.setFont(undefined, 'normal');
+                        doc.setTextColor(16, 185, 129);
+                        doc.text('Clear = Claim fully audited, no issues', 47, legendY + 9);
+                        doc.setTextColor(245, 158, 11);
+                        doc.text('Unclear = Has discrepancies or remarks requiring review', 145, legendY + 9);
+                        doc.setTextColor(100, 116, 139);
+                        doc.text('Pending = Not yet audited', 265, legendY + 9);
 
                         // ── Claim Count Row ──
                         doc.setTextColor(30, 41, 59); doc.setFont(undefined, 'normal'); doc.setFontSize(8);
                         const clrCount = combinedClear.length; const uncCount = combinedUnclear.length;
-                        doc.text(`Clean: ${clrCount}   Unclear/Pending: ${uncCount}   Total: ${totalClaims}`, 14, cardY + cardH + 7);
+                        doc.text(`Clear: ${clrCount}   Unclear/Pending: ${uncCount}   Total: ${totalClaims}`, 14, legendY + 20);
 
                         // Audit finalization remark (if any)
-                        let startY = cardY + cardH + 14;
+                        let startY = legendY + 27;
                         const scopeRemark = scope !== 'master' && dbIndex[scope] && dbIndex[scope].audit_remark ? dbIndex[scope].audit_remark : null;
                         if (scopeRemark) {
                             doc.setFontSize(8); doc.setFont(undefined, 'italic'); doc.setTextColor(99, 102, 241);
