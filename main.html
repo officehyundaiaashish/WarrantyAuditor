@@ -2270,6 +2270,7 @@
         .dp-item.dp-disabled {
             opacity: 0.35; cursor: not-allowed; pointer-events: none;
         }
+
     </style>
 </head>
 
@@ -2672,6 +2673,15 @@
                 </svg>
                 <span>Custom Codes</span>
             </div>
+            <div class="menu-card" tabindex="0" onclick="showScreen('screen-faq')"
+                onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showScreen('screen-faq');}">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                <span>FAQ's</span>
+            </div>
         </div>
 
         <footer class="app-footer">
@@ -2893,6 +2903,17 @@
     <!-- ════════════════════════════════════════════════════════
          HTML § 3 — SCREEN: CUSTOM CODES / SETTINGS
          ════════════════════════════════════════════════════════ -->
+    <!-- ════════════════════════════════════════════════════════
+         HTML § FAQ — SCREEN: FAQ's
+         ════════════════════════════════════════════════════════ -->
+    <!-- FAQ Screen — content loaded from audfaq.html via iframe -->
+    <div id="screen-faq" class="screen">
+        <iframe src="audfaq.html" id="faq-iframe"
+            style="width:100%; flex:1; border:none; min-height:100vh; display:block;"
+            title="FAQ — Warranty Auditor">
+        </iframe>
+    </div>
+
     <div id="screen-settings" class="screen">
         <div class="flex-between" style="margin-bottom: 16px;">
             <h3 style="margin:0;">Custom Discrepancy Codes</h3>
@@ -7958,6 +7979,10 @@ Upload the correct file.`);
                 }
             });
         })();
+
+        // ════════════════════════════════════════════════════════
+        // JS — FAQ SCREEN
+        // ════════════════════════════════════════════════════════
 
     </script>
 </body>
