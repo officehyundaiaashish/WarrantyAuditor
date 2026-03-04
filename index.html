@@ -68,6 +68,9 @@
             margin: 0;
             padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
         }
 
         body {
@@ -147,6 +150,8 @@
             font-weight: 800;
             color: var(--text-main);
             letter-spacing: -0.5px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-style: normal;
         }
 
         .login-body {
@@ -237,9 +242,12 @@
             border-radius: 0 0 20px 20px;
             border-top: 1px solid var(--border);
             text-align: center;
-            font-size: 0.75rem;
+            font-size: 0.68rem;
             color: var(--text-muted);
             background: var(--bg-base);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         /* TOTP Section Elements */
