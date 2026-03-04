@@ -4128,8 +4128,23 @@
             sessionStorage.setItem(key + '_dismissed', '1');
         }
 
+        // ── Shared helper: returns dbIndex keys sorted newest → oldest by month ──
+        function getSortedKeys() {
+            const parseMonth = m => {
+                if (!m) return 0;
+                const months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+                const match = m.match(/([a-zA-Z]+)[^0-9]*(\d{4})/);
+                if (match) {
+                    const mi = months.indexOf(match[1].toLowerCase().substring(0, 3));
+                    return new Date(parseInt(match[2]), mi >= 0 ? mi : 0).getTime();
+                }
+                const d = new Date(m); return isNaN(d) ? 0 : d.getTime();
+            };
+            return Object.keys(dbIndex).sort((a, b) => parseMonth(dbIndex[b].month) - parseMonth(dbIndex[a].month));
+        }
+
         async function openSuspenseFilter() {
-            const keys = Object.keys(dbIndex);
+            const keys = getSortedKeys();
             if (keys.length === 0) return showAppAlert("No audits saved.");
 
             // Build dashboard options
@@ -4312,7 +4327,7 @@
 
         function buildDashboard() {
             const optContainer = document.getElementById('options-dash-scope'); optContainer.innerHTML = '';
-            const keys = Object.keys(dbIndex);
+            const keys = getSortedKeys();
             if (keys.length === 0) return showAppAlert("No audits saved. Please create an audit first.");
 
             optContainer.innerHTML = '<div class="custom-option" data-value="__all__">All Months Combined</div>';
@@ -4344,7 +4359,7 @@
         // Opens dashboard with "All Months Combined" pre-selected (used by analytics notification)
         function buildDashboardAllMonths() {
             const optContainer = document.getElementById('options-dash-scope'); optContainer.innerHTML = '';
-            const keys = Object.keys(dbIndex);
+            const keys = getSortedKeys();
             if (keys.length === 0) return showAppAlert("No audits saved. Please create an audit first.");
 
             optContainer.innerHTML = '<div class="custom-option" data-value="__all__">All Months Combined</div>';
@@ -4371,7 +4386,7 @@
             try { monthKeys = JSON.parse(banner.dataset.monthKeys || '[]'); } catch(e) {}
 
             const optContainer = document.getElementById('options-dash-scope'); optContainer.innerHTML = '';
-            const keys = Object.keys(dbIndex);
+            const keys = getSortedKeys();
             if (keys.length === 0) return showAppAlert("No audits saved. Please create an audit first.");
 
             optContainer.innerHTML = '<div class="custom-option" data-value="__all__">All Months Combined</div>';
@@ -5539,7 +5554,20 @@ Upload the correct file.`);
         function openReportingMenu() {
             const optContainer = document.getElementById('options-report-scope');
             optContainer.innerHTML = '<div class="custom-option selected" data-value="master">Master Report (All Dates)</div>';
-            for (const [key, meta] of Object.entries(dbIndex)) { optContainer.innerHTML += `<div class="custom-option" data-value="${key}">${meta.month}${meta.audit_number ? ' [' + meta.audit_number + ']' : ''} ${meta.finalized ? '(Cls)' : '(Drf)'}</div>`; }
+            const sortedEntries = Object.entries(dbIndex).sort(([, a], [, b]) => {
+                const parseMonth = m => {
+                    if (!m) return 0;
+                    const months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+                    const match = m.match(/([a-zA-Z]+)[^0-9]*(\d{4})/);
+                    if (match) {
+                        const mi = months.indexOf(match[1].toLowerCase().substring(0, 3));
+                        return new Date(parseInt(match[2]), mi >= 0 ? mi : 0).getTime();
+                    }
+                    const d = new Date(m); return isNaN(d) ? 0 : d.getTime();
+                };
+                return parseMonth(b.month) - parseMonth(a.month); // newest first
+            });
+            for (const [key, meta] of sortedEntries) { optContainer.innerHTML += `<div class="custom-option" data-value="${key}">${meta.month}${meta.audit_number ? ' [' + meta.audit_number + ']' : ''} ${meta.finalized ? '(Cls)' : '(Drf)'}</div>`; }
             showScreen('screen-reports');
         }
 
