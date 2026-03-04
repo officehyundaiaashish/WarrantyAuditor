@@ -1125,9 +1125,23 @@
         }
 
         /* Trigger shows correct text color when a real value is programmatically selected */
+        .custom-select-wrapper .trigger-text {
+            color: var(--text-muted);
+            font-weight: 400;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
         .custom-select-wrapper.has-value .trigger-text {
-            color: var(--text-main);
-            font-weight: 600;
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .custom-select-wrapper.has-value .custom-select-trigger {
+            border-color: var(--accent);
+            background-color: rgba(59, 130, 246, 0.04);
         }
 
         /* TV Dropdown Clip Fix: Smart Relative Positioning pushes the modal taller instead of cutting off */
@@ -2907,7 +2921,7 @@
                 </div>
                 <input type="text" id="new-code-desc" class="input" placeholder="Enter Description">
             </div>
-            <div class="custom-select-wrapper" id="wrap-new-code-type" style="margin-bottom: 16px;">
+            <div class="custom-select-wrapper has-value" id="wrap-new-code-type" style="margin-bottom: 16px;">
                 <input type="hidden" id="new-code-type" value="unclear">
                 <div class="custom-select-trigger"><span class="trigger-text">Marks as Unclear (Discrepancy
                         Found)</span> <svg style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none"
@@ -3634,7 +3648,7 @@
             <p style="margin-bottom:16px;">Export structured audit reports with amount summaries.</p>
 
             <label>Select Audit Scope</label>
-            <div class="custom-select-wrapper" id="wrap-report-scope">
+            <div class="custom-select-wrapper has-value" id="wrap-report-scope">
                 <input type="hidden" id="report-scope" value="master">
                 <div class="custom-select-trigger"><span class="trigger-text">Master Report (All Dates)</span> <svg
                         style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -3645,7 +3659,7 @@
             </div>
 
             <label>Filter Output</label>
-            <div class="custom-select-wrapper" id="wrap-report-filter">
+            <div class="custom-select-wrapper has-value" id="wrap-report-filter">
                 <input type="hidden" id="report-filter" value="ALL">
                 <div class="custom-select-trigger"><span class="trigger-text">All Claims</span> <svg
                         style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -3696,7 +3710,7 @@
                 <div id="modal-all-details" class="all-details-grid"></div>
 
                 <label>Discrepancy Status</label>
-                <div class="custom-select-wrapper" id="wrap-modal-disc">
+                <div class="custom-select-wrapper has-value" id="wrap-modal-disc">
                     <input type="hidden" id="modal-discrepancy" value="0">
                     <div class="custom-select-trigger"><span class="trigger-text">Part is Clean (None Found)</span> <svg
                             style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -3844,7 +3858,7 @@
                 if (String(o.getAttribute('data-value')) === String(val)) {
                     o.classList.add('selected');
                     hiddenInput.value = val;
-                    textDisplay.innerText = o.innerText.trim();
+                    textDisplay.innerText = o.textContent.trim();
                     wrapper.classList.add('has-value');
                 }
             });
@@ -4163,26 +4177,26 @@
             const keys = getSortedKeys();
             if (keys.length === 0) return showAppAlert("No audits saved.");
 
-            // Build dashboard options
+            // Build options
             const optContainer = document.getElementById('options-dash-scope');
-            optContainer.innerHTML = '';
             optContainer.innerHTML = '<div class="custom-option" data-value="__all__">All Months Combined</div>';
             keys.forEach(k => { optContainer.innerHTML += `<div class="custom-option" data-value="${k}">${dbIndex[k].month}${dbIndex[k].audit_number ? ' [' + dbIndex[k].audit_number + ']' : ''} ${dbIndex[k].finalized ? '(Closed)' : '(Draft)'}</div>`; });
+
+            // Set trigger text directly — no DOM read
+            const wrapper = document.getElementById('wrap-dash-scope');
+            wrapper.querySelector('.trigger-text').innerText = 'All Months Combined';
+            wrapper.classList.add('has-value');
+            document.getElementById('dash-scope').value = '__all__';
 
             showScreen('screen-dashboard');
 
             // Always use All Months Combined so suspense items from ALL months are visible
             setTimeout(async () => {
-                const allOpt = optContainer.querySelector('[data-value="__all__"]');
-                if (allOpt) {
-                    document.getElementById('dash-scope').value = '__all__';
-                    const wrapper = document.getElementById('wrap-dash-scope');
-                    wrapper.querySelector('.trigger-text').innerText = 'All Months Combined';
-                    wrapper.classList.add('has-value');
-                    optContainer.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
-                    allOpt.classList.add('selected');
-                    sessionStorage.setItem('dash_last_key', '__all__');
-                }
+                optContainer.querySelectorAll('.custom-option').forEach(o => {
+                    o.classList.remove('selected');
+                    if (o.getAttribute('data-value') === '__all__') o.classList.add('selected');
+                });
+                sessionStorage.setItem('dash_last_key', '__all__');
                 await loadDashboardMonth('__all__');
                 setDashFilter('suspense');
             }, 150);
@@ -4356,23 +4370,27 @@
             // Restore last session selection if available
             const lastKey = sessionStorage.getItem('dash_last_key');
             const lastFilter = sessionStorage.getItem('dash_last_filter') || 'all';
+            const wrapper = document.getElementById('wrap-dash-scope');
             if (lastKey && (lastKey === '__all__' || dbIndex[lastKey])) {
-                // Restore the dropdown display
-                const matchOpt = optContainer.querySelector(`[data-value="${lastKey}"]`);
-                if (matchOpt) {
-                    document.getElementById('dash-scope').value = lastKey;
-                    const wrapper = document.getElementById('wrap-dash-scope');
-                    wrapper.querySelector('.trigger-text').innerText = matchOpt.innerText.trim();
-                    wrapper.classList.add('has-value');
-                    matchOpt.classList.add('selected');
-                }
+                // Build label from data — no DOM read needed
+                const restoredLabel = lastKey === '__all__'
+                    ? 'All Months Combined'
+                    : (dbIndex[lastKey].month
+                        + (dbIndex[lastKey].audit_number ? ' [' + dbIndex[lastKey].audit_number + ']' : '')
+                        + ' ' + (dbIndex[lastKey].finalized ? '(Closed)' : '(Draft)'));
+                document.getElementById('dash-scope').value = lastKey;
+                wrapper.querySelector('.trigger-text').innerText = restoredLabel;
+                wrapper.classList.add('has-value');
+                optContainer.querySelectorAll('.custom-option').forEach(o => {
+                    o.classList.remove('selected');
+                    if (o.getAttribute('data-value') === lastKey) o.classList.add('selected');
+                });
                 loadDashboardMonth(lastKey).then(() => {
                     if (lastFilter !== 'all') setDashFilter(lastFilter);
                 });
             } else {
                 document.getElementById('dash-content-area').style.display = 'none';
                 document.getElementById('dash-scope').value = "";
-                const wrapper = document.getElementById('wrap-dash-scope');
                 wrapper.querySelector('.trigger-text').innerText = "Select an Audit to View...";
                 wrapper.classList.remove('has-value');
             }
@@ -4380,25 +4398,27 @@
 
         // Opens dashboard with "All Months Combined" pre-selected (used by analytics notification)
         function buildDashboardAllMonths() {
-            const optContainer = document.getElementById('options-dash-scope'); optContainer.innerHTML = '';
             const keys = getSortedKeys();
             if (keys.length === 0) return showAppAlert("No audits saved. Please create an audit first.");
 
+            // Build options
+            const optContainer = document.getElementById('options-dash-scope');
             optContainer.innerHTML = '<div class="custom-option" data-value="__all__">All Months Combined</div>';
             keys.forEach(k => { optContainer.innerHTML += `<div class="custom-option" data-value="${k}">${dbIndex[k].month}${dbIndex[k].audit_number ? ' [' + dbIndex[k].audit_number + ']' : ''} ${dbIndex[k].finalized ? '(Closed)' : '(Draft)'}</div>`; });
 
+            // Set trigger text directly — no DOM read
+            const wrapper = document.getElementById('wrap-dash-scope');
+            wrapper.querySelector('.trigger-text').innerText = 'All Months Combined';
+            wrapper.classList.add('has-value');
+            document.getElementById('dash-scope').value = '__all__';
+
             showScreen('screen-dashboard');
 
-            // Force All Months Combined
             setTimeout(() => {
-                const allOpt = optContainer.querySelector('[data-value="__all__"]');
-                if (allOpt) {
-                    document.getElementById('dash-scope').value = '__all__';
-                    const wrapper = document.getElementById('wrap-dash-scope');
-                    wrapper.querySelector('.trigger-text').innerText = 'All Months Combined';
-                    wrapper.classList.add('has-value');
-                    allOpt.classList.add('selected');
-                }
+                optContainer.querySelectorAll('.custom-option').forEach(o => {
+                    o.classList.remove('selected');
+                    if (o.getAttribute('data-value') === '__all__') o.classList.add('selected');
+                });
                 loadDashboardMonth('__all__');
             }, 80);
         }
@@ -4409,29 +4429,37 @@
             let monthKeys = [];
             try { monthKeys = JSON.parse(banner.dataset.monthKeys || '[]'); } catch(e) {}
 
-            const optContainer = document.getElementById('options-dash-scope'); optContainer.innerHTML = '';
             const keys = getSortedKeys();
             if (keys.length === 0) return showAppAlert("No audits saved. Please create an audit first.");
 
+            // Determine target BEFORE building DOM — so label comes from data, not from hidden DOM
+            const targetKey = (monthKeys.length === 1 && dbIndex[monthKeys[0]]) ? monthKeys[0] : '__all__';
+            const targetLabel = targetKey === '__all__'
+                ? 'All Months Combined'
+                : (dbIndex[targetKey].month
+                    + (dbIndex[targetKey].audit_number ? ' [' + dbIndex[targetKey].audit_number + ']' : '')
+                    + ' ' + (dbIndex[targetKey].finalized ? '(Closed)' : '(Draft)'));
+
+            // Build options
+            const optContainer = document.getElementById('options-dash-scope');
             optContainer.innerHTML = '<div class="custom-option" data-value="__all__">All Months Combined</div>';
             keys.forEach(k => { optContainer.innerHTML += `<div class="custom-option" data-value="${k}">${dbIndex[k].month}${dbIndex[k].audit_number ? ' [' + dbIndex[k].audit_number + ']' : ''} ${dbIndex[k].finalized ? '(Closed)' : '(Draft)'}</div>`; });
 
+            // Set trigger text directly from data — no DOM read, no timing issue
+            const wrapper = document.getElementById('wrap-dash-scope');
+            wrapper.querySelector('.trigger-text').innerText = targetLabel;
+            wrapper.classList.add('has-value');
+            document.getElementById('dash-scope').value = targetKey;
+
             showScreen('screen-dashboard');
 
-            // Single affected month → load just that; multiple → All Months Combined
-            const targetKey = (monthKeys.length === 1 && dbIndex[monthKeys[0]]) ? monthKeys[0] : '__all__';
-
+            // Mark selected option in list and load data
             setTimeout(() => {
-                const opt = optContainer.querySelector(`[data-value="${targetKey}"]`);
-                if (opt) {
-                    document.getElementById('dash-scope').value = targetKey;
-                    const wrapper = document.getElementById('wrap-dash-scope');
-                    wrapper.querySelector('.trigger-text').innerText = opt.innerText.trim();
-                    wrapper.classList.add('has-value');
-                    optContainer.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
-                    opt.classList.add('selected');
-                    sessionStorage.setItem('dash_last_key', targetKey);
-                }
+                optContainer.querySelectorAll('.custom-option').forEach(o => {
+                    o.classList.remove('selected');
+                    if (o.getAttribute('data-value') === targetKey) o.classList.add('selected');
+                });
+                sessionStorage.setItem('dash_last_key', targetKey);
                 loadDashboardMonth(targetKey);
             }, 80);
         }
@@ -6785,7 +6813,7 @@ Upload the correct file.`);
                     const options = document.querySelectorAll('#wrap-modal-disc .custom-option');
                     let matched = null;
                     for (const opt of options) {
-                        if (opt.innerText.trim().toUpperCase().startsWith(letter)) { matched = opt; break; }
+                        if (opt.textContent.trim().toUpperCase().startsWith(letter)) { matched = opt; break; }
                     }
                     if (matched) {
                         e.preventDefault();
