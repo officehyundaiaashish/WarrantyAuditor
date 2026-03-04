@@ -291,7 +291,8 @@
             <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input class="faq-search-input" id="faq-search" type="text"
                 placeholder="Search FAQs… e.g. backup, unclear, finalize, TOTP"
-                oninput="faqSearch(this.value)" autocomplete="off" tabindex="-1">
+                oninput="faqSearch(this.value)" autocomplete="off" tabindex="-1"
+                readonly onfocus="this.removeAttribute('readonly')">
         </div>
 
         <!-- Stats -->
@@ -955,13 +956,21 @@
     <footer class="faq-footer">Warranty Auditor — FAQ's &nbsp;·&nbsp; by Aashish Giri H</footer>
 
     <script>
-        // ── Prevent auto-focus scroll: always start at top ──
-        window.addEventListener('load', function () {
-            if (document.activeElement) document.activeElement.blur();
-            window.scrollTo(0, 0);
+        // ── Prevent auto-focus scroll on mobile: always start at top ──
+        function _resetScrollTop() {
+            if (document.activeElement && document.activeElement !== document.body) {
+                document.activeElement.blur();
+            }
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
             document.documentElement.scrollTop = 0;
             document.body.scrollTop = 0;
-        });
+        }
+        // Fire at multiple points — mobile browsers re-focus after load
+        document.addEventListener('DOMContentLoaded', _resetScrollTop);
+        window.addEventListener('load', _resetScrollTop);
+        setTimeout(_resetScrollTop, 50);
+        setTimeout(_resetScrollTop, 150);
+        setTimeout(_resetScrollTop, 300);
 
         // ── Theme: sync with parent app (main.html) or localStorage ──
         (function () {
