@@ -1114,12 +1114,20 @@
             color: var(--accent) !important;
             font-weight: 800 !important;
             border-left: 4px solid var(--accent);
+            padding-left: 12px;
         }
 
         .custom-option.kb-focus {
             background-color: var(--bg-base);
             color: var(--accent);
             border-left: 4px solid var(--accent);
+            padding-left: 12px;
+        }
+
+        /* Trigger shows correct text color when a real value is programmatically selected */
+        .custom-select-wrapper.has-value .trigger-text {
+            color: var(--text-main);
+            font-weight: 600;
         }
 
         /* TV Dropdown Clip Fix: Smart Relative Positioning pushes the modal taller instead of cutting off */
@@ -3812,7 +3820,8 @@
                 option.classList.add('selected');
                 const val = option.getAttribute('data-value');
                 hiddenInput.value = val;
-                textDisplay.innerText = option.innerText;
+                textDisplay.innerText = option.innerText.trim();
+                wrapper.classList.add('has-value');
                 wrapper.classList.remove('open');
 
                 if (hiddenInput.id === 'modal-discrepancy') handleDiscrepancyChange(val);
@@ -3835,7 +3844,8 @@
                 if (String(o.getAttribute('data-value')) === String(val)) {
                     o.classList.add('selected');
                     hiddenInput.value = val;
-                    textDisplay.innerText = o.innerText;
+                    textDisplay.innerText = o.innerText.trim();
+                    wrapper.classList.add('has-value');
                 }
             });
 
@@ -4166,7 +4176,9 @@
                 const allOpt = optContainer.querySelector('[data-value="__all__"]');
                 if (allOpt) {
                     document.getElementById('dash-scope').value = '__all__';
-                    document.getElementById('wrap-dash-scope').querySelector('.trigger-text').innerText = 'All Months Combined';
+                    const wrapper = document.getElementById('wrap-dash-scope');
+                    wrapper.querySelector('.trigger-text').innerText = 'All Months Combined';
+                    wrapper.classList.add('has-value');
                     optContainer.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
                     allOpt.classList.add('selected');
                     sessionStorage.setItem('dash_last_key', '__all__');
@@ -4349,7 +4361,9 @@
                 const matchOpt = optContainer.querySelector(`[data-value="${lastKey}"]`);
                 if (matchOpt) {
                     document.getElementById('dash-scope').value = lastKey;
-                    document.getElementById('wrap-dash-scope').querySelector('.trigger-text').innerText = matchOpt.innerText;
+                    const wrapper = document.getElementById('wrap-dash-scope');
+                    wrapper.querySelector('.trigger-text').innerText = matchOpt.innerText.trim();
+                    wrapper.classList.add('has-value');
                     matchOpt.classList.add('selected');
                 }
                 loadDashboardMonth(lastKey).then(() => {
@@ -4358,7 +4372,9 @@
             } else {
                 document.getElementById('dash-content-area').style.display = 'none';
                 document.getElementById('dash-scope').value = "";
-                document.getElementById('wrap-dash-scope').querySelector('.trigger-text').innerText = "Select an Audit to View...";
+                const wrapper = document.getElementById('wrap-dash-scope');
+                wrapper.querySelector('.trigger-text').innerText = "Select an Audit to View...";
+                wrapper.classList.remove('has-value');
             }
         }
 
@@ -4378,7 +4394,9 @@
                 const allOpt = optContainer.querySelector('[data-value="__all__"]');
                 if (allOpt) {
                     document.getElementById('dash-scope').value = '__all__';
-                    document.getElementById('wrap-dash-scope').querySelector('.trigger-text').innerText = 'All Months Combined';
+                    const wrapper = document.getElementById('wrap-dash-scope');
+                    wrapper.querySelector('.trigger-text').innerText = 'All Months Combined';
+                    wrapper.classList.add('has-value');
                     allOpt.classList.add('selected');
                 }
                 loadDashboardMonth('__all__');
@@ -4407,7 +4425,9 @@
                 const opt = optContainer.querySelector(`[data-value="${targetKey}"]`);
                 if (opt) {
                     document.getElementById('dash-scope').value = targetKey;
-                    document.getElementById('wrap-dash-scope').querySelector('.trigger-text').innerText = opt.innerText;
+                    const wrapper = document.getElementById('wrap-dash-scope');
+                    wrapper.querySelector('.trigger-text').innerText = opt.innerText.trim();
+                    wrapper.classList.add('has-value');
                     optContainer.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
                     opt.classList.add('selected');
                     sessionStorage.setItem('dash_last_key', targetKey);
@@ -5015,6 +5035,7 @@
             document.getElementById('modal-discrepancy').value = "0";
             const wrapper = document.getElementById('wrap-modal-disc');
             wrapper.querySelector('.trigger-text').innerText = "Part is Clean (None Found)";
+            wrapper.classList.add('has-value');
             wrapper.querySelectorAll('.custom-option').forEach(o => {
                 o.classList.remove('selected');
                 if (o.getAttribute('data-value') === "0") o.classList.add('selected');
@@ -5026,6 +5047,7 @@
                     if (f.includes(DISCREPANCY_TYPES[key])) {
                         document.getElementById('modal-discrepancy').value = key;
                         wrapper.querySelector('.trigger-text').innerText = DISCREPANCY_TYPES[key] === "None Found" ? "Part is Clean (None Found)" : DISCREPANCY_TYPES[key];
+                        wrapper.classList.add('has-value');
                         wrapper.querySelectorAll('.custom-option').forEach(o => {
                             o.classList.remove('selected');
                             if (o.getAttribute('data-value') === String(key)) o.classList.add('selected');
