@@ -2910,7 +2910,8 @@
     <div id="screen-faq" class="screen">
         <iframe src="audfaq.html" id="faq-iframe"
             style="width:100%; flex:1; border:none; min-height:100vh; display:block;"
-            title="FAQ — Warranty Auditor">
+            title="FAQ — Warranty Auditor"
+            onload="try{this.contentWindow.scrollTo(0,0);this.contentWindow.document.activeElement.blur();}catch(e){}">
         </iframe>
     </div>
 
