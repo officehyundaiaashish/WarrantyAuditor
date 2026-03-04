@@ -960,6 +960,8 @@
             cursor: pointer;
             transition: background-color 0.1s;
             border-bottom: 1px solid var(--bg-base);
+            color: var(--text-main);
+            background-color: var(--surface);
         }
 
         .custom-option:last-child {
@@ -1410,6 +1412,10 @@
             cursor: pointer;
         }
 
+        tr:hover td:first-child {
+            background-color: var(--bg-base);
+        }
+
         th:first-child,
         td:first-child {
             position: sticky;
@@ -1506,7 +1512,7 @@
             }
 
             50% {
-                border-top-color: #e2e8f0;
+                border-top-color: #cbd5e1;
             }
         }
 
@@ -3135,7 +3141,7 @@
                 <div id="gdrive-setup-section">
 
                     <button class="btn" onclick="connectGoogleDrive()"
-                        style="margin-bottom:8px; background:white; color:#1f2937; border:1px solid #dadce0; font-weight:700; gap:10px;">
+                        style="margin-bottom:8px; background:var(--surface); color:var(--text-main); border:1px solid var(--border); font-weight:700; gap:10px;">
                         <svg style="width:18px;height:18px;flex-shrink:0;" viewBox="0 0 87.3 78"
                             xmlns="http://www.w3.org/2000/svg">
                             <path
@@ -3188,7 +3194,7 @@
                     <!-- Action buttons -->
                     <div class="grid-2" style="gap:8px; margin-bottom:8px;">
                         <button class="btn" id="gdrive-backup-btn" onclick="uploadToGoogleDrive()"
-                            style="margin:0; background:#4285f4; color:white; border-color:#4285f4; font-weight:700;">
+                            style="margin:0; background:var(--accent); color:white; border-color:var(--accent); font-weight:700;">
                             <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"
                                 viewBox="0 0 24 24">
                                 <polyline points="16 16 12 12 8 16" />
