@@ -6966,7 +6966,7 @@ Upload the correct file.`);
             const total = cln + unc + pen;
             const allZero = total === 0;
 
-            const cs = getComputedStyle(document.documentElement);
+            const cs = getComputedStyle(document.body);
             const textMain  = cs.getPropertyValue('--text-main').trim()  || '#0f172a';
             const textMuted = cs.getPropertyValue('--text-muted').trim() || '#94a3b8';
             const bgSurface = cs.getPropertyValue('--surface').trim()    || '#ffffff';
