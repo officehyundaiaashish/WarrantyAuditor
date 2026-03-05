@@ -4087,7 +4087,45 @@
                     </div>
                 </div>
 
-                <div id="modal-remark-box" style="display:block; animation: slideFadeUp 0.2s ease;">
+                <div id="modal-batch-section"
+                    style="margin-top: 16px; padding: 16px; background: rgba(42, 181, 165, 0.05); border: 1px solid rgba(42, 181, 165, 0.2); border-radius: 12px; animation: slideFadeUp 0.2s ease;">
+                    <label style="color: var(--primary); font-weight: 700; margin-bottom: 12px;">Batch Code
+                        Verification</label>
+
+                    <div class="grid-2" style="gap: 12px; margin-bottom: 12px;">
+                        <div>
+                            <label style="font-size: 0.75rem;">Category</label>
+                            <select id="modal-batch-category" class="input" style="margin-bottom: 0;">
+                                <option value="2005">Main (A=2005)</option>
+                                <option value="2019">Cooling Coil (A=2019)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.75rem;">Batch Code (Physical)</label>
+                            <input type="text" id="modal-batch-code" class="input" placeholder="e.g. AFE" maxlength="3"
+                                style="margin-bottom: 0; text-transform: uppercase;">
+                        </div>
+                    </div>
+
+                    <div class="grid-2" style="gap: 12px; margin-bottom: 12px;">
+                        <div>
+                            <label style="font-size: 0.75rem;">Production Date</label>
+                            <input type="text" id="modal-prod-date-decoded" class="input" readonly
+                                placeholder="Auto-calculated"
+                                style="margin-bottom: 0; background: var(--surface); cursor: default;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.75rem;">Claim Table Date</label>
+                            <input type="date" id="modal-claim-table-date" class="input" style="margin-bottom: 0;">
+                        </div>
+                    </div>
+
+                    <div id="modal-batch-val-msg" class="result"
+                        style="display:none; padding: 10px; border-radius: 8px; font-size: 0.85rem; text-align: center; font-weight: 600; margin-top: 8px;">
+                    </div>
+                </div>
+
+                <div id="modal-remark-box" style="display:block; animation: slideFadeUp 0.2s ease; margin-top: 16px;">
                     <label>Optional Remark</label>
                     <input type="text" id="modal-remark" class="input" placeholder="Add a remark (optional)...">
                 </div>
@@ -4099,6 +4137,80 @@
             </div>
         </div>
     </div>
+
+    <iframe src="prdcal.html" id="prdcal-iframe" style="display:none;"></iframe>
+
+    <script>
+        // --- BATCH CODE DECODER GLUE ---
+        function getBatchDecoder() {
+            const frame = document.getElementById('prdcal-iframe');
+            return frame ? frame.contentWindow.BatchDecoder : null;
+        }
+
+        function handleBatchCodeChange() {
+            const decoder = getBatchDecoder();
+            if (!decoder) return;
+
+            const codeInput = document.getElementById('modal-batch-code');
+            if (!codeInput) return;
+            const code = codeInput.value.trim().toUpperCase();
+            const baseYear = parseInt(document.getElementById('modal-batch-category').value);
+            const resMsg = document.getElementById('modal-batch-val-msg');
+            const decodedInput = document.getElementById('modal-prod-date-decoded');
+            const claimDateInput = document.getElementById('modal-claim-table-date');
+
+            if (code.length < 3) {
+                decodedInput.value = '';
+                resMsg.style.display = 'none';
+                return;
+            }
+
+            const decoded = decoder.decode(code, baseYear);
+            if (decoded.error) {
+                decodedInput.value = 'Invalid';
+                resMsg.style.display = 'block';
+                resMsg.className = 'result invalid';
+                resMsg.innerText = "❌ " + decoded.error;
+                resMsg.style.background = 'rgba(239, 68, 68, 0.1)';
+                resMsg.style.color = 'var(--danger)';
+                resMsg.style.border = '1px solid var(--danger)';
+            } else {
+                const ds = decoded.date.toLocaleDateString('en-GB').replace(/\//g, '-');
+                decodedInput.value = ds;
+
+                // Validate if claim date is present
+                if (claimDateInput.value) {
+                    const claimDate = new Date(claimDateInput.value);
+                    const validation = decoder.validate(decoded.date, claimDate);
+
+                    resMsg.style.display = 'block';
+                    resMsg.innerText = (validation.status === 'valid' ? '✓ ' : '❌ ') + validation.message;
+                    if (validation.status === 'valid') {
+                        resMsg.style.background = 'rgba(16, 185, 129, 0.1)';
+                        resMsg.style.color = 'var(--success)';
+                        resMsg.style.border = '1px solid var(--success)';
+                    } else {
+                        resMsg.style.background = 'rgba(239, 68, 68, 0.1)';
+                        resMsg.style.color = 'var(--danger)';
+                        resMsg.style.border = '1px solid var(--danger)';
+                    }
+                } else {
+                    resMsg.style.display = 'none';
+                }
+            }
+        }
+
+        // Initialize event listeners for batch section
+        document.addEventListener('DOMContentLoaded', () => {
+            const codeInput = document.getElementById('modal-batch-code');
+            const catSelect = document.getElementById('modal-batch-category');
+            const claimDateInput = document.getElementById('modal-claim-table-date');
+
+            if (codeInput) codeInput.addEventListener('input', handleBatchCodeChange);
+            if (catSelect) catSelect.addEventListener('change', handleBatchCodeChange);
+            if (claimDateInput) claimDateInput.addEventListener('change', handleBatchCodeChange);
+        });
+    </script>
 
     <script>
         // --- PERSISTENT THEME & ICONS ---
@@ -5443,6 +5555,36 @@
                 suspenseBox.style.display = 'none';
             }
 
+            // --- BATCH CODE RESET & INIT ---
+            const bCode = document.getElementById('modal-batch-code');
+            const bDecoded = document.getElementById('modal-prod-date-decoded');
+            const bMsg = document.getElementById('modal-batch-val-msg');
+            const bClaimDate = document.getElementById('modal-claim-table-date');
+
+            if (bCode) bCode.value = entry && entry.batch_code ? entry.batch_code : '';
+            if (bDecoded) bDecoded.value = entry && entry.decoded_prod_date ? entry.decoded_prod_date : '';
+            if (bMsg) bMsg.style.display = 'none';
+
+            // Auto-fill Claim Table Date from Excel row
+            if (bClaimDate) {
+                let excelDate = row[colMap.prod_date] || '';
+                // Try to format excelDate (often DD-MM-YYYY or DD.MM.YYYY) to YYYY-MM-DD
+                if (excelDate && excelDate !== '-') {
+                    const parts = excelDate.split(/[-./]/);
+                    if (parts.length === 3) {
+                        // Assume DD-MM-YYYY
+                        let d = parts[0].padStart(2, '0');
+                        let m = parts[1].padStart(2, '0');
+                        let y = parts[2];
+                        if (y.length === 2) y = '20' + y;
+                        bClaimDate.value = `${y}-${m}-${d}`;
+                    }
+                } else {
+                    bClaimDate.value = '';
+                }
+            }
+            if (bCode && bCode.value) handleBatchCodeChange(); // Re-validate if editing
+
             // Scroll modal body to top on every open
             const modalBody = document.querySelector('#audit-modal .modal-body');
             if (modalBody) modalBody.scrollTop = 0;
@@ -5476,6 +5618,14 @@
             // Save optional remark
             const optRemark = document.getElementById('modal-remark');
             if (optRemark && optRemark.value.trim()) entry.optional_remark = optRemark.value.trim();
+
+            // Save Batch Code data
+            const bCode = document.getElementById('modal-batch-code');
+            const bDecoded = document.getElementById('modal-prod-date-decoded');
+            if (bCode && bCode.value.trim()) {
+                entry.batch_code = bCode.value.trim().toUpperCase();
+                entry.decoded_prod_date = bDecoded.value;
+            }
 
             // Save Suspense(P) tracking data
             const suspenseBox = document.getElementById('modal-suspense-box');
