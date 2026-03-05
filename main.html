@@ -210,8 +210,8 @@
             --success: #10b981;
             --warning: #f59e0b;
             --accent: #4dcfc3;
-            --radius: 16px;
-            --shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+            --radius: 20px;
+            --shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1);
             /* Softer, wider shadow */
             --modal-overlay: rgba(0, 0, 0, 0.4);
             color-scheme: light;
@@ -296,14 +296,28 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 24px;
-            padding-bottom: 16px;
+            padding: 16px 0;
             border-bottom: 1px solid var(--border);
+            position: relative;
         }
 
         .app-title {
-            margin: 0;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
             display: inline-flex;
             align-items: center;
+            gap: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .app-title {
+                position: static;
+                transform: none;
+                left: auto;
+                order: -1;
+                margin-right: auto;
+            }
         }
 
         .app-title-badge {
@@ -334,7 +348,7 @@
         }
 
         .app-title-icon {
-            height: 38px;
+            height: 48px;
             width: auto;
             flex-shrink: 0;
             display: block;
@@ -364,20 +378,65 @@
         }
 
         .app-title-text {
-            font-size: 1.5rem;
-            /* Slightly larger */
+            display: flex;
+            gap: 2px;
+            font-size: 1.6rem;
             font-weight: 800;
-            /* Bold */
             letter-spacing: -0.5px;
-            /* Tighter letter spacing */
             white-space: nowrap;
+        }
+
+        .app-title-text span {
+            display: inline-block;
             background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
             -webkit-background-clip: text;
-            /* Gradient text */
             -webkit-text-fill-color: transparent;
-            color: var(--primary);
-            /* Fallback */
-            transition: opacity 0.3s ease;
+            animation: jump 2.5s infinite ease-in-out;
+        }
+
+        @keyframes jump {
+
+            0%,
+            20%,
+            100% {
+                transform: translateY(0);
+            }
+
+            10% {
+                transform: translateY(-8px);
+            }
+        }
+
+        .app-title-text span:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .app-title-text span:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .app-title-text span:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+
+        .app-title-text span:nth-child(4) {
+            animation-delay: 0.3s;
+        }
+
+        .app-title-text span:nth-child(5) {
+            animation-delay: 0.4s;
+        }
+
+        .app-title-text span:nth-child(6) {
+            animation-delay: 0.5s;
+        }
+
+        .app-title-text span:nth-child(7) {
+            animation-delay: 0.6s;
+        }
+
+        .app-title-text span:nth-child(8) {
+            animation-delay: 0.7s;
         }
 
         /* Header action buttons */
@@ -1270,7 +1329,7 @@
         .grid-2 {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 12px;
+            gap: 8px;
         }
 
         @media (min-width: 500px) {
@@ -1289,7 +1348,7 @@
         .menu-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 16px;
+            gap: 12px;
             max-width: 100%;
             margin: 0;
             width: 100%;
@@ -1299,7 +1358,7 @@
             background-color: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 24px 12px;
+            padding: 16px 12px;
             text-align: center;
             cursor: pointer;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1307,7 +1366,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 12px;
+            gap: 8px;
             box-shadow: var(--shadow);
             color: var(--text-main);
             font-weight: 600;
@@ -1755,9 +1814,9 @@
         .all-details-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            gap: 8px;
             background: var(--bg-base);
-            padding: 16px;
+            padding: 12px;
             border-radius: 8px;
             border: 1px solid var(--border);
             margin-bottom: 20px;
@@ -3808,7 +3867,7 @@
                         stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="20 6 9 17 4 12" />
                     </svg>
-                    <span class="ws-label">Close</span>
+                    <span class="ws-label">Close Audit</span>
                 </button>
                 <button class="ws-btn ws-btn-blue" onclick="refreshTableFromSavedData()" title="Fetch All Claims"
                     id="btn-fetch-all-claims" style="display:none;">
@@ -4095,10 +4154,19 @@
                     <div class="grid-2" style="gap: 12px; margin-bottom: 12px;">
                         <div>
                             <label style="font-size: 0.75rem;">Category</label>
-                            <select id="modal-batch-category" class="input" style="margin-bottom: 0;">
-                                <option value="2005">Main (A=2005)</option>
-                                <option value="2019">Cooling Coil (A=2019)</option>
-                            </select>
+                            <div class="custom-select-wrapper has-value" id="wrap-modal-batch-cat"
+                                style="margin-bottom: 0;">
+                                <input type="hidden" id="modal-batch-category" value="2005">
+                                <div class="custom-select-trigger"><span class="trigger-text">Main (A=2005)</span> <svg
+                                        style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg></div>
+                                <div class="custom-options">
+                                    <div class="custom-option selected" data-value="2005">Main (A=2005)</div>
+                                    <div class="custom-option" data-value="2019">Cooling Coil (A=2019)</div>
+                                </div>
+                            </div>
                         </div>
                         <div>
                             <label style="font-size: 0.75rem;">Batch Code (Physical)</label>
@@ -4149,7 +4217,11 @@
 
         function handleBatchCodeChange() {
             const decoder = getBatchDecoder();
-            if (!decoder) return;
+            if (!decoder) {
+                // If decoder not ready, try again in 100ms
+                setTimeout(handleBatchCodeChange, 100);
+                return;
+            }
 
             const codeInput = document.getElementById('modal-batch-code');
             if (!codeInput) return;
@@ -4273,6 +4345,7 @@
 
                 if (hiddenInput.id === 'modal-discrepancy') handleDiscrepancyChange(val);
                 if (hiddenInput.id === 'dash-scope') loadDashboardMonth(val);
+                if (hiddenInput.id === 'modal-batch-category') handleBatchCodeChange();
                 return;
             }
 
@@ -5561,6 +5634,9 @@
             const bMsg = document.getElementById('modal-batch-val-msg');
             const bClaimDate = document.getElementById('modal-claim-table-date');
 
+            // Reset Category to default (2005) or existing if available
+            setCustomSelectValue('wrap-modal-batch-cat', entry && entry.batch_category ? entry.batch_category : '2005');
+
             if (bCode) bCode.value = entry && entry.batch_code ? entry.batch_code : '';
             if (bDecoded) bDecoded.value = entry && entry.decoded_prod_date ? entry.decoded_prod_date : '';
             if (bMsg) bMsg.style.display = 'none';
@@ -5622,9 +5698,11 @@
             // Save Batch Code data
             const bCode = document.getElementById('modal-batch-code');
             const bDecoded = document.getElementById('modal-prod-date-decoded');
+            const bCat = document.getElementById('modal-batch-category');
             if (bCode && bCode.value.trim()) {
                 entry.batch_code = bCode.value.trim().toUpperCase();
                 entry.decoded_prod_date = bDecoded.value;
+                entry.batch_category = bCat.value;
             }
 
             // Save Suspense(P) tracking data
