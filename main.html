@@ -70,7 +70,7 @@
                     // sessionStorage check MUST also confirm it belongs to the current user.
                     // Without UID check, a different user opening the same tab would skip TOTP.
                     const totpOk = sessionStorage.getItem('totp_verified') === 'true' &&
-                                   sessionStorage.getItem('totp_verified_uid') === expectedUid;
+                        sessionStorage.getItem('totp_verified_uid') === expectedUid;
                     if (!totpOk) {
                         let sessionValid = false;
 
@@ -1109,6 +1109,7 @@
             background: var(--primary);
             color: var(--primary-text);
         }
+
         .custom-option.selected {
             background-color: rgba(59, 130, 246, 0.1) !important;
             color: var(--accent) !important;
@@ -1255,30 +1256,43 @@
 
         /* Notification Banner */
         @keyframes shimmerLeft {
-            0% { background-position: -600px 0; }
-            100% { background-position: 600px 0; }
+            0% {
+                background-position: -600px 0;
+            }
+
+            100% {
+                background-position: 600px 0;
+            }
         }
+
         .notif-shimmer {
             position: relative;
             overflow: hidden;
         }
+
         .notif-shimmer::after {
             content: '';
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(90deg, transparent 20%, rgba(255,255,255,0.04) 50%, transparent 80%);
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent 20%, rgba(255, 255, 255, 0.04) 50%, transparent 80%);
             background-size: 600px 100%;
             animation: shimmerLeft 4s ease-in-out infinite;
             pointer-events: none;
             border-radius: inherit;
         }
+
         .notif-shimmer.shimmer-critical::after {
-            background: linear-gradient(90deg, transparent 20%, rgba(255,255,255,0.055) 50%, transparent 80%);
+            background: linear-gradient(90deg, transparent 20%, rgba(255, 255, 255, 0.055) 50%, transparent 80%);
             animation-duration: 2.5s;
         }
+
         .notif-shimmer.shimmer-general::after {
             animation-duration: 6s;
         }
+
         .notification-banner {
             background: rgba(245, 158, 11, 0.1);
             border: 1px solid rgba(245, 158, 11, 0.3);
@@ -1298,6 +1312,7 @@
             animation: slideFadeUp 0.4s ease;
             line-height: 1.25;
         }
+
         .notif-close-btn {
             margin-left: auto;
             flex-shrink: 0;
@@ -1315,7 +1330,10 @@
             transition: opacity 0.2s;
             padding: 0;
         }
-        .notif-close-btn:hover { opacity: 1; }
+
+        .notif-close-btn:hover {
+            opacity: 1;
+        }
 
         /* Dashboard & Stats */
         .stat-card {
@@ -1378,6 +1396,7 @@
             border-radius: 8px;
             transition: background 0.15s ease;
         }
+
         .chart-legend-row:hover {
             background: var(--bg-base);
         }
@@ -2025,22 +2044,67 @@
 
         /* ── Workspace compact action buttons ── */
         .ws-btn {
-            display: inline-flex; align-items: center; gap: 5px;
-            padding: 7px 10px; border-radius: 8px;
-            border: 1px solid var(--border); background: var(--surface);
-            cursor: pointer; font-size: 0.75rem; font-weight: 700;
-            color: var(--text-muted); white-space: nowrap;
-            transition: all 0.15s ease; flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 7px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            white-space: nowrap;
+            transition: all 0.15s ease;
+            flex-shrink: 0;
         }
-        .ws-btn:active { transform: scale(0.96); }
-        .ws-btn-primary { background: var(--primary); color: var(--primary-text); border-color: var(--primary); }
-        .ws-btn-primary:hover { opacity: 0.88; }
-        .ws-btn-blue { color: var(--accent); border-color: rgba(59,130,246,0.35); }
-        .ws-btn-blue:hover { background: rgba(59,130,246,0.07); }
-        .ws-btn-danger { color: var(--danger); border-color: rgba(239,68,68,0.35); }
-        .ws-btn-danger:hover { background: rgba(239,68,68,0.07); }
-        .ws-btn:not(.ws-btn-primary):hover { border-color: var(--text-muted); }
-        @media (max-width: 420px) { .ws-label { display: none; } .ws-btn { padding: 7px 9px; } }
+
+        .ws-btn:active {
+            transform: scale(0.96);
+        }
+
+        .ws-btn-primary {
+            background: var(--primary);
+            color: var(--primary-text);
+            border-color: var(--primary);
+        }
+
+        .ws-btn-primary:hover {
+            opacity: 0.88;
+        }
+
+        .ws-btn-blue {
+            color: var(--accent);
+            border-color: rgba(59, 130, 246, 0.35);
+        }
+
+        .ws-btn-blue:hover {
+            background: rgba(59, 130, 246, 0.07);
+        }
+
+        .ws-btn-danger {
+            color: var(--danger);
+            border-color: rgba(239, 68, 68, 0.35);
+        }
+
+        .ws-btn-danger:hover {
+            background: rgba(239, 68, 68, 0.07);
+        }
+
+        .ws-btn:not(.ws-btn-primary):hover {
+            border-color: var(--text-muted);
+        }
+
+        @media (max-width: 420px) {
+            .ws-label {
+                display: none;
+            }
+
+            .ws-btn {
+                padding: 7px 9px;
+            }
+        }
 
         /* ════════════════════════════════════════════════════════
            § 2 — USER MANAGEMENT CARDS
@@ -2202,17 +2266,21 @@
            ════════════════════════════════════════════════════════ */
         #user-sheet-backdrop {
             display: none;
-            position: fixed; inset: 0; z-index: 9998;
+            position: fixed;
+            inset: 0;
+            z-index: 9998;
         }
+
         #user-sheet {
             display: none;
             position: fixed;
-            top: 56px; right: 12px;
+            top: 56px;
+            right: 12px;
             z-index: 9999;
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08);
             width: 240px;
             overflow: hidden;
             transform-origin: top right;
@@ -2223,55 +2291,102 @@
                 opacity 0.15s ease;
             will-change: transform, opacity;
         }
+
         #user-sheet.active {
             transform: scale(1) translateY(0);
             opacity: 1;
         }
+
         .dp-user-row {
-            display: flex; align-items: center; gap: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
             padding: 14px 14px 12px;
             border-bottom: 1px solid var(--border);
         }
+
         .dp-avatar {
-            width: 38px; height: 38px; border-radius: 50%;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
             background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1rem; font-weight: 800; color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            font-weight: 800;
+            color: #fff;
             flex-shrink: 0;
-            box-shadow: 0 2px 8px rgba(99,102,241,0.35);
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
         }
+
         .dp-name {
-            font-size: 0.85rem; font-weight: 800;
-            color: var(--text-main); line-height: 1.2;
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: var(--text-main);
+            line-height: 1.2;
         }
+
         .dp-email {
-            font-size: 0.68rem; color: var(--text-muted);
-            margin-top: 2px; font-family: monospace;
-            white-space: nowrap; overflow: hidden;
-            text-overflow: ellipsis; max-width: 160px;
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+            font-family: monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 160px;
         }
+
         .dp-item {
-            display: flex; align-items: center; gap: 12px;
-            width: 100%; padding: 11px 14px;
-            border: none; background: transparent;
-            cursor: pointer; text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 11px 14px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            text-align: left;
             -webkit-tap-highlight-color: transparent;
             transition: background 0.1s ease;
         }
-        .dp-item:hover { background: var(--bg-base); }
-        .dp-item:active { background: var(--border); }
+
+        .dp-item:hover {
+            background: var(--bg-base);
+        }
+
+        .dp-item:active {
+            background: var(--border);
+        }
+
         .dp-icon {
-            width: 32px; height: 32px; border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             flex-shrink: 0;
         }
-        .dp-label { font-size: 0.83rem; font-weight: 700; color: var(--text-main); }
-        .dp-divider { height: 1px; background: var(--border); margin: 2px 0; }
-        .dp-item.dp-disabled {
-            opacity: 0.35; cursor: not-allowed; pointer-events: none;
+
+        .dp-label {
+            font-size: 0.83rem;
+            font-weight: 700;
+            color: var(--text-main);
         }
 
+        .dp-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 2px 0;
+        }
 
+        .dp-item.dp-disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
     </style>
 </head>
 
@@ -2381,7 +2496,8 @@
         <div class="modal-dialog" style="max-width: 340px;">
             <div class="modal-body" style="text-align:center; padding: 32px 24px;">
                 <div id="dialog-icon" style="display:flex;justify-content:center;margin-bottom:14px;"></div>
-                <h3 id="dialog-msg" style="margin-bottom:20px; font-size:1.05rem; line-height: 1.5; white-space:pre-line;"></h3>
+                <h3 id="dialog-msg"
+                    style="margin-bottom:20px; font-size:1.05rem; line-height: 1.5; white-space:pre-line;"></h3>
 
                 <div id="dialog-input-wrapper" style="position:relative; display:none; margin-bottom: 16px;"
                     autocomplete="off">
@@ -2436,10 +2552,11 @@
             </button>
             <!-- Menu button -->
             <button class="theme-toggle" onclick="openUserSheet()" title="Menu" id="header-menu-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;position:relative;">
-                    <circle cx="12" cy="5" r="1.2" fill="currentColor" stroke="none"/>
-                    <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/>
-                    <circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none"/>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" style="width:16px;height:16px;position:relative;">
+                    <circle cx="12" cy="5" r="1.2" fill="currentColor" stroke="none" />
+                    <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none" />
+                    <circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none" />
                 </svg>
             </button>
         </div>
@@ -2460,18 +2577,22 @@
         <!-- Actions -->
         <button class="dp-item" id="sheet-backup-btn" onclick="closeUserSheet();setTimeout(headerUploadNow,180);">
             <span class="dp-icon" style="background:rgba(16,185,129,0.12);">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/>
-                    <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="16 16 12 12 8 16" />
+                    <line x1="12" y1="12" x2="12" y2="21" />
+                    <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
                 </svg>
             </span>
             <span class="dp-label">Backup to Cloud</span>
         </button>
         <button class="dp-item" id="sheet-restore-btn" onclick="closeUserSheet();setTimeout(headerRestoreNow,180);">
             <span class="dp-icon" style="background:rgba(59,130,246,0.12);">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
-                    <polyline points="8 13 12 17 16 13"/><line x1="12" y1="17" x2="12" y2="9"/>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
+                    <polyline points="8 13 12 17 16 13" />
+                    <line x1="12" y1="17" x2="12" y2="9" />
                 </svg>
             </span>
             <span class="dp-label">Restore from Cloud</span>
@@ -2479,8 +2600,10 @@
         <div class="dp-divider"></div>
         <button class="dp-item" onclick="closeUserSheet();setTimeout(openChangePasswordSheet,180);">
             <span class="dp-icon" style="background:rgba(59,130,246,0.12);">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                 </svg>
             </span>
             <span class="dp-label">Change Password</span>
@@ -2488,9 +2611,11 @@
         <div class="dp-divider"></div>
         <button class="dp-item" onclick="closeUserSheet();setTimeout(logoutUser,180);">
             <span class="dp-icon" style="background:rgba(239,68,68,0.1);">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                    <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
                 </svg>
             </span>
             <span class="dp-label" style="color:#ef4444;">Logout</span>
@@ -2499,29 +2624,50 @@
     </div>
 
     <!-- Change Password Bottom Sheet -->
-    <div id="change-pwd-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:4000;" onclick="closeChangePwdSheet()"></div>
-    <div id="admin-change-pwd-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:4002;" onclick="closeAdminChangePwdSheet()"></div>
-    <div id="admin-change-pwd-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px 40px;z-index:4003;max-width:480px;margin:0 auto;box-shadow:0 -8px 32px rgba(0,0,0,0.2);animation:slideFadeUp 0.25s ease;">
+    <div id="change-pwd-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:4000;"
+        onclick="closeChangePwdSheet()"></div>
+    <div id="admin-change-pwd-backdrop"
+        style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:4002;"
+        onclick="closeAdminChangePwdSheet()"></div>
+    <div id="admin-change-pwd-sheet"
+        style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px 40px;z-index:4003;max-width:480px;margin:0 auto;box-shadow:0 -8px 32px rgba(0,0,0,0.2);animation:slideFadeUp 0.25s ease;">
         <div style="width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px;"></div>
         <input type="hidden" id="admin-cpwd-uid">
         <h3 style="margin:0 0 6px;font-size:1.1rem;" id="admin-cpwd-title">Set Password</h3>
         <p style="margin:0 0 8px;font-size:0.8rem;color:var(--text-muted);" id="admin-cpwd-subtitle"></p>
-        <div style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:8px;padding:8px 12px;margin-bottom:14px;font-size:0.74rem;color:var(--text-muted);line-height:1.6;">
+        <div
+            style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:8px;padding:8px 12px;margin-bottom:14px;font-size:0.74rem;color:var(--text-muted);line-height:1.6;">
             <strong style="color:var(--text-main);display:block;margin-bottom:2px;">Password Rules:</strong>
-            Min 8 chars &nbsp;·&nbsp; At least one letter (A–Z) &nbsp;·&nbsp; At least one number (0–9) &nbsp;·&nbsp; Common passwords not accepted
+            Min 8 chars &nbsp;·&nbsp; At least one letter (A–Z) &nbsp;·&nbsp; At least one number (0–9) &nbsp;·&nbsp;
+            Common passwords not accepted
         </div>
         <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">New Password</label>
         <div style="position:relative;margin-bottom:8px;">
-            <input type="password" id="admin-cpwd-new" class="input" placeholder="Min 8 chars, letters + numbers" style="margin:0;padding-right:44px;" autocomplete="new-password">
-            <button onclick="togglePwdVisibility('admin-cpwd-new',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);padding:4px;" title="Show/Hide">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <input type="password" id="admin-cpwd-new" class="input" placeholder="Min 8 chars, letters + numbers"
+                style="margin:0;padding-right:44px;" autocomplete="new-password">
+            <button onclick="togglePwdVisibility('admin-cpwd-new',this)"
+                style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);padding:4px;"
+                title="Show/Hide">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                </svg>
             </button>
         </div>
-        <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Confirm Password</label>
+        <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Confirm
+            Password</label>
         <div style="position:relative;margin-bottom:20px;">
-            <input type="password" id="admin-cpwd-confirm" class="input" placeholder="Re-enter new password" style="margin:0;padding-right:44px;" autocomplete="new-password">
-            <button onclick="togglePwdVisibility('admin-cpwd-confirm',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);padding:4px;" title="Show/Hide">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <input type="password" id="admin-cpwd-confirm" class="input" placeholder="Re-enter new password"
+                style="margin:0;padding-right:44px;" autocomplete="new-password">
+            <button onclick="togglePwdVisibility('admin-cpwd-confirm',this)"
+                style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);padding:4px;"
+                title="Show/Hide">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                </svg>
             </button>
         </div>
         <div style="display:flex;gap:12px;">
@@ -2530,20 +2676,29 @@
         </div>
     </div>
 
-    <div id="change-pwd-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px 40px;z-index:4001;max-width:480px;margin:0 auto;box-shadow:0 -8px 32px rgba(0,0,0,0.2);animation:slideFadeUp 0.25s ease;">
+    <div id="change-pwd-sheet"
+        style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px 40px;z-index:4001;max-width:480px;margin:0 auto;box-shadow:0 -8px 32px rgba(0,0,0,0.2);animation:slideFadeUp 0.25s ease;">
         <div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px;"></div>
         <h3 style="margin:0 0 4px;font-size:1.05rem;">Change Password</h3>
-        <p style="color:var(--text-muted);font-size:0.8rem;margin:0 0 8px;">Your new password will be updated in Firebase immediately.</p>
-        <div style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:8px;padding:8px 12px;margin-bottom:16px;font-size:0.74rem;color:var(--text-muted);line-height:1.6;">
+        <p style="color:var(--text-muted);font-size:0.8rem;margin:0 0 8px;">Your new password will be updated in
+            Firebase immediately.</p>
+        <div
+            style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:8px;padding:8px 12px;margin-bottom:16px;font-size:0.74rem;color:var(--text-muted);line-height:1.6;">
             <strong style="color:var(--text-main);display:block;margin-bottom:2px;">Password Rules:</strong>
-            Minimum 8 characters &nbsp;·&nbsp; Must include at least one letter (A–Z) &nbsp;·&nbsp; Must include at least one number (0–9) &nbsp;·&nbsp; Common passwords not accepted
+            Minimum 8 characters &nbsp;·&nbsp; Must include at least one letter (A–Z) &nbsp;·&nbsp; Must include at
+            least one number (0–9) &nbsp;·&nbsp; Common passwords not accepted
         </div>
-        <label style="font-size:0.78rem;color:var(--text-muted);margin-bottom:6px;display:block;">Current Password</label>
-        <input type="password" id="cpwd-current" class="input" placeholder="Enter current password..." style="margin-bottom:14px;">
+        <label style="font-size:0.78rem;color:var(--text-muted);margin-bottom:6px;display:block;">Current
+            Password</label>
+        <input type="password" id="cpwd-current" class="input" placeholder="Enter current password..."
+            style="margin-bottom:14px;">
         <label style="font-size:0.78rem;color:var(--text-muted);margin-bottom:6px;display:block;">New Password</label>
-        <input type="password" id="cpwd-new" class="input" placeholder="Enter new password..." style="margin-bottom:14px;">
-        <label style="font-size:0.78rem;color:var(--text-muted);margin-bottom:6px;display:block;">Confirm New Password</label>
-        <input type="password" id="cpwd-confirm" class="input" placeholder="Confirm new password..." style="margin-bottom:20px;">
+        <input type="password" id="cpwd-new" class="input" placeholder="Enter new password..."
+            style="margin-bottom:14px;">
+        <label style="font-size:0.78rem;color:var(--text-muted);margin-bottom:6px;display:block;">Confirm New
+            Password</label>
+        <input type="password" id="cpwd-confirm" class="input" placeholder="Confirm new password..."
+            style="margin-bottom:20px;">
         <div class="grid-2" style="gap:10px;">
             <button class="btn primary" style="margin:0;" onclick="submitChangePassword()">Update Password</button>
             <button class="btn" style="margin:0;" onclick="closeChangePwdSheet()">Cancel</button>
@@ -2556,10 +2711,12 @@
          ════════════════════════════════════════════════════════ -->
     <div id="screen-menu" class="screen">
 
-        <div id="main-notification" class="notification-banner notif-shimmer shimmer-critical" onclick="openUnclearPendingDashboard()">
+        <div id="main-notification" class="notification-banner notif-shimmer shimmer-critical"
+            onclick="openUnclearPendingDashboard()">
             <svg style="width:16px; height:16px; flex-shrink:0; stroke:currentColor; stroke-width:2; fill:none;"
                 viewBox="0 0 24 24">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                </path>
                 <line x1="12" y1="9" x2="12" y2="13"></line>
                 <line x1="12" y1="17" x2="12.01" y2="17"></line>
             </svg>
@@ -2570,8 +2727,13 @@
             style="background: var(--surface); border: 1px solid var(--border); color: var(--text-main); display: none; flex-direction:column; align-items:flex-start; cursor:pointer; position:relative;"
             onclick="buildDashboardAllMonths()">
             <span id="analytics-notif-text" style="width:100%;"></span>
-            <button class="notif-close-btn" title="Dismiss" style="position:absolute;top:8px;right:8px;" onclick="dismissNotif(event,'analytics-notification','notif_analytics')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <button class="notif-close-btn" title="Dismiss" style="position:absolute;top:8px;right:8px;"
+                onclick="dismissNotif(event,'analytics-notification','notif_analytics')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
             </button>
         </div>
 
@@ -2675,7 +2837,8 @@
             </div>
             <div class="menu-card" tabindex="0" onclick="showScreen('screen-faq')"
                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showScreen('screen-faq');}">
-                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"></circle>
                     <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
                     <line x1="12" y1="17" x2="12.01" y2="17"></line>
@@ -2772,7 +2935,8 @@
             <!-- Suspense Urgent Card — centred in its own row -->
             <div id="dash-suspense-row" style="display:none; margin-bottom:8px;">
                 <div class="stat-card claim-card" id="dash-card-suspense"
-                    style="border-top: 4px solid var(--danger); max-width:260px; margin:0 auto;" onclick="setDashFilter('suspense')">
+                    style="border-top: 4px solid var(--danger); max-width:260px; margin:0 auto;"
+                    onclick="setDashFilter('suspense')">
                     <div class="stat-value" id="dash-suspense-count" style="color:var(--danger)">0</div>
                     <div class="stat-label">⚠ Suspense Urgent</div>
                 </div>
@@ -2790,18 +2954,29 @@
                     <line x1="12" y1="16" x2="12.01" y2="16"></line>
                 </svg>
                 <span id="dash-suspense-text"></span>
-                <button class="notif-close-btn" title="Dismiss" onclick="dismissNotif(event,'dash-suspense-notif','dash_suspense_notif')">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <button class="notif-close-btn" title="Dismiss"
+                    onclick="dismissNotif(event,'dash-suspense-notif','dash_suspense_notif')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
                 </button>
             </div>
 
             <button class="btn" id="btn-toggle-chart" onclick="toggleDashChart()"
                 style="margin-bottom:12px; display:inline-flex; align-items:center; gap:6px; font-size:0.78rem; padding:7px 14px;">
-                <svg style="width:14px;height:14px;stroke:currentColor;stroke-width:2;fill:none;" viewBox="0 0 24 24"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+                <svg style="width:14px;height:14px;stroke:currentColor;stroke-width:2;fill:none;" viewBox="0 0 24 24">
+                    <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+                    <path d="M22 12A10 10 0 0 0 12 2v10z" />
+                </svg>
                 <span id="chart-toggle-label">Hide Chart</span>
             </button>
-            <div id="dash-chart-container" style="display:block; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px 20px 16px; margin-bottom:20px;">
-                <p style="font-size:0.7rem; font-weight:700; letter-spacing:0.8px; color:var(--text-muted); text-transform:uppercase; margin-bottom:16px;">Audit Breakdown</p>
+            <div id="dash-chart-container"
+                style="display:block; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px 20px 16px; margin-bottom:20px;">
+                <p
+                    style="font-size:0.7rem; font-weight:700; letter-spacing:0.8px; color:var(--text-muted); text-transform:uppercase; margin-bottom:16px;">
+                    Audit Breakdown</p>
                 <!-- Doughnut centred -->
                 <div style="position:relative; width:160px; height:160px; margin:0 auto 20px;">
                     <canvas id="auditChart" style="width:160px;height:160px;"></canvas>
@@ -2810,34 +2985,43 @@
                 <div style="display:flex; flex-direction:column; gap:0;">
                     <div class="chart-legend-row" onclick="setDashFilter('clean')" style="cursor:pointer;">
                         <div style="display:flex;align-items:center;gap:10px;flex:1;">
-                            <span style="width:8px;height:8px;border-radius:50%;background:#10b981;flex-shrink:0;"></span>
+                            <span
+                                style="width:8px;height:8px;border-radius:50%;background:#10b981;flex-shrink:0;"></span>
                             <span style="font-size:0.82rem;font-weight:600;color:var(--text-main);">Clean</span>
                         </div>
                         <div style="display:flex;align-items:center;gap:10px;">
-                            <span id="chart-leg-clean" style="font-size:0.95rem;font-weight:800;color:var(--text-main);">0</span>
-                            <span id="chart-leg-clean-pct" style="font-size:0.72rem;font-weight:600;color:#10b981;min-width:36px;text-align:right;">0%</span>
+                            <span id="chart-leg-clean"
+                                style="font-size:0.95rem;font-weight:800;color:var(--text-main);">0</span>
+                            <span id="chart-leg-clean-pct"
+                                style="font-size:0.72rem;font-weight:600;color:#10b981;min-width:36px;text-align:right;">0%</span>
                         </div>
                     </div>
                     <div style="height:1px;background:var(--border);margin:0 2px;"></div>
                     <div class="chart-legend-row" onclick="setDashFilter('unclear')" style="cursor:pointer;">
                         <div style="display:flex;align-items:center;gap:10px;flex:1;">
-                            <span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;flex-shrink:0;"></span>
+                            <span
+                                style="width:8px;height:8px;border-radius:50%;background:#f59e0b;flex-shrink:0;"></span>
                             <span style="font-size:0.82rem;font-weight:600;color:var(--text-main);">Unclear</span>
                         </div>
                         <div style="display:flex;align-items:center;gap:10px;">
-                            <span id="chart-leg-unclear" style="font-size:0.95rem;font-weight:800;color:var(--text-main);">0</span>
-                            <span id="chart-leg-unclear-pct" style="font-size:0.72rem;font-weight:600;color:#f59e0b;min-width:36px;text-align:right;">0%</span>
+                            <span id="chart-leg-unclear"
+                                style="font-size:0.95rem;font-weight:800;color:var(--text-main);">0</span>
+                            <span id="chart-leg-unclear-pct"
+                                style="font-size:0.72rem;font-weight:600;color:#f59e0b;min-width:36px;text-align:right;">0%</span>
                         </div>
                     </div>
                     <div style="height:1px;background:var(--border);margin:0 2px;"></div>
                     <div class="chart-legend-row" onclick="setDashFilter('pending')" style="cursor:pointer;">
                         <div style="display:flex;align-items:center;gap:10px;flex:1;">
-                            <span style="width:8px;height:8px;border-radius:50%;background:#94a3b8;flex-shrink:0;"></span>
+                            <span
+                                style="width:8px;height:8px;border-radius:50%;background:#94a3b8;flex-shrink:0;"></span>
                             <span style="font-size:0.82rem;font-weight:600;color:var(--text-main);">Pending</span>
                         </div>
                         <div style="display:flex;align-items:center;gap:10px;">
-                            <span id="chart-leg-pending" style="font-size:0.95rem;font-weight:800;color:var(--text-main);">0</span>
-                            <span id="chart-leg-pending-pct" style="font-size:0.72rem;font-weight:600;color:#94a3b8;min-width:36px;text-align:right;">0%</span>
+                            <span id="chart-leg-pending"
+                                style="font-size:0.95rem;font-weight:800;color:var(--text-main);">0</span>
+                            <span id="chart-leg-pending-pct"
+                                style="font-size:0.72rem;font-weight:600;color:#94a3b8;min-width:36px;text-align:right;">0%</span>
                         </div>
                     </div>
                 </div>
@@ -2909,8 +3093,7 @@
     <!-- FAQ Screen — content loaded from audfaq.html via iframe -->
     <div id="screen-faq" class="screen">
         <iframe src="audfaq.html" id="faq-iframe"
-            style="width:100%; flex:1; border:none; min-height:100vh; display:block;"
-            title="FAQ — Audit-it"
+            style="width:100%; flex:1; border:none; min-height:100vh; display:block;" title="FAQ — Audit-it"
             onload="try{this.contentWindow.scrollTo(0,0);this.contentWindow.document.activeElement.blur();}catch(e){}">
         </iframe>
     </div>
@@ -3356,7 +3539,12 @@
                             5,000 req/hr limit. Auto-sync uses ~18/hr.</div>
                         <div id="autosync-triggers"
                             style="display:none; margin-top:10px; font-size:0.72rem; color:var(--text-muted); line-height:1.8;">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;flex-shrink:0;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Close Audit · Tab close · Every 3 min</div>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                                style="display:inline-block;vertical-align:middle;margin-right:4px;flex-shrink:0;">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                            </svg>Close Audit · Tab close · Every 3 min
+                        </div>
                     </div>
                     <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
                         <span id="gist-sync-indicator"
@@ -3424,74 +3612,79 @@
             <input type="hidden" id="audit-from">
             <input type="hidden" id="audit-to">
 
-            <div style="background:var(--bg-base);border:1px solid var(--border);border-radius:10px;padding:14px 14px 10px;margin-bottom:16px;">
-                <label style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:6px;display:block;">Audit Period</label>
-                <div id="audit-period-display" style="font-size:0.95rem;font-weight:700;color:var(--primary);margin-bottom:10px;min-height:1.2em;" aria-live="polite"></div>
+            <div
+                style="background:var(--bg-base);border:1px solid var(--border);border-radius:10px;padding:14px 14px 10px;margin-bottom:16px;">
+                <label
+                    style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:6px;display:block;">Audit
+                    Period</label>
+                <div id="audit-period-display"
+                    style="font-size:0.95rem;font-weight:700;color:var(--primary);margin-bottom:10px;min-height:1.2em;"
+                    aria-live="polite"></div>
                 <div class="grid-2" style="margin-bottom:0;">
-                <!-- FROM picker -->
-                <div>
-                    <label>From</label>
-                    <div class="mp-wrapper" id="mp-from" data-target="audit-from">
-                        <div class="mp-display" onclick="toggleMonthPicker('mp-from')">
-                            <svg class="mp-cal-icon" viewBox="0 0 24 24">
-                                <rect x="3" y="4" width="18" height="18" rx="2" />
-                                <line x1="16" y1="2" x2="16" y2="6" />
-                                <line x1="8" y1="2" x2="8" y2="6" />
-                                <line x1="3" y1="10" x2="21" y2="10" />
-                            </svg>
-                            <span class="mp-label placeholder" id="mp-from-label">Select month</span>
-                            <svg class="mp-chevron" viewBox="0 0 24 24">
-                                <polyline points="6 9 12 15 18 9" />
-                            </svg>
-                        </div>
-                        <div class="mp-dropdown" id="mp-from-dropdown">
-                            <div class="mp-year-row">
-                                <button type="button" class="mp-yr-btn" onclick="shiftYear('mp-from',-1)"><svg
-                                        viewBox="0 0 24 24">
-                                        <polyline points="15 18 9 12 15 6" />
-                                    </svg></button>
-                                <span class="mp-year-label" id="mp-from-year">2025</span>
-                                <button type="button" class="mp-yr-btn" onclick="shiftYear('mp-from',1)"><svg
-                                        viewBox="0 0 24 24">
-                                        <polyline points="9 18 15 12 9 6" />
-                                    </svg></button>
+                    <!-- FROM picker -->
+                    <div>
+                        <label>From</label>
+                        <div class="mp-wrapper" id="mp-from" data-target="audit-from">
+                            <div class="mp-display" onclick="toggleMonthPicker('mp-from')">
+                                <svg class="mp-cal-icon" viewBox="0 0 24 24">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                                    <line x1="16" y1="2" x2="16" y2="6" />
+                                    <line x1="8" y1="2" x2="8" y2="6" />
+                                    <line x1="3" y1="10" x2="21" y2="10" />
+                                </svg>
+                                <span class="mp-label placeholder" id="mp-from-label">Select month</span>
+                                <svg class="mp-chevron" viewBox="0 0 24 24">
+                                    <polyline points="6 9 12 15 18 9" />
+                                </svg>
                             </div>
-                            <div class="mp-months" id="mp-from-months"></div>
+                            <div class="mp-dropdown" id="mp-from-dropdown">
+                                <div class="mp-year-row">
+                                    <button type="button" class="mp-yr-btn" onclick="shiftYear('mp-from',-1)"><svg
+                                            viewBox="0 0 24 24">
+                                            <polyline points="15 18 9 12 15 6" />
+                                        </svg></button>
+                                    <span class="mp-year-label" id="mp-from-year">2025</span>
+                                    <button type="button" class="mp-yr-btn" onclick="shiftYear('mp-from',1)"><svg
+                                            viewBox="0 0 24 24">
+                                            <polyline points="9 18 15 12 9 6" />
+                                        </svg></button>
+                                </div>
+                                <div class="mp-months" id="mp-from-months"></div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <!-- TO picker -->
-                <div>
-                    <label>To</label>
-                    <div class="mp-wrapper" id="mp-to" data-target="audit-to">
-                        <div class="mp-display" onclick="toggleMonthPicker('mp-to')">
-                            <svg class="mp-cal-icon" viewBox="0 0 24 24">
-                                <rect x="3" y="4" width="18" height="18" rx="2" />
-                                <line x1="16" y1="2" x2="16" y2="6" />
-                                <line x1="8" y1="2" x2="8" y2="6" />
-                                <line x1="3" y1="10" x2="21" y2="10" />
-                            </svg>
-                            <span class="mp-label placeholder" id="mp-to-label">Select month</span>
-                            <svg class="mp-chevron" viewBox="0 0 24 24">
-                                <polyline points="6 9 12 15 18 9" />
-                            </svg>
-                        </div>
-                        <div class="mp-dropdown" id="mp-to-dropdown">
-                            <div class="mp-year-row">
-                                <button type="button" class="mp-yr-btn" onclick="shiftYear('mp-to',-1)"><svg
-                                        viewBox="0 0 24 24">
-                                        <polyline points="15 18 9 12 15 6" />
-                                    </svg></button>
-                                <span class="mp-year-label" id="mp-to-year">2025</span>
-                                <button type="button" class="mp-yr-btn" onclick="shiftYear('mp-to',1)"><svg
-                                        viewBox="0 0 24 24">
-                                        <polyline points="9 18 15 12 9 6" />
-                                    </svg></button>
+                    <!-- TO picker -->
+                    <div>
+                        <label>To</label>
+                        <div class="mp-wrapper" id="mp-to" data-target="audit-to">
+                            <div class="mp-display" onclick="toggleMonthPicker('mp-to')">
+                                <svg class="mp-cal-icon" viewBox="0 0 24 24">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                                    <line x1="16" y1="2" x2="16" y2="6" />
+                                    <line x1="8" y1="2" x2="8" y2="6" />
+                                    <line x1="3" y1="10" x2="21" y2="10" />
+                                </svg>
+                                <span class="mp-label placeholder" id="mp-to-label">Select month</span>
+                                <svg class="mp-chevron" viewBox="0 0 24 24">
+                                    <polyline points="6 9 12 15 18 9" />
+                                </svg>
                             </div>
-                            <div class="mp-months" id="mp-to-months"></div>
+                            <div class="mp-dropdown" id="mp-to-dropdown">
+                                <div class="mp-year-row">
+                                    <button type="button" class="mp-yr-btn" onclick="shiftYear('mp-to',-1)"><svg
+                                            viewBox="0 0 24 24">
+                                            <polyline points="15 18 9 12 15 6" />
+                                        </svg></button>
+                                    <span class="mp-year-label" id="mp-to-year">2025</span>
+                                    <button type="button" class="mp-yr-btn" onclick="shiftYear('mp-to',1)"><svg
+                                            viewBox="0 0 24 24">
+                                            <polyline points="9 18 15 12 9 6" />
+                                        </svg></button>
+                                </div>
+                                <div class="mp-months" id="mp-to-months"></div>
+                            </div>
                         </div>
                     </div>
-                </div>
                 </div>
             </div>
             <label>Source Excel File</label>
@@ -3520,22 +3713,42 @@
          ════════════════════════════════════════════════════════ -->
     <div id="screen-workspace" class="screen">
         <div class="flex-between" style="margin-bottom: 12px;">
-            <h3 id="workspace-title" style="margin:0; font-size:1rem; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:45vw;">Workspace</h3>
+            <h3 id="workspace-title"
+                style="margin:0; font-size:1rem; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:45vw;">
+                Workspace</h3>
             <div style="display:flex; gap:6px; flex-shrink:0;">
                 <button class="ws-btn ws-btn-primary" onclick="finalizeAuditFlow()" title="Close Audit">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                    </svg>
                     <span class="ws-label">Close</span>
                 </button>
-                <button class="ws-btn ws-btn-blue" onclick="refreshTableFromSavedData()" title="Fetch All Claims" id="btn-fetch-all-claims" style="display:none;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                <button class="ws-btn ws-btn-blue" onclick="refreshTableFromSavedData()" title="Fetch All Claims"
+                    id="btn-fetch-all-claims" style="display:none;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="23 4 23 10 17 10" />
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                    </svg>
                     <span class="ws-label">Fetch All Claims</span>
                 </button>
                 <button class="ws-btn ws-btn-danger" onclick="discardWorkspace()" title="Discard">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6l-1 14H6L5 6" />
+                        <path d="M10 11v6M14 11v6" />
+                    </svg>
                     <span class="ws-label">Discard</span>
                 </button>
                 <button class="ws-btn" onclick="requestExitWorkspace()" title="Menu">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="6" x2="21" y2="6" />
+                        <line x1="3" y1="12" x2="21" y2="12" />
+                        <line x1="3" y1="18" x2="21" y2="18" />
+                    </svg>
                     <span class="ws-label">Menu</span>
                 </button>
             </div>
@@ -3956,7 +4169,8 @@
         function showAppAlert(msg) {
             const iconEl = document.getElementById('dialog-icon');
             if (iconEl) iconEl.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
-            document.getElementById('dialog-msg').innerText = msg; document.getElementById('dialog-input-wrapper').style.display = 'none'; document.getElementById('dialog-btn-no').style.display = 'none'; document.getElementById('dialog-btn-yes').onclick = closeDialog; document.getElementById('app-dialog').classList.add('active'); }
+            document.getElementById('dialog-msg').innerText = msg; document.getElementById('dialog-input-wrapper').style.display = 'none'; document.getElementById('dialog-btn-no').style.display = 'none'; document.getElementById('dialog-btn-yes').onclick = closeDialog; document.getElementById('app-dialog').classList.add('active');
+        }
         function showAppConfirm(msg, onYes) {
             const iconEl = document.getElementById('dialog-icon');
             if (iconEl) iconEl.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
@@ -4088,14 +4302,14 @@
                 let backupObj = {}; const keys = await localforage.keys();
                 for (let k of keys) { backupObj[k] = await localforage.getItem(k); }
                 // Core app settings
-                backupObj['_secConfig']     = localStorage.getItem('auditor_sec') || "{}";
-                backupObj['_autosync']      = localStorage.getItem('gist_autosync') || 'false';
-                backupObj['_theme']         = localStorage.getItem('auditor_theme') || 'light';
-                backupObj['_customCodes']   = localStorage.getItem('auditor_custom_codes') || '{}';
+                backupObj['_secConfig'] = localStorage.getItem('auditor_sec') || "{}";
+                backupObj['_autosync'] = localStorage.getItem('gist_autosync') || 'false';
+                backupObj['_theme'] = localStorage.getItem('auditor_theme') || 'light';
+                backupObj['_customCodes'] = localStorage.getItem('auditor_custom_codes') || '{}';
                 // GitHub Gist connection (token encrypted — safe to back up)
-                backupObj['_gistTokenEnc']  = localStorage.getItem('gist_token_enc') || '';
-                backupObj['_gistId']        = localStorage.getItem('gist_id') || '';
-                backupObj['_gistLastSync']  = localStorage.getItem('gist_last_sync') || '';
+                backupObj['_gistTokenEnc'] = localStorage.getItem('gist_token_enc') || '';
+                backupObj['_gistId'] = localStorage.getItem('gist_id') || '';
+                backupObj['_gistLastSync'] = localStorage.getItem('gist_last_sync') || '';
                 backupObj['_gistLastSyncIso'] = localStorage.getItem('gist_last_sync_iso') || '';
                 // Google Drive / Firebase last sync
                 backupObj['_gdriveLastSync'] = localStorage.getItem('gdrive_last_sync') || '';
@@ -4114,14 +4328,14 @@
                     try {
                         const data = JSON.parse(e.target.result); await localforage.clear();
                         for (let key in data) {
-                            if      (key === '_secConfig')      { localStorage.setItem('auditor_sec', data[key]); }
-                            else if (key === '_autosync')       { localStorage.setItem('gist_autosync', data[key]); }
-                            else if (key === '_theme')          { localStorage.setItem('auditor_theme', data[key]); applyTheme(data[key]); }
-                            else if (key === '_customCodes')    { localStorage.setItem('auditor_custom_codes', data[key]); }
-                            else if (key === '_gistTokenEnc')   { if (data[key]) localStorage.setItem('gist_token_enc', data[key]); }
-                            else if (key === '_gistId')         { if (data[key]) localStorage.setItem('gist_id', data[key]); }
-                            else if (key === '_gistLastSync')   { if (data[key]) localStorage.setItem('gist_last_sync', data[key]); }
-                            else if (key === '_gistLastSyncIso'){ if (data[key]) localStorage.setItem('gist_last_sync_iso', data[key]); }
+                            if (key === '_secConfig') { localStorage.setItem('auditor_sec', data[key]); }
+                            else if (key === '_autosync') { localStorage.setItem('gist_autosync', data[key]); }
+                            else if (key === '_theme') { localStorage.setItem('auditor_theme', data[key]); applyTheme(data[key]); }
+                            else if (key === '_customCodes') { localStorage.setItem('auditor_custom_codes', data[key]); }
+                            else if (key === '_gistTokenEnc') { if (data[key]) localStorage.setItem('gist_token_enc', data[key]); }
+                            else if (key === '_gistId') { if (data[key]) localStorage.setItem('gist_id', data[key]); }
+                            else if (key === '_gistLastSync') { if (data[key]) localStorage.setItem('gist_last_sync', data[key]); }
+                            else if (key === '_gistLastSyncIso') { if (data[key]) localStorage.setItem('gist_last_sync_iso', data[key]); }
                             else if (key === '_gdriveLastSync') { if (data[key]) localStorage.setItem('gdrive_last_sync', data[key]); }
                             else { await localforage.setItem(key, data[key]); }
                         }
@@ -4184,7 +4398,7 @@
         function getSortedKeys() {
             const parseMonth = m => {
                 if (!m) return 0;
-                const months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+                const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
                 const match = m.match(/([a-zA-Z]+)[^0-9]*(\d{4})/);
                 if (match) {
                     const mi = months.indexOf(match[1].toLowerCase().substring(0, 3));
@@ -4449,7 +4663,7 @@
         function openUnclearPendingDashboard() {
             const banner = document.getElementById('main-notification');
             let monthKeys = [];
-            try { monthKeys = JSON.parse(banner.dataset.monthKeys || '[]'); } catch(e) {}
+            try { monthKeys = JSON.parse(banner.dataset.monthKeys || '[]'); } catch (e) { }
 
             const keys = getSortedKeys();
             if (keys.length === 0) return showAppAlert("No audits saved. Please create an audit first.");
@@ -5424,7 +5638,7 @@ Upload the correct file.`);
             const sortedEntries = Object.entries(dbIndex).sort(([, a], [, b]) => {
                 const parseMonth = m => {
                     if (!m) return 0;
-                    const months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+                    const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
                     // Try "Month YYYY" e.g. "March 2025"
                     const match = m.match(/([a-zA-Z]+)[^0-9]*(\d{4})/);
                     if (match) {
@@ -5635,7 +5849,7 @@ Upload the correct file.`);
             const sortedEntries = Object.entries(dbIndex).sort(([, a], [, b]) => {
                 const parseMonth = m => {
                     if (!m) return 0;
-                    const months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+                    const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
                     const match = m.match(/([a-zA-Z]+)[^0-9]*(\d{4})/);
                     if (match) {
                         const mi = months.indexOf(match[1].toLowerCase().substring(0, 3));
@@ -5664,24 +5878,24 @@ Upload the correct file.`);
             // Use canonical fixed keys so every row object has identical key order.
             // Source data is pulled via colMapping; audit data uses fixed field names.
             return {
-                "Claim No":               row[colMapping.claim_no]    || "",
-                "R/O No":                 row[colMapping.ro_no]        || "",
-                "Claim Type":             row[colMapping.claim_type]   || "",
-                "Causal Part":            row[colMapping.causal_part]  || "",
-                "Part Description":       row[colMapping.part_desc]    || "",
-                "Production Date":        row[colMapping.prod_date]    || "",
-                "Amount":                 row[colMapping.amount]       || "",
-                "Audit Status":           auditEntry.audited ? "Audited" : "Pending",
-                "Discrepancy Found":      (!isClaimClean(auditEntry.findings) && auditEntry.audited) ? "Yes" : "No",
-                "Discrepancy Details":    auditEntry.findings ? auditEntry.findings.join("; ") : "",
-                "Optional Remark":        auditEntry.optional_remark   || "",
-                "POD Number":             auditEntry.pod_number        || "",
-                "Missing Part Name":      auditEntry.missing_part_name || "",
-                "Suspense Status":        auditEntry.suspense_sent     || "",
-                "Suspense POD":           auditEntry.suspense_pod      || "",
+                "Claim No": row[colMapping.claim_no] || "",
+                "R/O No": row[colMapping.ro_no] || "",
+                "Claim Type": row[colMapping.claim_type] || "",
+                "Causal Part": row[colMapping.causal_part] || "",
+                "Part Description": row[colMapping.part_desc] || "",
+                "Production Date": row[colMapping.prod_date] || "",
+                "Amount": row[colMapping.amount] || "",
+                "Audit Status": auditEntry.audited ? "Audited" : "Pending",
+                "Discrepancy Found": (!isClaimClean(auditEntry.findings) && auditEntry.audited) ? "Yes" : "No",
+                "Discrepancy Details": auditEntry.findings ? auditEntry.findings.join("; ") : "",
+                "Optional Remark": auditEntry.optional_remark || "",
+                "POD Number": auditEntry.pod_number || "",
+                "Missing Part Name": auditEntry.missing_part_name || "",
+                "Suspense Status": auditEntry.suspense_sent || "",
+                "Suspense POD": auditEntry.suspense_pod || "",
                 "Urgent Action Required": (auditEntry.suspense_pending && auditEntry.suspense_sent === 'no') ? "YES - SEND TO TECHNICAL CENTRE" : "",
-                "Audit Time":             auditEntry.timestamp ? new Date(auditEntry.timestamp).toLocaleString() : "",
-                "Auditor":                "Aashish Giri H"
+                "Audit Time": auditEntry.timestamp ? new Date(auditEntry.timestamp).toLocaleString() : "",
+                "Auditor": "Aashish Giri H"
             };
         }
 
@@ -5763,22 +5977,22 @@ Upload the correct file.`);
                     const darkBg = { fgColor: { rgb: '1E293B' } }; const greenBg = { fgColor: { rgb: '16A34A' } }; const amberBg = { fgColor: { rgb: 'D97706' } };
                     const whiteTxt = { color: { rgb: 'FFFFFF' } }; const boldWhite = { bold: true, color: { rgb: 'FFFFFF' } };
                     const thinBorder = {
-                        top:    { style: 'thin',   color: { rgb: 'CBD5E1' } },
-                        bottom: { style: 'thin',   color: { rgb: 'CBD5E1' } },
-                        left:   { style: 'thin',   color: { rgb: 'CBD5E1' } },
-                        right:  { style: 'thin',   color: { rgb: 'CBD5E1' } }
+                        top: { style: 'thin', color: { rgb: 'CBD5E1' } },
+                        bottom: { style: 'thin', color: { rgb: 'CBD5E1' } },
+                        left: { style: 'thin', color: { rgb: 'CBD5E1' } },
+                        right: { style: 'thin', color: { rgb: 'CBD5E1' } }
                     };
                     const thickBorderB = {
-                        top:    { style: 'thin',   color: { rgb: 'CBD5E1' } },
+                        top: { style: 'thin', color: { rgb: 'CBD5E1' } },
                         bottom: { style: 'medium', color: { rgb: '64748B' } },
-                        left:   { style: 'thin',   color: { rgb: 'CBD5E1' } },
-                        right:  { style: 'thin',   color: { rgb: 'CBD5E1' } }
+                        left: { style: 'thin', color: { rgb: 'CBD5E1' } },
+                        right: { style: 'thin', color: { rgb: 'CBD5E1' } }
                     };
                     const outerBorder = {
-                        top:    { style: 'medium', color: { rgb: '64748B' } },
+                        top: { style: 'medium', color: { rgb: '64748B' } },
                         bottom: { style: 'medium', color: { rgb: '64748B' } },
-                        left:   { style: 'medium', color: { rgb: '64748B' } },
-                        right:  { style: 'medium', color: { rgb: '64748B' } }
+                        left: { style: 'medium', color: { rgb: '64748B' } },
+                        right: { style: 'medium', color: { rgb: '64748B' } }
                     };
                     const centreAlign = { horizontal: 'center', vertical: 'center', wrapText: true };
                     const centreAlignNoWrap = { horizontal: 'center', vertical: 'center' };
@@ -5845,13 +6059,13 @@ Upload the correct file.`);
 
                     // Style amount summary — all cells bordered and centred
                     const amtLabelStyle = { font: { bold: true, sz: 9, color: { rgb: 'FFFFFF' } }, alignment: centreAlign };
-                    const amtValStyle   = { font: { bold: true, sz: 13, color: { rgb: 'FFFFFF' } }, alignment: centreAlign };
+                    const amtValStyle = { font: { bold: true, sz: 13, color: { rgb: 'FFFFFF' } }, alignment: centreAlign };
                     const amtColors = ['1E293B', '16A34A', 'D97706', '64748B'];
                     [0, 2, 4, 6].forEach((c, i) => {
                         const lAddr = XLSX.utils.encode_cell({ r: 4, c });
                         const vAddr = XLSX.utils.encode_cell({ r: 5, c });
                         if (ws[lAddr]) ws[lAddr].s = { ...amtLabelStyle, fill: { fgColor: { rgb: amtColors[i] } }, border: thinBorder };
-                        if (ws[vAddr]) ws[vAddr].s = { ...amtValStyle,   fill: { fgColor: { rgb: amtColors[i] } }, border: thinBorder };
+                        if (ws[vAddr]) ws[vAddr].s = { ...amtValStyle, fill: { fgColor: { rgb: amtColors[i] } }, border: thinBorder };
                         // Fill the adjacent (odd) column with same colour for visual block
                         const lAdj = XLSX.utils.encode_cell({ r: 4, c: c + 1 });
                         const vAdj = XLSX.utils.encode_cell({ r: 5, c: c + 1 });
@@ -6023,27 +6237,27 @@ Upload the correct file.`);
                         // Build column styles to prevent text overflow — fixed widths for key columns
                         const colStyles = {};
                         const auditStatusIdx = headers.indexOf('Audit Status');
-                        const discFoundIdx   = headers.indexOf('Discrepancy Found');
-                        const findingsIdx    = headers.indexOf('Discrepancy Details');
-                        const remarkIdx      = headers.indexOf('Optional Remark');
-                        const urgentIdx      = headers.indexOf('Urgent Action Required');
-                        const auditorIdx     = headers.indexOf('Auditor');
-                        const auditTimeIdx   = headers.indexOf('Audit Time');
-                        const podIdx         = headers.indexOf('POD Number');
-                        const suspStatusIdx  = headers.indexOf('Suspense Status');
-                        const suspPodIdx     = headers.indexOf('Suspense POD');
+                        const discFoundIdx = headers.indexOf('Discrepancy Found');
+                        const findingsIdx = headers.indexOf('Discrepancy Details');
+                        const remarkIdx = headers.indexOf('Optional Remark');
+                        const urgentIdx = headers.indexOf('Urgent Action Required');
+                        const auditorIdx = headers.indexOf('Auditor');
+                        const auditTimeIdx = headers.indexOf('Audit Time');
+                        const podIdx = headers.indexOf('POD Number');
+                        const suspStatusIdx = headers.indexOf('Suspense Status');
+                        const suspPodIdx = headers.indexOf('Suspense POD');
                         const missingPartIdx = headers.indexOf('Missing Part Name');
-                        if (auditStatusIdx  !== -1) colStyles[auditStatusIdx]  = { cellWidth: 16, halign: 'center', fontStyle: 'bold' };
-                        if (discFoundIdx    !== -1) colStyles[discFoundIdx]    = { cellWidth: 12, halign: 'center' };
-                        if (findingsIdx     !== -1) colStyles[findingsIdx]     = { cellWidth: 36 };
-                        if (remarkIdx       !== -1) colStyles[remarkIdx]       = { cellWidth: 24 };
-                        if (urgentIdx       !== -1) colStyles[urgentIdx]       = { cellWidth: 28 };
-                        if (auditorIdx      !== -1) colStyles[auditorIdx]      = { cellWidth: 18 };
-                        if (auditTimeIdx    !== -1) colStyles[auditTimeIdx]    = { cellWidth: 22 };
-                        if (podIdx          !== -1) colStyles[podIdx]          = { cellWidth: 16 };
-                        if (suspStatusIdx   !== -1) colStyles[suspStatusIdx]   = { cellWidth: 14, halign: 'center' };
-                        if (suspPodIdx      !== -1) colStyles[suspPodIdx]      = { cellWidth: 14 };
-                        if (missingPartIdx  !== -1) colStyles[missingPartIdx]  = { cellWidth: 22 };
+                        if (auditStatusIdx !== -1) colStyles[auditStatusIdx] = { cellWidth: 16, halign: 'center', fontStyle: 'bold' };
+                        if (discFoundIdx !== -1) colStyles[discFoundIdx] = { cellWidth: 12, halign: 'center' };
+                        if (findingsIdx !== -1) colStyles[findingsIdx] = { cellWidth: 36 };
+                        if (remarkIdx !== -1) colStyles[remarkIdx] = { cellWidth: 24 };
+                        if (urgentIdx !== -1) colStyles[urgentIdx] = { cellWidth: 28 };
+                        if (auditorIdx !== -1) colStyles[auditorIdx] = { cellWidth: 18 };
+                        if (auditTimeIdx !== -1) colStyles[auditTimeIdx] = { cellWidth: 22 };
+                        if (podIdx !== -1) colStyles[podIdx] = { cellWidth: 16 };
+                        if (suspStatusIdx !== -1) colStyles[suspStatusIdx] = { cellWidth: 14, halign: 'center' };
+                        if (suspPodIdx !== -1) colStyles[suspPodIdx] = { cellWidth: 14 };
+                        if (missingPartIdx !== -1) colStyles[missingPartIdx] = { cellWidth: 22 };
 
                         // Color "Audit Status" cells by value
                         const didParseCell = (data) => {
@@ -6271,7 +6485,7 @@ Upload the correct file.`);
         // ════════════════════════════════════════════════════════
         function showToast(msg, type, dur) {
             let t = document.getElementById('gist-toast');
-            if (!t) { t = document.createElement('div'); t.id = 'gist-toast';  t.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;max-width:92vw;width:380px;padding:14px 18px;border-radius:12px;font-size:0.8rem;font-weight:600;line-height:1.5;box-shadow:0 8px 32px rgba(0,0,0,0.22);cursor:pointer;transition:opacity 0.3s;'; t.onclick = () => { t.style.opacity = '0'; setTimeout(() => { if (t.parentNode) t.remove(); }, 300); }; document.body.appendChild(t); }
+            if (!t) { t = document.createElement('div'); t.id = 'gist-toast'; t.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;max-width:92vw;width:380px;padding:14px 18px;border-radius:12px;font-size:0.8rem;font-weight:600;line-height:1.5;box-shadow:0 8px 32px rgba(0,0,0,0.22);cursor:pointer;transition:opacity 0.3s;'; t.onclick = () => { t.style.opacity = '0'; setTimeout(() => { if (t.parentNode) t.remove(); }, 300); }; document.body.appendChild(t); }
             const S = { danger: { bg: 'rgba(239,68,68,0.97)', b: '#ef4444', c: '#fff', icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>' }, warning: { bg: 'rgba(245,158,11,0.97)', b: '#f59e0b', c: '#111', icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' }, success: { bg: 'rgba(16,185,129,0.97)', b: '#10b981', c: '#fff', icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' } };
             const s = S[type] || S.success; t.style.background = s.bg; t.style.border = '1px solid ' + s.b; t.style.color = s.c; t.style.opacity = '1'; t.style.display = 'flex'; t.style.alignItems = 'center'; t.style.gap = '10px'; t.innerHTML = s.icon + '<span>' + msg + '</span>';
             if (t._x) clearTimeout(t._x); t._x = setTimeout(() => { t.style.opacity = '0'; setTimeout(() => { if (t.parentNode) t.remove(); }, 300); }, (dur || 5000));
@@ -6988,12 +7202,12 @@ Upload the correct file.`);
             const total = cln + unc + pen;
             const pct = (n) => total > 0 ? Math.round(n / total * 100) + '%' : '0%';
             const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-            set('chart-leg-clean',        cln);
-            set('chart-leg-unclear',      unc);
-            set('chart-leg-pending',      pen);
-            set('chart-leg-clean-pct',    pct(cln));
-            set('chart-leg-unclear-pct',  pct(unc));
-            set('chart-leg-pending-pct',  pct(pen));
+            set('chart-leg-clean', cln);
+            set('chart-leg-unclear', unc);
+            set('chart-leg-pending', pen);
+            set('chart-leg-clean-pct', pct(cln));
+            set('chart-leg-unclear-pct', pct(unc));
+            set('chart-leg-pending-pct', pct(pen));
         }
 
         function renderDashChart() {
@@ -7008,10 +7222,10 @@ Upload the correct file.`);
             const allZero = total === 0;
 
             const cs = getComputedStyle(document.body);
-            const textMain  = cs.getPropertyValue('--text-main').trim()  || '#0f172a';
+            const textMain = cs.getPropertyValue('--text-main').trim() || '#0f172a';
             const textMuted = cs.getPropertyValue('--text-muted').trim() || '#94a3b8';
-            const bgSurface = cs.getPropertyValue('--surface').trim()    || '#ffffff';
-            const borderCol = cs.getPropertyValue('--border').trim()     || '#e2e8f0';
+            const bgSurface = cs.getPropertyValue('--surface').trim() || '#ffffff';
+            const borderCol = cs.getPropertyValue('--border').trim() || '#e2e8f0';
 
             dashChartInstance = new Chart(ctx.getContext('2d'), {
                 type: 'doughnut',
@@ -7063,7 +7277,7 @@ Upload the correct file.`);
                     afterDraw(chart) {
                         const { ctx: c, chartArea: { left, top, right, bottom } } = chart;
                         const cx = (left + right) / 2, cy = (top + bottom) / 2;
-                        const r  = Math.min(right - left, bottom - top);
+                        const r = Math.min(right - left, bottom - top);
                         c.save();
                         c.textAlign = 'center'; c.textBaseline = 'middle';
                         c.fillStyle = allZero ? textMuted : textMain;
@@ -7183,73 +7397,154 @@ Upload the correct file.`);
             }
         }
 
-        // Backup to Firestore
+        // Backup to Firestore — Full data with atomic-safe chunking
+        // SAFETY: Old data is NEVER deleted until new data is fully written & verified.
         async function uploadToGoogleDrive() {
             if (!window._fbUser) return showAppAlert("Please sign in with Google first.");
             showLoader(true);
             try {
-                // Build backup — strip raw_data and filtered_data (Excel rows) to stay
-                // under Firestore's 1MB per-document limit. Audit results (audit_data)
-                // are all that matters. Excel can be re-uploaded from the original file.
+                // Build FULL backup — including raw_data, filtered_data, settings — everything
                 let bk = {};
                 const ks = await localforage.keys();
                 for (let k of ks) {
-                    const item = await localforage.getItem(k);
-                    if (item && typeof item === 'object' && !Array.isArray(item)) {
-                        // Strip large Excel row arrays — keep only audit metadata
-                        const slim = {};
-                        for (let f in item) {
-                            if (f !== 'raw_data' && f !== 'filtered_data') {
-                                slim[f] = item[f];
-                            }
-                        }
-                        bk[k] = slim;
-                    } else {
-                        bk[k] = item;
-                    }
+                    bk[k] = await localforage.getItem(k);
                 }
                 bk['_secConfig'] = localStorage.getItem('auditor_sec') || '{}';
                 bk['_theme'] = localStorage.getItem('auditor_theme') || 'light';
                 bk['_customCodes'] = localStorage.getItem('auditor_custom_codes') || '{}';
                 bk['_savedAt'] = new Date().toISOString();
 
+                // Verify backup object is valid before uploading
+                const fullJson = JSON.stringify(bk);
+                try { JSON.parse(fullJson); } catch (_) {
+                    showLoader(false);
+                    return showAppAlert("Backup failed: data integrity check failed. Please try again.");
+                }
+
+                const sizeMB = (fullJson.length / (1024 * 1024)).toFixed(2);
                 const dealerID = window._fbUser.email.split('@')[0].toUpperCase();
-                const docRef = window._fbDoc(window._fbDb, 'users', dealerID, 'backups', 'latest');
-                await window._fbSetDoc(docRef, bk);
+                const chunksCol = window._fbCollection(window._fbDb, 'users', dealerID, 'backups', 'latest', 'chunks');
+
+                // STEP 1: Write NEW chunks first (don't touch old data)
+                const CHUNK_SIZE = 800000; // 800KB per chunk
+                const totalChunks = Math.ceil(fullJson.length / CHUNK_SIZE);
+                const batchId = Date.now(); // unique ID so new chunks don't clash with old
+
+                for (let i = 0; i < totalChunks; i++) {
+                    const chunkData = fullJson.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+                    const chunkRef = window._fbDoc(chunksCol, 'v' + batchId + '_chunk_' + i);
+                    await window._fbSetDoc(chunkRef, { idx: i, data: chunkData, batch: batchId });
+                }
+
+                // STEP 2: Verify newly written chunks by reading them back
+                const verifySnap = await window._fbGetDocs(chunksCol);
+                const newChunks = [];
+                verifySnap.forEach(d => {
+                    const cd = d.data();
+                    if (cd.batch === batchId) newChunks.push(cd);
+                });
+                if (newChunks.length !== totalChunks) {
+                    showLoader(false);
+                    return showAppAlert("Backup verification failed: only " + newChunks.length + "/" + totalChunks + " chunks written. Old backup is safe. Please retry.");
+                }
+
+                // STEP 3: New data verified — NOW safe to delete old chunks
+                const delPromises = [];
+                verifySnap.forEach(d => {
+                    const cd = d.data();
+                    if (cd.batch !== batchId) delPromises.push(window._fbDeleteDoc(d.ref));
+                });
+                await Promise.all(delPromises);
+
+                // STEP 4: Rename chunk IDs to clean names (optional but cleaner)
+                // Skip rename — chunks already have unique IDs, no conflict possible
+
+                // STEP 5: Update metadata doc LAST (this is the "commit" point)
+                const metaRef = window._fbDoc(window._fbDb, 'users', dealerID, 'backups', 'latest');
+                await window._fbSetDoc(metaRef, {
+                    _savedAt: bk['_savedAt'],
+                    _totalChunks: totalChunks,
+                    _totalSize: fullJson.length,
+                    _batchId: batchId,
+                    _version: 2  // v2 = chunked full backup
+                });
 
                 const ds = new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
                 localStorage.setItem('gdrive_last_sync', ds);
                 showLoader(false);
                 await checkGdriveBackupStatus();
-                showToast('Backup saved to Cloud — ' + ds, 'success', 4000);
+                showToast(`✅ Full backup saved (${sizeMB} MB, ${totalChunks} chunks) — ${ds}`, 'success', 5000);
             } catch (e) {
                 showLoader(false);
-                showAppAlert("Backup Failed: " + e.message);
+                showAppAlert("Backup Failed: " + e.message + "\n\nYour existing cloud backup (if any) is still safe.");
             }
         }
 
-        // Restore from Firestore
+        // Restore from Firestore — supports v2 chunked + v1 single-doc
+        // SAFETY: All cloud data is fully downloaded & verified BEFORE local data is cleared.
         async function restoreFromGoogleDrive() {
             if (!window._fbUser) return showAppAlert("Please sign in with Google first.");
 
-            showAppConfirm("Restore from Cloud?\n\nThis will overwrite all local data on this device.", async () => {
+            showAppConfirm("Restore from Cloud?\n\nThis will overwrite all local data on this device.\nYour audit data and settings will be replaced with the cloud backup.", async () => {
                 showLoader(true);
                 try {
                     const dealerID = window._fbUser.email.split('@')[0].toUpperCase();
-                    const docRef = window._fbDoc(window._fbDb, 'users', dealerID, 'backups', 'latest');
-                    const snap = await window._fbGetDoc(docRef);
+                    const metaRef = window._fbDoc(window._fbDb, 'users', dealerID, 'backups', 'latest');
+                    const metaSnap = await window._fbGetDoc(metaRef);
 
-                    if (!snap.exists()) {
+                    if (!metaSnap.exists()) {
                         showLoader(false);
                         return showAppAlert("No backup found on cloud. Please backup first.");
                     }
 
-                    const data = snap.data();
+                    const meta = metaSnap.data();
+                    let data;
 
-                    // Clear local storage first
+                    if (meta._version === 2 && meta._totalChunks) {
+                        // v2 chunked backup — read all chunks and reassemble
+                        const chunksCol = window._fbCollection(window._fbDb, 'users', dealerID, 'backups', 'latest', 'chunks');
+                        const chunksSnap = await window._fbGetDocs(chunksCol);
+                        const chunks = [];
+                        const targetBatch = meta._batchId;
+                        chunksSnap.forEach(d => {
+                            const cd = d.data();
+                            // Only use chunks from the correct batch
+                            if (!targetBatch || cd.batch === targetBatch) {
+                                chunks.push({ idx: cd.idx, data: cd.data });
+                            }
+                        });
+                        chunks.sort((a, b) => a.idx - b.idx);
+
+                        // Verify chunk count matches metadata
+                        if (chunks.length !== meta._totalChunks) {
+                            showLoader(false);
+                            return showAppAlert("Restore aborted: cloud backup incomplete (" + chunks.length + "/" + meta._totalChunks + " chunks found).\n\nLocal data is untouched. Please create a fresh backup from a device with complete data.");
+                        }
+
+                        const fullJson = chunks.map(c => c.data).join('');
+
+                        // Verify data integrity before clearing local
+                        try {
+                            data = JSON.parse(fullJson);
+                        } catch (_) {
+                            showLoader(false);
+                            return showAppAlert("Restore aborted: cloud backup data is corrupted.\n\nLocal data is untouched. Please create a fresh backup.");
+                        }
+                    } else {
+                        // v1 old format — data was directly in the document
+                        data = meta;
+                    }
+
+                    // Verify critical keys exist in backup
+                    const sessionKeys = Object.keys(data).filter(k => k.startsWith('audit_'));
+                    if (sessionKeys.length === 0 && !data['_customCodes'] && !data['_secConfig']) {
+                        showLoader(false);
+                        return showAppAlert("Restore aborted: backup appears empty — no audit sessions or settings found.\n\nLocal data is untouched.");
+                    }
+
+                    // ALL CHECKS PASSED — now safe to clear local and restore
                     await localforage.clear();
 
-                    const SKIP = new Set(['_secConfig','_theme','_customCodes','_savedAt','_autosync']);
                     for (let k in data) {
                         if (k === '_secConfig') {
                             localStorage.setItem('auditor_sec', typeof data[k] === 'string' ? data[k] : JSON.stringify(data[k]));
@@ -7260,22 +7555,20 @@ Upload the correct file.`);
                             localStorage.setItem('auditor_custom_codes', typeof data[k] === 'string' ? data[k] : JSON.stringify(data[k]));
                         } else if (k === '_autosync') {
                             localStorage.setItem('gist_autosync', data[k]);
-                        } else if (k === '_savedAt') {
+                        } else if (k === '_savedAt' || k === '_totalChunks' || k === '_totalSize' || k === '_version' || k === '_batchId') {
                             // skip — metadata only
                         } else {
-                            // Restore session data — raw_data and filtered_data were stripped at backup
-                            // so the session will load empty rows (user re-uploads Excel as normal)
                             await localforage.setItem(k, data[k]);
                         }
                     }
 
                     localStorage.setItem('gdrive_connected', 'true');
                     showLoader(false);
-                    showToast('Restore complete! Reloading...', 'success', 3000);
-                    setTimeout(() => window.location.reload(), 2000);
+                    showToast(`✅ Full restore complete! ${sessionKeys.length} audit session(s) recovered. Reloading...`, 'success', 4000);
+                    setTimeout(() => window.location.reload(), 2500);
                 } catch (e) {
                     showLoader(false);
-                    showAppAlert("Restore Failed: " + e.message);
+                    showAppAlert("Restore Failed: " + e.message + "\n\nYour local data is untouched.");
                 }
             });
         }
@@ -7455,14 +7748,14 @@ Upload the correct file.`);
 
                     const userPerms = Array.isArray(u.permissions) ? u.permissions : Object.values(u.permissions || {});
                     const allScreens = [
-                        { id: 'screen-new-audit',  label: 'New Audit' },
-                        { id: 'screen-archive',    label: 'Drafts & Archives' },
-                        { id: 'screen-dashboard',  label: 'Dashboard' },
-                        { id: 'screen-reports',    label: 'Reports Export' },
-                        { id: 'screen-backup',     label: 'Backup & Restore' },
-                        { id: 'screen-settings',   label: 'Custom Codes' },
-                        { id: 'screen-security',   label: 'Security Settings' },
-                        { id: 'screen-users',      label: 'User Management' },
+                        { id: 'screen-new-audit', label: 'New Audit' },
+                        { id: 'screen-archive', label: 'Drafts & Archives' },
+                        { id: 'screen-dashboard', label: 'Dashboard' },
+                        { id: 'screen-reports', label: 'Reports Export' },
+                        { id: 'screen-backup', label: 'Backup & Restore' },
+                        { id: 'screen-settings', label: 'Custom Codes' },
+                        { id: 'screen-security', label: 'Security Settings' },
+                        { id: 'screen-users', label: 'User Management' },
                     ];
                     // Check if this is a master-level user (has all 8 permissions)
                     const effectivePerms = (u.email && u.email.toLowerCase() === 'n3235wrty@warrantyauditor.app')
@@ -7496,7 +7789,7 @@ Upload the correct file.`);
                         </div>` : ''}
                         <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:10px;">
                             <b>TOTP:</b> ${hasTotp ? '<span style="color:var(--success)">Configured</span>' : (u.pendingTotpSecret ? '<span style="color:var(--warning)">Pending Setup</span>' : '<span style="color:var(--danger)">Not Setup</span>')}&nbsp;&nbsp;
-                            <b>Last Login:</b> ${u.lastLogin ? new Date(u.lastLogin).toLocaleString('en-IN', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'}) : '<span style="color:var(--text-muted)">Never</span>'}
+                            <b>Last Login:</b> ${u.lastLogin ? new Date(u.lastLogin).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '<span style="color:var(--text-muted)">Never</span>'}
                         </div>
 
                         <!-- Permissions section -->
@@ -7562,7 +7855,7 @@ Upload the correct file.`);
                 const { getAuth, signInWithEmailAndPassword, updatePassword } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
 
                 const tempName = 'TempApprove_' + Date.now();
-                const tempApp  = initializeApp({
+                const tempApp = initializeApp({
                     apiKey: 'AIzaSyAJZDURUl_Xh2FWjoVwGLZ4yuhVdFUZMHc',
                     authDomain: 'warranty-auditor.firebaseapp.com',
                     projectId: 'warranty-auditor',
@@ -7582,7 +7875,7 @@ Upload the correct file.`);
                 // We need to sign in as the user with their CURRENT (old) password — but we don't have it.
                 // So: mark pendingPasswordApproved = true. On login in index.html, if approved, update Firebase Auth password.
 
-                await deleteApp(tempApp).catch(() => {});
+                await deleteApp(tempApp).catch(() => { });
 
                 // Mark as approved — index.html will handle the actual Auth password update on next login
                 await window._fbUpdateDoc(ref, {
@@ -7595,7 +7888,7 @@ Upload the correct file.`);
                 showToast(`Password reset approved for ${dealerID}. They can now login with new password.`, 'success', 4000);
                 // Refresh user list
                 setTimeout(openUserManagement, 500);
-            } catch(e) {
+            } catch (e) {
                 showLoader(false);
                 showAppAlert('Approval failed: ' + e.message);
             }
@@ -7635,7 +7928,7 @@ Upload the correct file.`);
             if (pwd.length < 8) return showToast('Password must be at least 8 characters.', 'warning', 3000);
             if (!/[a-zA-Z]/.test(pwd)) return showToast('Password must contain at least one letter (A–Z).', 'warning', 3000);
             if (!/[0-9]/.test(pwd)) return showToast('Password must contain at least one number (0–9).', 'warning', 3000);
-            const commonPasswords = ['password','password1','password123','123456','12345678','1234567890','qwerty','abc123','letmein','welcome','admin','admin123','iloveyou','sunshine','monkey','shadow','master','dragon','passw0rd','111111','000000'];
+            const commonPasswords = ['password', 'password1', 'password123', '123456', '12345678', '1234567890', 'qwerty', 'abc123', 'letmein', 'welcome', 'admin', 'admin123', 'iloveyou', 'sunshine', 'monkey', 'shadow', 'master', 'dragon', 'passw0rd', '111111', '000000'];
             if (commonPasswords.includes(pwd.toLowerCase())) return showToast('This password is too common. Choose a more unique password.', 'warning', 4000);
             if (pwd !== conf) return showToast('Passwords do not match.', 'warning', 3000);
             closeAdminChangePwdSheet();
@@ -7656,7 +7949,7 @@ Upload the correct file.`);
                 });
                 showLoader(false);
                 showToast('Password reset queued for ' + dealerID + '. They will use new password on next login.', 'success', 4000);
-            } catch(e) {
+            } catch (e) {
                 showLoader(false);
                 showAppAlert('Failed to set password: ' + e.message);
             }
@@ -7671,7 +7964,7 @@ Upload the correct file.`);
                 await window._fbUpdateDoc(docRef, { permissions: checked });
                 showLoader(false);
                 showToast('Permissions saved for ' + uid, 'success', 3000);
-            } catch(e) {
+            } catch (e) {
                 showLoader(false);
                 showAppAlert("Failed to save: " + e.message);
             }
@@ -7686,8 +7979,8 @@ Upload the correct file.`);
             if (!dealerID || !password) return showAppAlert("Please enter both User ID and Password.");
             if (password.length < 8) return showAppAlert("Password must be at least 8 characters.");
             if (!/[a-zA-Z]/.test(password)) return showAppAlert("Password must contain at least one letter (A–Z).");
-            if (!/[0-9]/.test(password))    return showAppAlert("Password must contain at least one number (0–9).");
-            const _commonPwds = ['password','password1','password123','123456','12345678','1234567890','qwerty','abc123','letmein','welcome','admin','admin123','iloveyou','sunshine','monkey','shadow','master','dragon','passw0rd','111111','000000'];
+            if (!/[0-9]/.test(password)) return showAppAlert("Password must contain at least one number (0–9).");
+            const _commonPwds = ['password', 'password1', 'password123', '123456', '12345678', '1234567890', 'qwerty', 'abc123', 'letmein', 'welcome', 'admin', 'admin123', 'iloveyou', 'sunshine', 'monkey', 'shadow', 'master', 'dragon', 'passw0rd', '111111', '000000'];
             if (_commonPwds.includes(password.toLowerCase())) return showAppAlert("This password is too common. Please choose a more unique password.");
 
             showLoader(true);
@@ -7824,7 +8117,7 @@ Upload the correct file.`);
             if (newPwd.length < 8) return showAppAlert('New password must be at least 8 characters.');
             if (!/[a-zA-Z]/.test(newPwd)) return showAppAlert('Password must contain at least one letter (A–Z).');
             if (!/[0-9]/.test(newPwd)) return showAppAlert('Password must contain at least one number (0–9).');
-            const commonPasswords = ['password','password1','password123','123456','12345678','1234567890','qwerty','abc123','letmein','welcome','admin','admin123','iloveyou','sunshine','monkey','shadow','master','dragon','passw0rd','111111','000000'];
+            const commonPasswords = ['password', 'password1', 'password123', '123456', '12345678', '1234567890', 'qwerty', 'abc123', 'letmein', 'welcome', 'admin', 'admin123', 'iloveyou', 'sunshine', 'monkey', 'shadow', 'master', 'dragon', 'passw0rd', '111111', '000000'];
             if (commonPasswords.includes(newPwd.toLowerCase())) return showAppAlert('This password is too common. Please choose a more unique password.');
             if (newPwd !== confirm) return showAppAlert('New passwords do not match.');
             showLoader(true);
@@ -7843,10 +8136,10 @@ Upload the correct file.`);
                 showLoader(false);
                 closeChangePwdSheet();
                 showToast('Password updated successfully!', 'success', 3000);
-            } catch(e) {
+            } catch (e) {
                 showLoader(false);
                 const msg = e.code === 'auth/wrong-password' ? 'Current password is incorrect.' :
-                            e.code === 'auth/too-many-requests' ? 'Too many attempts. Try again later.' : e.message;
+                    e.code === 'auth/too-many-requests' ? 'Too many attempts. Try again later.' : e.message;
                 showAppAlert('Password change failed: ' + msg);
             }
         }
@@ -7860,7 +8153,7 @@ Upload the correct file.`);
                 localStorage.removeItem('totp_verified_at');
                 localStorage.removeItem('totp_verified_uid');
                 if (window._fbSignOut && window._fbAuth) {
-                    try { await window._fbSignOut(window._fbAuth); } catch(e) {}
+                    try { await window._fbSignOut(window._fbAuth); } catch (e) { }
                 }
                 window.location.href = 'index.html';
             });
@@ -7974,7 +8267,7 @@ Upload the correct file.`);
         (function addSelfChangePwdEyes() {
             const fields = [
                 { id: 'cpwd-current', label: 'Current Password' },
-                { id: 'cpwd-new',     label: 'New Password' },
+                { id: 'cpwd-new', label: 'New Password' },
                 { id: 'cpwd-confirm', label: 'Confirm Password' }
             ];
             fields.forEach(f => {
