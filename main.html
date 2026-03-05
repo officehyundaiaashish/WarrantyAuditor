@@ -2696,7 +2696,7 @@
                         </svg>
                     </div>
                     <div>
-                        <div style="font-size:0.95rem;font-weight:800;color:var(--text-main);">Warranty Auditor</div>
+                        <div style="font-size:0.95rem;font-weight:800;color:var(--text-main);">Audit-it</div>
                         <div style="font-size:0.72rem;color:var(--text-muted);margin-top:1px;">by Aashish Giri H</div>
                     </div>
                 </div>
@@ -2909,7 +2909,7 @@
     <div id="screen-faq" class="screen">
         <iframe src="audfaq.html" id="faq-iframe"
             style="width:100%; flex:1; border:none; min-height:100vh; display:block;"
-            title="FAQ — Warranty Auditor"
+            title="FAQ — Audit-it"
             onload="try{this.contentWindow.scrollTo(0,0);this.contentWindow.document.activeElement.blur();}catch(e){}">
         </iframe>
     </div>
@@ -4100,7 +4100,7 @@
                 backupObj['_gdriveLastSync'] = localStorage.getItem('gdrive_last_sync') || '';
                 const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupObj));
                 const dlAnchorElem = document.createElement('a'); dlAnchorElem.setAttribute("href", dataStr);
-                dlAnchorElem.setAttribute("download", `WarrantyAuditor_Backup_${new Date().toISOString().split('T')[0]}.json`);
+                dlAnchorElem.setAttribute("download", `Auditit_Backup_${new Date().toISOString().split('T')[0]}.json`);
                 dlAnchorElem.click(); showAppAlert("Backup downloaded successfully.");
             } catch (e) { showAppAlert("Backup failed: " + e.message); }
             showLoader(false);
@@ -6073,7 +6073,7 @@ Upload the correct file.`);
                         for (let i = 1; i <= pageCount; i++) {
                             doc.setPage(i);
                             doc.setFontSize(7); doc.setFont(undefined, 'normal'); doc.setTextColor(148, 163, 184);
-                            doc.text(`Warranty Auditor  |  Aashish Giri H  |  Page ${i} of ${pageCount}`, pageW / 2, doc.internal.pageSize.getHeight() - 5, { align: 'center' });
+                            doc.text(`Audit-it  |  Aashish Giri H  |  Page ${i} of ${pageCount}`, pageW / 2, doc.internal.pageSize.getHeight() - 5, { align: 'center' });
                         }
 
                         doc.save(fileName + ".pdf");
