@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production Date Calculator</title>
+    <style>
+        :root {
+            --bg: #111827;
+            --surface: #1f2937;
+            --text: #f9fafb;
+            --primary: #2ab5a5;
+            --danger: #ef4444;
+            --success: #10b981;
+            --border: #374151;
+            --radius: 12px;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: var(--surface);
+            padding: 24px;
+            border-radius: var(--radius);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid var(--border);
+        }
+
+        h2 {
+            margin-top: 0;
+            color: var(--primary);
+            font-size: 1.25rem;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+            color: #9ca3af;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: white;
+            box-sizing: border-box;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .valid {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .invalid {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Batch Code Decoder</h2>
+        <div class="input-group">
+            <label>Category</label>
+            <select id="standalone-category">
+                <option value="2005">Main (A=2005)</option>
+                <option value="2019">Cooling Coil (A=2019)</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>Batch Code</label>
+            <input type="text" id="standalone-code" placeholder="Enter code (e.g. AFE)" maxlength="3"
+                style="text-transform: uppercase;">
+        </div>
+        <input type="hidden" id="standalone-claim-date">
+        <div id="standalone-result" class="result" style="display:none;"></div>
+    </div>
+
+    <script>
+        const MONTH_ALPHA = { 'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7, 'I': 8, 'J': 9, 'K': 10, 'L': 11 };
+        const DAY_ALPHA = {};
+        for (let i = 0; i < 26; i++) DAY_ALPHA[String.fromCharCode(65 + i)] = i + 1;
+        for (let i = 1; i <= 5; i++) DAY_ALPHA[String(i)] = 26 + i;
+
+        /**
+         * Decodes a 3-character batch code into a Date object.
+         */
+        function decodeBatchCode(code, baseYear) {
+            code = code.trim().toUpperCase();
+            if (code.length < 3) return { error: "Code too short" };
+
+            const yCh = code[0], mCh = code[1], dCh = code[2];
+
+            // Year: A=baseYear, B=baseYear+1, ...
+            const yearOffset = yCh.charCodeAt(0) - 65;
+            const year = baseYear + yearOffset;
+
+            // Month
+            if (!(mCh in MONTH_ALPHA)) return { error: `Invalid month '${mCh}'` };
+            const month = MONTH_ALPHA[mCh];
+
+            // Day
+            if (!(dCh in DAY_ALPHA)) return { error: `Invalid day '${dCh}'` };
+            const day = DAY_ALPHA[dCh];
+
+            const dt = new Date(year, month, day);
+            if (isNaN(dt.getTime()) || dt.getDate() !== day) return { error: "Invalid date" };
+
+            return { date: dt };
+        }
+
+        /**
+         * Validates production date against claim date.
+         */
+        function validateProductionDate(prodDate, claimDate) {
+            if (!prodDate || !claimDate) return null;
+
+            const pTime = prodDate.getTime();
+            const cTime = claimDate.getTime();
+
+            // 1. Post-dated check
+            if (pTime > cTime) {
+                return { status: "invalid", message: "Part does not belong to vehicle (Post-dated)." };
+            }
+
+            // 2. 6-month range check
+            const sixMonthsAgo = new Date(claimDate);
+            sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+            if (pTime < sixMonthsAgo.getTime()) {
+                return { status: "invalid", message: "Part too old than allowed range. Still part not related to vehicle." };
+            }
+
+            return { status: "valid", message: "Part production date valid for vehicle." };
+        }
+
+        // Standalone UI logic
+        const catSelect = document.getElementById('standalone-category');
+        const codeInput = document.getElementById('standalone-code');
+        const resDiv = document.getElementById('standalone-result');
+
+        function updateStandalone() {
+            const code = codeInput.value.trim();
+            if (code.length < 3) { resDiv.style.display = 'none'; return; }
+
+            const baseYear = parseInt(catSelect.value);
+            const decoded = decodeBatchCode(code, baseYear);
+
+            resDiv.style.display = 'block';
+            if (decoded.error) {
+                resDiv.className = 'result invalid';
+                resDiv.innerText = "❌ " + decoded.error;
+            } else {
+                resDiv.className = 'result valid';
+                const ds = decoded.date.toLocaleDateString('en-GB').replace(/\//g, '-');
+                resDiv.innerText = "Decoded: " + ds;
+            }
+        }
+
+        if (codeInput) {
+            codeInput.addEventListener('input', updateStandalone);
+            catSelect.addEventListener('change', updateStandalone);
+        }
+
+        // Export functions for main.html (via window)
+        window.BatchDecoder = {
+            decode: decodeBatchCode,
+            validate: validateProductionDate
+        };
+    </script>
+</body>
+
+</html>
