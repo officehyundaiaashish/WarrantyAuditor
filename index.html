@@ -607,6 +607,23 @@
             hideError('login-error');
             showLoading();
 
+            // ── LOGIN KILL SWITCH CHECK ──
+            // Master ID (N3235WRTY) is always exempt from kill switch
+            if (uidInput.toUpperCase() !== 'N3235WRTY') {
+                try {
+                    const configRef = window._fbDoc(window._fbDb, 'config', 'appSettings');
+                    const configSnap = await window._fbGetDoc(configRef);
+                    if (configSnap.exists() && configSnap.data().loginDisabled === true) {
+                        hideLoading();
+                        showError('login-error', '🔒 Login is currently disabled by the administrator. Please try again later.');
+                        return;
+                    }
+                } catch (e) {
+                    // Firestore unavailable — allow login (fail open for availability)
+                    console.warn('Kill switch check failed (non-fatal):', e.message);
+                }
+            }
+
             // Transform ID to pseudo-email for Firebase Auth
             authEmail = uidInput.toLowerCase() + "@warrantyauditor.app";
 
@@ -643,6 +660,22 @@
                     localStorage.setItem('wa_last_uid', uidInput.toUpperCase());
                     localStorage.removeItem('wa_fail_' + uidInput.toUpperCase());
                     updateAttemptDots(0);
+
+                    // ── TOTP DISABLED BY ADMIN ──
+                    // If admin has disabled 2FA for this user, skip TOTP entirely
+                    if (userData.totpDisabled === true) {
+                        const _now = new Date().toISOString();
+                        const _uid = uidInput.toUpperCase();
+                        localStorage.setItem('totp_verified_at', _now);
+                        localStorage.setItem('totp_verified_uid', _uid);
+                        sessionStorage.setItem('totp_verified', 'true');
+                        sessionStorage.setItem('totp_verified_uid', _uid);
+                        sessionStorage.setItem('wau_uid', currentUserId);
+                        window._fbUpdateDoc(userDocRef, { lastLogin: _now })
+                            .catch(e => console.warn('lastLogin write failed:', e.message));
+                        window.location.href = "main.html";
+                        return;
+                    }
 
                     if (userData.totpSecret) {
                         // Secret already confirmed — go straight to OTP entry (no QR ever again)
