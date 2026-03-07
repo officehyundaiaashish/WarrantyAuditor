@@ -5,7 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Audit-it — Login</title>
-
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2ab5a5">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Audit-it">
     <!-- Google Fonts: Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet"/>
 
@@ -41,6 +47,18 @@
         window._fbUpdateDoc = updateDoc;
         window._fbSignInWithEmail = signInWithEmailAndPassword;
         window._fbCreateUser = createUserWithEmailAndPassword;
+
+        // Login bypass check — if admin enabled, skip login entirely
+        (async () => {
+            try {
+                const bypassRef = doc(db, 'config', 'appSettings');
+                const bypassSnap = await getDoc(bypassRef);
+                if (bypassSnap.exists() && bypassSnap.data().loginBypass === true) {
+                    window.location.replace('main.html');
+                    return;
+                }
+            } catch(e) { /* Firebase unavailable, show login normally */ }
+        })();
 
         // Ensure user is signed out when arriving on the login page
         signOut(auth);
@@ -491,6 +509,39 @@
         </div>
     </div>
 
+    <!-- PWA Install Banner -->
+    <div id="pwa-install-banner" style="display:none; position:fixed; bottom:0; left:0; right:0; z-index:3000;
+        background: linear-gradient(135deg, #2ab5a5 0%, #1e9587 100%);
+        color: #fff; padding: 14px 16px 18px; box-shadow: 0 -4px 24px rgba(0,0,0,0.18);
+        font-family:'Poppins',sans-serif;">
+        <style>
+            @keyframes slideUpBanner {
+                from { transform: translateY(100%); opacity: 0; }
+                to   { transform: translateY(0);    opacity: 1; }
+            }
+            #pwa-install-banner { animation: slideUpBanner 0.4s cubic-bezier(0.16,1,0.3,1); }
+        </style>
+        <div style="display:flex; align-items:center; gap:12px; max-width:500px; margin:0 auto;">
+            <div style="background:rgba(255,255,255,0.2); border-radius:12px; padding:8px; flex-shrink:0;">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+            </div>
+            <div style="flex:1; min-width:0;">
+                <div style="font-weight:800; font-size:0.88rem; margin-bottom:2px;">Audit-it App Install Karein</div>
+                <div style="font-size:0.74rem; opacity:0.88; line-height:1.3;">Home screen par add karein — offline bhi kaam karta hai</div>
+            </div>
+            <div style="display:flex; gap:8px; flex-shrink:0;">
+                <button onclick="dismissPwaInstall()" style="background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.35); color:white; padding:8px 13px; border-radius:8px; font-size:0.76rem; font-weight:700; cursor:pointer; font-family:inherit;">
+                    Baad Mein
+                </button>
+                <button onclick="triggerPwaInstall()" style="background:white; border:none; color:#1e9587; padding:8px 14px; border-radius:8px; font-size:0.76rem; font-weight:800; cursor:pointer; font-family:inherit; box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+                    Install
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let currentUserId = "";
         let currentTempSecret = ""; // Temporary secret generated during QR phase
@@ -607,21 +658,17 @@
             hideError('login-error');
             showLoading();
 
-            // ── LOGIN KILL SWITCH CHECK ──
-            // Master ID (N3235WRTY) is always exempt from kill switch
+            // Login kill switch check (Master is always exempt)
             if (uidInput.toUpperCase() !== 'N3235WRTY') {
                 try {
                     const configRef = window._fbDoc(window._fbDb, 'config', 'appSettings');
                     const configSnap = await window._fbGetDoc(configRef);
                     if (configSnap.exists() && configSnap.data().loginDisabled === true) {
                         hideLoading();
-                        showError('login-error', '🔒 Login is currently disabled by the administrator. Please try again later.');
+                        showError('login-error', 'Login is currently disabled by the administrator. Please try again later.');
                         return;
                     }
-                } catch (e) {
-                    // Firestore unavailable — allow login (fail open for availability)
-                    console.warn('Kill switch check failed (non-fatal):', e.message);
-                }
+                } catch(e) { /* Firestore unavailable — allow login */ }
             }
 
             // Transform ID to pseudo-email for Firebase Auth
@@ -661,8 +708,7 @@
                     localStorage.removeItem('wa_fail_' + uidInput.toUpperCase());
                     updateAttemptDots(0);
 
-                    // ── TOTP DISABLED BY ADMIN ──
-                    // If admin has disabled 2FA for this user, skip TOTP entirely
+                    // TOTP disabled by admin — skip 2FA entirely
                     if (userData.totpDisabled === true) {
                         const _now = new Date().toISOString();
                         const _uid = uidInput.toUpperCase();
@@ -671,8 +717,7 @@
                         sessionStorage.setItem('totp_verified', 'true');
                         sessionStorage.setItem('totp_verified_uid', _uid);
                         sessionStorage.setItem('wau_uid', currentUserId);
-                        window._fbUpdateDoc(userDocRef, { lastLogin: _now })
-                            .catch(e => console.warn('lastLogin write failed:', e.message));
+                        window._fbUpdateDoc(userDocRef, { lastLogin: _now }).catch(() => {});
                         window.location.href = "main.html";
                         return;
                     }
@@ -990,13 +1035,54 @@
             const length = 20;
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
             let secret = '';
-            // Make sure crypto is available
             let array = new Uint8Array(length);
             window.crypto.getRandomValues(array);
             for (let i = 0; i < length; i++) {
                 secret += chars[array[i] % chars.length];
             }
             return secret;
+        }
+
+        // PWA Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(() => {});
+            });
+        }
+
+        // PWA Install prompt
+        let _pwaPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            _pwaPrompt = e;
+            const dismissed = localStorage.getItem('pwa_dismissed');
+            const isOld = dismissed && dismissed !== 'permanent' && (Date.now() - parseInt(dismissed)) > 7 * 86400000;
+            if (!dismissed || isOld) {
+                setTimeout(() => {
+                    const b = document.getElementById('pwa-install-banner');
+                    if (b) b.style.display = 'block';
+                }, 1500);
+            }
+        });
+
+        function triggerPwaInstall() {
+            if (!_pwaPrompt) return;
+            _pwaPrompt.prompt();
+            _pwaPrompt.userChoice.then(c => {
+                if (c.outcome === 'accepted') localStorage.setItem('pwa_dismissed', 'permanent');
+                document.getElementById('pwa-install-banner').style.display = 'none';
+                _pwaPrompt = null;
+            });
+        }
+
+        function dismissPwaInstall() {
+            document.getElementById('pwa-install-banner').style.display = 'none';
+            localStorage.setItem('pwa_dismissed', Date.now().toString());
+        }
+
+        // Already installed
+        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+            localStorage.setItem('pwa_dismissed', 'permanent');
         }
 
     </script>
