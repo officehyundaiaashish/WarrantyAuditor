@@ -5,7 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Audit-it</title>
-    <meta name="theme-color" content="#0d9488">
+    <meta name="theme-color" content="#f4f7f6" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)">
+    <meta id="theme-color-meta" name="theme-color" content="#f4f7f6">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -378,7 +380,7 @@
         }
 
         .app-title-icon {
-            height: 38px;
+            height: 46px;
             width: auto;
             flex-shrink: 0;
             display: block;
@@ -4280,6 +4282,9 @@
         function applyTheme(theme) {
             if (theme === 'dark') document.body.setAttribute('data-theme', 'dark');
             else document.body.removeAttribute('data-theme');
+            // Status bar color ko header ke saath match karo
+            const meta = document.getElementById('theme-color-meta');
+            if (meta) meta.content = theme === 'dark' ? '#111827' : '#f4f7f6';
         }
         let savedTheme = localStorage.getItem('auditor_theme') || 'light';
         applyTheme(savedTheme);
