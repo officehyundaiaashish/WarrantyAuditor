@@ -8,6 +8,14 @@
     <meta name="theme-color" content="#f4f7f6" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)">
     <meta id="theme-color-meta" name="theme-color" content="#f4f7f6">
+    <script>
+      // Page load pe turant sahi color set karo — flicker na ho
+      (function() {
+        const t = localStorage.getItem('auditor_theme') || 'light';
+        const color = t === 'dark' ? '#111827' : '#f4f7f6';
+        document.getElementById('theme-color-meta').content = color;
+      })();
+    </script>
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
