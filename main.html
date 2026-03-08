@@ -7443,24 +7443,6 @@ Upload the correct file.`);
                 const activeEl = document.activeElement;
                 const isTypingInModal = activeEl && (activeEl.id === 'modal-remark' || activeEl.id === 'modal-extra-text' || activeEl.tagName === 'TEXTAREA');
 
-                // First-letter key highlights matching discrepancy option in dropdown
-                if (!isTypingInModal && /^[a-zA-Z]$/.test(e.key) && !e.ctrlKey && !e.altKey && !e.metaKey) {
-                    const letter = e.key.toUpperCase();
-                    const options = document.querySelectorAll('#wrap-modal-disc .custom-option');
-                    let matched = null;
-                    for (const opt of options) {
-                        if (opt.textContent.trim().toUpperCase().startsWith(letter)) { matched = opt; break; }
-                    }
-                    if (matched) {
-                        e.preventDefault();
-                        const wrapper = document.getElementById('wrap-modal-disc');
-                        if (!wrapper.classList.contains('open')) wrapper.classList.add('open');
-                        options.forEach(o => o.classList.remove('highlighted'));
-                        matched.classList.add('highlighted');
-                        matched.scrollIntoView({ block: 'nearest' });
-                    }
-                    return;
-                }
 
                 if (e.key === 'Enter') {
                     e.preventDefault();
