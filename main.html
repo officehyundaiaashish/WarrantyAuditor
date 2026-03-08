@@ -5959,7 +5959,7 @@ Upload the correct file.`);
             });
 
             for (const [key, meta] of sortedEntries) {
-                if (meta.finalized === showFinalized) {
+                if (Boolean(meta.finalized) === Boolean(showFinalized)) {
                     const tr = document.createElement('tr');
                     const auditNum = meta.audit_number || '';
                     const isFrozen = !!meta.audit_number; // Audit number generated = frozen
