@@ -229,6 +229,12 @@
                     // Putting this in finally ensures menu/UI never stays blank.
                     if (typeof initGdriveUI === 'function') setTimeout(initGdriveUI, 100);
                     if (typeof updateMenuRBAC === 'function') updateMenuRBAC();
+                    
+                    // --- Navigation History Initialisation ---
+                    const initialHash = window.location.hash.substring(1);
+                    const initialScreen = (initialHash && document.getElementById(initialHash)) ? initialHash : 'screen-menu';
+                    history.replaceState({ screen: initialScreen }, '', '#' + initialScreen);
+                    if (initialScreen !== 'screen-menu') showScreen(initialScreen, false);
                 }
             } else {
                 window._fbUser = null;
