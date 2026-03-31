@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MRS Assigner — Audit-it</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         /* ── CSS Variables ── */
         :root {
@@ -1777,10 +1778,8 @@
         }
 
         function initTable() {
-            // Force RGB variables for glassmorphism
-            const style = getComputedStyle(document.documentElement);
-            const surfaceStr = document.documentElement.getAttribute('data-theme') === 'dark' ? '31, 41, 55' : '255, 255, 255';
-            document.documentElement.style.setProperty('--surface-rgb', surfaceStr);
+            const hTheme = localStorage.getItem('auditor_theme') || 'light';
+            applyTheme(hTheme);
 
             const headerRow = document.getElementById('tableHeader');
             const tbody = document.getElementById('tableBody');
@@ -1789,10 +1788,6 @@
             headerRow.innerHTML = columns.map(c => `<th>${c}</th>`).join('');
 
             renderData(rawData);
-
-            // Apply Theme if available in parent/localStorage
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', savedTheme);
         }
 
         function renderData(data) {
@@ -1852,6 +1847,18 @@
                 window.history.back();
             }
         }
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            const surfaceStr = theme === 'dark' ? '31, 41, 55' : '255, 255, 255';
+            document.documentElement.style.setProperty('--surface-rgb', surfaceStr);
+        }
+
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'theme-change') {
+                applyTheme(e.data.theme);
+            }
+        });
     </script>
 </body>
 
