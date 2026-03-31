@@ -3282,6 +3282,14 @@
         </iframe>
     </div>
 
+    <!-- MRS Assigner Screen — content loaded from mrsas.html via iframe -->
+    <div id="screen-mrs-assigner" class="screen" style="padding:0;">
+        <iframe src="mrsas.html" id="mrs-assigner-iframe" style="width:100%; flex:1; border:none; display:block;"
+            title="MRS Assigner — Audit-it"
+            onload="try{this.contentWindow.scrollTo(0,0);this.contentWindow.document.activeElement.blur();}catch(e){}">
+        </iframe>
+    </div>
+
     <div id="screen-settings" class="screen">
         <div class="flex-between" style="margin-bottom: 16px;">
             <h3 style="margin:0;">Custom Discrepancy Codes</h3>
@@ -4338,6 +4346,12 @@
             // Status bar color ko header ke saath match karo
             const meta = document.getElementById('theme-color-meta');
             if (meta) meta.content = theme === 'dark' ? '#111827' : '#f4f7f6';
+            
+            // Sync with MRS Assigner Iframe
+            const mrsIfrm = document.getElementById('mrs-assigner-iframe');
+            if (mrsIfrm && mrsIfrm.contentWindow) {
+                mrsIfrm.contentWindow.postMessage({ type: 'theme-change', theme: theme }, '*');
+            }
         }
         let savedTheme = localStorage.getItem('auditor_theme') || 'light';
         applyTheme(savedTheme);
