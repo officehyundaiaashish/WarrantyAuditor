@@ -286,6 +286,38 @@
             color-scheme: dark;
         }
 
+        /* --- CUSTOM MODERN SCROLLBAR --- */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            background-clip: padding-box;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+            background-clip: padding-box;
+        }
+        [data-theme="dark"] ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+        [data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+        [data-theme="dark"] * {
+            scrollbar-color: #475569 transparent;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -4741,7 +4773,53 @@
             }
         }
 
-        function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); if (id === 'screen-menu') setTimeout(loadDashboardNotifications, 100); if (id === 'screen-new-audit') { const today = new Date(); const y = today.getFullYear(); const m = today.getMonth(); const firstDay = new Date(y, m, 1).toISOString().split('T')[0]; const lastDay = new Date(y, m + 1, 0).toISOString().split('T')[0]; const fromEl = document.getElementById('audit-from'); const toEl = document.getElementById('audit-to'); if (!fromEl.value) { fromEl.value = firstDay; setTimeout(() => setMonthPickerValue('mp-from', y, m), 0); } if (!toEl.value) { toEl.value = lastDay; setTimeout(() => setMonthPickerValue('mp-to', y, m), 0); } } }
+        function showScreen(id, pushHistory = true) {
+            const el = document.getElementById(id);
+            if (!el) return;
+
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            el.classList.add('active');
+
+            // Handle browser history back/forward (PWA & Android Support)
+            if (pushHistory) {
+                history.pushState({ screen: id }, '', '#' + id);
+            }
+
+            if (id === 'screen-menu') setTimeout(loadDashboardNotifications, 100);
+            if (id === 'screen-new-audit') {
+                const today = new Date();
+                const y = today.getFullYear();
+                const m = today.getMonth();
+                const firstDay = new Date(y, m, 1).toISOString().split('T')[0];
+                const lastDay = new Date(y, m + 1, 0).toISOString().split('T')[0];
+                const fromEl = document.getElementById('audit-from');
+                const toEl = document.getElementById('audit-to');
+                if (!fromEl.value) {
+                    fromEl.value = firstDay;
+                    setTimeout(() => setMonthPickerValue('mp-from', y, m), 0);
+                }
+                if (!toEl.value) {
+                    toEl.value = lastDay;
+                    setTimeout(() => setMonthPickerValue('mp-to', y, m), 0);
+                }
+            }
+        }
+
+        window.addEventListener('popstate', (e) => {
+            const modal = document.getElementById('audit-modal');
+            if (modal && modal.classList.contains('active')) {
+                closeModal();
+                return;
+            }
+            if (e.state && e.state.screen) {
+                showScreen(e.state.screen, false);
+            } else if (window.location.hash) {
+                const h = window.location.hash.substring(1);
+                if (document.getElementById(h)) showScreen(h, false);
+            } else {
+                showScreen('screen-menu', false);
+            }
+        });
 
 
         // ════════════════════════════════════════════════════════
@@ -7446,17 +7524,16 @@ Upload the correct file.`);
 
 
                 if (e.key === 'Enter') {
-                    e.preventDefault();
-                    // Allow Enter from modal-remark to save entry
-                    if (activeEl && activeEl.id === 'modal-remark') {
-                        saveClaimAudit();
-                        return;
-                    }
-                    if (isTypingInModal) return;
+                    // Don't save if typing in a multiline area (though currently none exist in modal)
+                    if (activeEl && activeEl.tagName === 'TEXTAREA') return;
+
                     if (document.querySelector('.custom-select-wrapper.open')) {
+                        e.preventDefault();
                         document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
                         return;
                     }
+
+                    e.preventDefault();
                     saveClaimAudit();
                 }
                 return;
@@ -8052,7 +8129,7 @@ Upload the correct file.`);
 
         // ── Unified showScreen: RBAC + backup screen hooks + user mgmt cleanup ──
         const _showScreenBase = showScreen;
-        showScreen = function (id) {
+        showScreen = function (id, pushHistory = true) {
             if (id !== 'screen-menu') {
                 const isMaster = window._fbUser && window._fbUser.email &&
                     window._fbUser.email.toLowerCase() === 'n3235wrty@warrantyauditor.app';
@@ -8068,7 +8145,7 @@ Upload the correct file.`);
                 _userMgmtUnsubscribe();
                 _userMgmtUnsubscribe = null;
             }
-            _showScreenBase(id);
+            _showScreenBase(id, pushHistory);
             if (id === 'screen-backup') {
                 setTimeout(initGistUI, 50);
                 setTimeout(initGdriveUI, 80);
