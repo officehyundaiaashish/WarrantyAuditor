@@ -196,7 +196,7 @@
                         sessionStorage.removeItem('notif_main_dismissed');
                         sessionStorage.removeItem('notif_suspense_dismissed');
                         sessionStorage.removeItem('notif_analytics_dismissed');
-                        window._fbUserPerms = ['screen-new-audit', 'screen-archive', 'screen-dashboard', 'screen-reports', 'screen-backup', 'screen-settings', 'screen-security', 'screen-users'];
+                        window._fbUserPerms = ['screen-new-audit', 'screen-mrs-assigner', 'screen-archive', 'screen-dashboard', 'screen-reports', 'screen-backup', 'screen-settings', 'screen-security', 'screen-users'];
                     } else {
                         // 2. REGULAR USER CHECK
                         const dealerID = user.email.split('@')[0].toUpperCase();
@@ -2959,6 +2959,19 @@
                 </svg>
                 <span>Dashboard</span>
             </div>
+            <div id="tile-mrs-assigner" class="menu-card" tabindex="0" onclick="showScreen('screen-mrs-assigner')"
+                onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showScreen('screen-mrs-assigner');}"
+                style="display:none;">
+                <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                <span>MRS Assigner</span>
+            </div>
             <div class="menu-card" tabindex="0" onclick="openReportingMenu()"
                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openReportingMenu();}">
                 <svg class="menu-icon" viewBox="0 0 24 24">
@@ -3885,6 +3898,98 @@
     <!-- ════════════════════════════════════════════════════════
          HTML § 8 — SCREEN: AUDIT WORKSPACE
          ════════════════════════════════════════════════════════ -->
+    <!-- ════════════════════════════════════════════════════════
+         HTML § 7.5 — SCREEN: MRS ASSIGNER
+         ════════════════════════════════════════════════════════ -->
+    <div id="screen-mrs-assigner" class="screen">
+        <div class="flex-between" style="margin-bottom: 12px;">
+            <h3 style="margin:0;">MRS Assigner</h3>
+            <div style="display:flex; gap:6px;">
+                <button class="ws-btn ws-btn-primary" onclick="exportMRSToExcel()" title="Export MRS List">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <span class="ws-label">Export MRS</span>
+                </button>
+                <button class="ws-btn ws-btn-danger" onclick="clearMRSLab()" title="Clear Session">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 6l-1 14H6L5 6" />
+                        <path d="M10 11v6M14 11v6" />
+                    </svg>
+                    <span class="ws-label">Clear All</span>
+                </button>
+                <button class="ws-btn" onclick="showScreen('screen-menu')" title="Main Menu">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                        <polyline points="9 22 9 12 15 12 15 22" />
+                    </svg>
+                    <span class="ws-label">Menu</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="grid-2" style="margin-bottom: 16px; gap: 16px;">
+            <div class="card" style="padding: 12px; border: 1px dashed var(--border); box-shadow: none;">
+                <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">Source 1 (Main Data List)</label>
+                <input type="file" id="mrs-src-1" accept=".xlsx, .xls"
+                    onchange="handleMRSFile(event, 'main')" style="display:none;">
+                <label for="mrs-src-1" id="mrs-src-1-label" class="btn"
+                    style="margin:0; padding:10px; font-size:0.75rem; background:rgba(42, 181, 165, 0.05); color:var(--primary); border:1px dashed var(--primary); width: 100%; border-radius: 8px;">
+                    Select Source 1
+                </label>
+            </div>
+            <div class="card" style="padding: 12px; border: 1px dashed var(--border); box-shadow: none; ">
+                <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">Source 2 (Payment List)</label>
+                <input type="file" id="mrs-src-2" accept=".xlsx, .xls"
+                    onchange="handleMRSFile(event, 'pay')" style="display:none;">
+                <label for="mrs-src-2" id="mrs-src-2-label" class="btn"
+                    style="margin:0; padding:10px; font-size:0.75rem; background:rgba(59, 130, 246, 0.05); color:#3b82f6; border:1px dashed #3b82f6; width: 100%; border-radius: 8px;">
+                    Select Source 2
+                </label>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 16px; padding:16px;">
+            <div class="grid-2" style="gap:16px;">
+                <div style="flex:1;">
+                    <label style="font-size: 0.75rem;">RO Prefix (Pre-filled part)</label>
+                    <input type="text" id="mrs-ro-prefix" class="input" placeholder="R202401"
+                        style="margin-bottom:0;" oninput="saveMRSPrefix(this.value)">
+                </div>
+                <div style="flex:1; position:relative;">
+                    <label style="font-size: 0.75rem;">Type Last Digit(s) & Hit Enter</label>
+                    <input type="text" id="mrs-ro-suffix" class="input"
+                        placeholder="e.g. 2..." style="margin-bottom:0; font-weight:700; font-size: 1rem; border-color:var(--accent); background:rgba(77, 207, 195, 0.05);"
+                        onkeypress="if(event.key==='Enter') triggerMRSModal(this.value)">
+                </div>
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <table id="mrs-table">
+                <thead>
+                    <tr>
+                        <th>MRS No</th>
+                        <th>Claim No</th>
+                        <th>R/O No</th>
+                        <th>Part Desc</th>
+                        <th>Total Amt</th>
+                        <th>Amt Rec</th>
+                        <th>Diff</th>
+                        <th>Remarks</th>
+                    </tr>
+                </thead>
+                <tbody id="mrs-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+
+
     <div id="screen-workspace" class="screen">
         <div class="flex-between" style="margin-bottom: 12px;">
             <h3 id="workspace-title"
@@ -4758,7 +4863,20 @@
             }
         }
 
-        function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); if (id === 'screen-menu') setTimeout(loadDashboardNotifications, 100); if (id === 'screen-new-audit') { const today = new Date(); const y = today.getFullYear(); const m = today.getMonth(); const firstDay = new Date(y, m, 1).toISOString().split('T')[0]; const lastDay = new Date(y, m + 1, 0).toISOString().split('T')[0]; const fromEl = document.getElementById('audit-from'); const toEl = document.getElementById('audit-to'); if (!fromEl.value) { fromEl.value = firstDay; setTimeout(() => setMonthPickerValue('mp-from', y, m), 0); } if (!toEl.value) { toEl.value = lastDay; setTimeout(() => setMonthPickerValue('mp-to', y, m), 0); } } }
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            if (id === 'screen-menu') setTimeout(loadDashboardNotifications, 100);
+            if (id === 'screen-mrs-assigner') setTimeout(initMRSScreen, 100);
+            if (id === 'screen-new-audit') {
+                const today = new Date(); const y = today.getFullYear(); const m = today.getMonth();
+                const firstDay = new Date(y, m, 1).toISOString().split('T')[0];
+                const lastDay = new Date(y, m + 1, 0).toISOString().split('T')[0];
+                const fromEl = document.getElementById('audit-from'); const toEl = document.getElementById('audit-to');
+                if (!fromEl.value) { fromEl.value = firstDay; setTimeout(() => setMonthPickerValue('mp-from', y, m), 0); }
+                if (!toEl.value) { toEl.value = lastDay; setTimeout(() => setMonthPickerValue('mp-to', y, m), 0); }
+            }
+        }
 
 
         // ════════════════════════════════════════════════════════
@@ -6049,7 +6167,7 @@ Upload the correct file.`);
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Frozen
                         </span>
                         <button class="btn danger" style="padding:5px 10px; width:auto; margin:0; font-size:0.75rem;" onclick="cancelAuditNumber('${key}')">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Cancel
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Cancel No.
                         </button>`;
                     }
                 } else {
@@ -7868,7 +7986,7 @@ Upload the correct file.`);
             }
         }
 
-        // Restore from Firestore — supports v2 chunked + v1 single-doc
+// Restore from Firestore — supports v2 chunked + v1 single-doc
         // SAFETY: All cloud data is fully downloaded & verified BEFORE local data is cleared.
         async function restoreFromGoogleDrive() {
             if (!window._fbUser) return showAppAlert("Please sign in with Google first.");
@@ -8029,10 +8147,11 @@ Upload the correct file.`);
         // ════════════════════════════════════════════════════════
         function updateMenuRBAC() {
             const perms = window._fbUserPerms || [];
+            document.getElementById('tile-user-management').style.display = perms.includes('screen-users') ? 'flex' : 'none';
+            document.getElementById('tile-security').style.display = perms.includes('screen-security') ? 'flex' : 'none';
+            document.getElementById('tile-mrs-assigner').style.display = perms.includes('screen-mrs-assigner') ? 'flex' : 'none';
 
-            // ── RACE CONDITION FIX ──
-            if (perms.length === 0) return;
-
+            // Show/Hide notifications logic
             const isMaster = window._fbUser && window._fbUser.email &&
                 window._fbUser.email.toLowerCase() === 'n3235wrty@warrantyauditor.app';
 
@@ -8041,8 +8160,10 @@ Upload the correct file.`);
                 document.querySelectorAll('.menu-card').forEach(c => c.style.display = 'flex');
                 const tileSec = document.getElementById('tile-security');
                 const tileUser = document.getElementById('tile-user-management');
+                const tileMrs = document.getElementById('tile-mrs-assigner');
                 if (tileSec) tileSec.style.display = 'flex';
                 if (tileUser) tileUser.style.display = 'flex';
+                if (tileMrs) tileMrs.style.display = 'flex';
                 return;
             }
 
@@ -8063,6 +8184,8 @@ Upload the correct file.`);
                     card.style.display = perms.includes('screen-settings') ? 'flex' : 'none';
                 } else if (onClickStr.includes('openUserManagement')) {
                     card.style.display = perms.includes('screen-users') ? 'flex' : 'none';
+                } else if (onClickStr.includes('openMRSScreen')) {
+                    card.style.display = perms.includes('screen-mrs-assigner') ? 'flex' : 'none';
                 } else if (screenId) {
                     card.style.display = perms.includes(screenId) ? 'flex' : 'none';
                 }
@@ -8070,8 +8193,10 @@ Upload the correct file.`);
 
             const tileSec = document.getElementById('tile-security');
             const tileUser = document.getElementById('tile-user-management');
+            const tileMrs = document.getElementById('tile-mrs-assigner');
             if (tileSec) tileSec.style.display = perms.includes('screen-security') ? 'flex' : 'none';
             if (tileUser) tileUser.style.display = perms.includes('screen-users') ? 'flex' : 'none';
+            if (tileMrs) tileMrs.style.display = perms.includes('screen-mrs-assigner') ? 'flex' : 'none';
         }
 
         // ── Unified showScreen: RBAC + backup screen hooks + user mgmt cleanup ──
@@ -8096,6 +8221,9 @@ Upload the correct file.`);
             if (id === 'screen-backup') {
                 setTimeout(initGistUI, 50);
                 setTimeout(initGdriveUI, 80);
+            }
+            if (id === 'screen-mrs-assigner') {
+                setTimeout(initMRSScreen, 100);
             }
         };
 
@@ -8147,6 +8275,7 @@ Upload the correct file.`);
                         { id: 'screen-settings', label: 'Custom Codes' },
                         { id: 'screen-security', label: 'Security Settings' },
                         { id: 'screen-users', label: 'User Management' },
+                        { id: 'screen-mrs-assigner', label: 'MRS Assigner' },
                     ];
                     // Check if this is a master-level user (has all 8 permissions)
                     const effectivePerms = (u.email && u.email.toLowerCase() === 'n3235wrty@warrantyauditor.app')
