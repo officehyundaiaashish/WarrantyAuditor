@@ -533,13 +533,35 @@
                 </div>
 
                 <div class="card-actions">
-                    <button class="btn-feed" onclick="feedToTable()">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="23 4 23 10 17 10"></polyline>
-                            <polyline points="1 20 1 14 7 14"></polyline>
-                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    <button class="btn btn-feed" onclick="feedToTable()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
                         </svg>
-                        Feed To Database Table
+                        Feed To Table Ledger
+                    </button>
+                </div>
+            </div>
+
+            <div class="card fade-in" style="animation-delay: 0.1s; margin-top: 20px; padding: 15px;">
+                <div class="flex-between" style="flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-secondary" onclick="exportLedger()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            Backup Ledger
+                        </button>
+                        <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            Restore Backup
+                        </button>
+                        <input type="file" id="importFile" style="display:none" accept=".json" onchange="importLedger(event)">
+                    </div>
+                    <button class="btn btn-cancel" onclick="clearLedger()">
+                        Clear All Records
                     </button>
                 </div>
             </div>
@@ -667,24 +689,45 @@
                     if (roNo) claimMap[roNo] = row;
                 });
 
-                // Clear current table rows
-                rawData.length = 0;
+                // Create a record of existing duplicates (Key = R/O + Claim)
+                const existingKeys = new Set(rawData.map(r => `${r['R/O No']}_${r['Claim No']}`));
 
-                // Process each row in Source 1 as a NEW record
-                source1Data.forEach((match1, index) => {
+                // Process each row in Source 1 as a POTENTIAL record
+                let addedCount = 0;
+                let skippedCount = 0;
+                let filteredCount = 0;
+
+                source1Data.forEach((match1) => {
                     const roKey = String(match1['R/O No'] || match1['R/O No.'] || '').trim();
+                    const claimNo = String(match1['Claim No'] || '').trim();
+                    const type = String(match1['Claim Type'] || '').toUpperCase();
+                    const amt = parseFloat(match1['Total Amt'] || match1['Approve Amount by HMI'] || 0);
+                    const desc = String(match1['Part Desc'] || match1['Part Description'] || '').toUpperCase();
+
+                    // 1. Basic Validation
                     if (!roKey || roKey.toUpperCase() === 'CANCLE' || roKey.toUpperCase() === 'CANCEL') return;
 
+                    // 2. Claim Type Filtering (Mirrors New Audit logic)
+                    if (type.includes('FREE SERVICE') || type.includes('FSC')) { filteredCount++; return; }
+                    if (type.includes('CAMPAIGN') && amt < 300 && !desc.includes('POWER WINDOW') && !desc.includes('FUEL PUMP')) { filteredCount++; return; }
+
+                    // 3. Duplicate Prevention
+                    const recordKey = `${roKey}_${claimNo}`;
+                    if (existingKeys.has(recordKey)) {
+                        skippedCount++;
+                        return;
+                    }
+
                     const newRow = {
-                        "MRS": index + 1, // Auto-generating MRS ID
+                        "MRS": rawData.length + 1, // Safe sequential ID in ledger
                         "VIN": match1['VIN'] || '',
-                        "Claim No": match1['Claim No'] || '',
-                        "Claim Date": match1['Claim Date'] || '',
+                        "Claim No": claimNo,
+                        "Claim Date": match1['Claim Date'] || match1['Claim Date'] || '',
                         "Claim Type": match1['Claim Type'] || '',
                         "R/O No": roKey,
                         "R/O Date": match1['R/O Date'] || '',
                         "Part Desc": match1['Part Desc'] || match1['Part Description'] || '',
-                        "Total Amt": match1['Total Amt'] || match1['Approve Amount by HMI'] || 0,
+                        "Total Amt": amt,
                         "Labour": match1['Labour'] || 0,
                         "part": match1['part'] || 0,
                         "Sublet": match1['Sublet'] || 0,
@@ -698,8 +741,7 @@
                     };
 
                     // Then lookup Source 2 via Claim No
-                    const claimKey = String(newRow['Claim No'] || '').trim();
-                    const match2 = payMap[claimKey];
+                    const match2 = payMap[claimNo];
                     if (match2) {
                         newRow['AMT RECEIVED'] = match2['Gross Amount'] || match2['Ramittance Amt.'] || 0;
                         newRow['PAYMENT DATE'] = match2['Payment Cheque Date'] || '';
@@ -716,10 +758,13 @@
                     }
 
                     rawData.push(newRow);
+                    existingKeys.add(recordKey);
+                    addedCount++;
                 });
 
+                saveLedger();
                 renderData(rawData);
-                alert(`Successfully built database with ${rawData.length} records!`);
+                alert(`Operation Complete:\n- Added: ${addedCount}\n- Skipped (Duplicate): ${skippedCount}\n- Filtered (Type): ${filteredCount}`);
             } catch (err) {
                 console.error(err);
                 alert("An error occurred during mapping: " + err.message);
@@ -729,7 +774,65 @@
             }
         }
 
+        function saveLedger() {
+            localStorage.setItem('mrs_ledger_data', JSON.stringify(rawData));
+        }
+
+        function loadLedger() {
+            const saved = localStorage.getItem('mrs_ledger_data');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    rawData.length = 0;
+                    parsed.forEach(r => rawData.push(r));
+                } catch (e) { console.error("Ledger Load Fail", e); }
+            }
+        }
+
+        function clearLedger() {
+            if (confirm("Are you sure you want to PERMANENTLY clear the entire record ledger?")) {
+                rawData.length = 0;
+                saveLedger();
+                renderData(rawData);
+            }
+        }
+
+        function exportLedger() {
+            if (rawData.length === 0) { alert("Nothing to export."); return; }
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(rawData, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", `mrs_ledger_backup_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        function importLedger(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (!Array.isArray(importedData)) throw new Error("Invalid format.");
+                    
+                    if (confirm(`Replace current ledger with ${importedData.length} records?`)) {
+                        rawData.length = 0;
+                        importedData.forEach(r => rawData.push(r));
+                        saveLedger();
+                        renderData(rawData);
+                        alert("Ledger restored successfully!");
+                    }
+                } catch (err) {
+                    alert("Import failed: " + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
         function initTable() {
+            loadLedger();
             updateTheme();
             const headerRow = document.getElementById('tableHeader');
             const tbody = document.getElementById('tableBody');
