@@ -265,6 +265,10 @@
             /* Softer, wider shadow */
             --modal-overlay: rgba(0, 0, 0, 0.4);
             color-scheme: light;
+
+            /* --- SHIMMER VISIBILITY (LIGHT THEME) --- */
+            --notif-shimmer-bg: linear-gradient(90deg, transparent 20%, rgba(255, 255, 255, 0.35) 50%, transparent 80%);
+            --notif-shimmer-crit-bg: linear-gradient(90deg, transparent 20%, rgba(255, 255, 255, 0.5) 50%, transparent 80%);
         }
 
         [data-theme="dark"] {
@@ -284,6 +288,10 @@
             --shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.7);
             --modal-overlay: rgba(0, 0, 0, 0.7);
             color-scheme: dark;
+
+            /* --- SHIMMER VISIBILITY (DARK THEME) --- */
+            --notif-shimmer-bg: linear-gradient(90deg, transparent 20%, rgba(255, 255, 255, 0.04) 50%, transparent 80%);
+            --notif-shimmer-crit-bg: linear-gradient(90deg, transparent 20%, rgba(255, 255, 255, 0.055) 50%, transparent 80%);
         }
 
         /* --- MODERN PREMIUM SCROLLBAR --- */
@@ -1434,7 +1442,7 @@
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(90deg, transparent 20%, rgba(255, 255, 255, 0.04) 50%, transparent 80%);
+            background: var(--notif-shimmer-bg);
             background-size: 600px 100%;
             animation: shimmerLeft 4s ease-in-out infinite;
             pointer-events: none;
@@ -1444,7 +1452,7 @@
         }
 
         .notif-shimmer.shimmer-critical::after {
-            background: linear-gradient(90deg, transparent 20%, rgba(255, 255, 255, 0.055) 50%, transparent 80%);
+            background: var(--notif-shimmer-crit-bg);
             animation-duration: 2.5s;
         }
 
