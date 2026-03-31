@@ -238,6 +238,7 @@
                     const bypassSnap = await getDoc(bypassRef);
                     if (bypassSnap.exists() && bypassSnap.data().loginBypass === true) {
                         // BYPASS IS ACTIVE — Allow entry without User
+                        window._isGuestSession = true;
                         window._fbUserPerms = ['screen-new-audit', 'screen-archive', 'screen-dashboard', 'screen-reports', 'screen-backup', 'screen-settings', 'screen-security', 'screen-users'];
                         if (typeof updateMenuRBAC === 'function') updateMenuRBAC();
                         document.body.classList.remove('loading'); 
@@ -8472,6 +8473,10 @@ Upload the correct file.`);
         }
 
         async function toggleLoginBypassSwitch() {
+            if (window._isGuestSession) {
+                return showAppAlert("Action Required: Admin Login Needed\n\nTo change this setting, you must be logged in as the Master Admin. Please go back to the login page and use the 'Admin Login' link.");
+            }
+
             try {
                 showLoader(true);
                 const configRef = window._fbDoc(window._fbDb, 'config', 'appSettings');
