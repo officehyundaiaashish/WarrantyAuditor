@@ -8155,7 +8155,7 @@ Upload the correct file.`);
                             </button>
                         </div>` : ''}
                         <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:10px;">
-                            <b>TOTP:</b> ${hasTotp ? '<span style="color:var(--success)">Configured</span>' : (u.pendingTotpSecret ? '<span style="color:var(--warning)">Pending Setup</span>' : '<span style="color:var(--danger)">Not Setup</span>')}&nbsp;&nbsp;
+                            <b>TOTP:</b> ${u.totpDisabled === true ? '<span style="color:var(--text-muted)">Disabled</span>' : (hasTotp ? '<span style="color:var(--success)">Configured</span>' : (u.pendingTotpSecret ? '<span style="color:var(--warning)">Pending Setup</span>' : '<span style="color:var(--danger)">Not Setup</span>'))}&nbsp;&nbsp;
                             <b>Last Login:</b> ${u.lastLogin ? new Date(u.lastLogin).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '<span style="color:var(--text-muted)">Never</span>'}
                         </div>
 
@@ -8178,7 +8178,7 @@ Upload the correct file.`);
 
                         <div class="user-actions" style="display:flex !important; flex-wrap:wrap; gap:8px; margin-top:12px; border-top: 1px dashed var(--border); padding-top: 12px; visibility:visible !important; opacity:1 !important;">
                             <button class="btn" style="flex:1; min-width:80px; padding:6px 12px; font-size:0.75rem;" onclick="resetUserTOTP('${uid}', '${u.dealerID}')">Reset TOTP</button>
-                            <button class="btn" style="flex:1; min-width:80px; padding:6px 12px; font-size:0.75rem; color:#f59e0b; border-color:#f59e0b;" onclick="disableUser2FA('${uid}', '${u.dealerID}')">Disable 2FA</button>
+                            <button class="btn" style="flex:1; min-width:80px; padding:6px 12px; font-size:0.75rem; color:#f59e0b; border-color:#f59e0b;" onclick="toggleUser2FA('${uid}', '${u.dealerID}', ${!!u.totpDisabled})">${u.totpDisabled === true ? 'Enable 2FA' : 'Disable 2FA'}</button>
                             <button class="btn" style="flex:1; min-width:80px; padding:6px 12px; font-size:0.75rem; color:var(--accent);border-color:var(--accent);"
                                 data-uid="${uid}" data-dealerid="${u.dealerID || ''}"
                                 onclick="openAdminChangePwd(this.dataset.uid, this.dataset.dealerid)">Change Password</button>
@@ -8419,19 +8419,23 @@ Upload the correct file.`);
             });
         }
 
-        async function disableUser2FA(uid, dealerID) {
-            showAppConfirm(`Disable 2FA for ${dealerID}?\n\nThis will clear their verification status. They must verify TOTP on next login.`, async () => {
+        async function toggleUser2FA(uid, dealerID, currentlyDisabled) {
+            const action = currentlyDisabled ? 'Enable' : 'Disable';
+            showAppConfirm(`${action} 2FA for ${dealerID}?\n\n${currentlyDisabled ? 'User will be required to verify TOTP on next login.' : '2FA will be skipped for this user and their current verification will be cleared.'}`, async () => {
                 showLoader(true);
                 try {
                     const docRef = window._fbDoc(window._fbDb, 'users', uid);
-                    await window._fbUpdateDoc(docRef, {
-                        totpVerifiedAt: window._fbDeleteField()
-                    });
+                    const updateData = { totpDisabled: !currentlyDisabled };
+                    // If disabling, also clear verified status for safety
+                    if (!currentlyDisabled) updateData.totpVerifiedAt = window._fbDeleteField();
+                    
+                    await window._fbUpdateDoc(docRef, updateData);
                     showLoader(false);
-                    showToast(`2FA disabled for ${dealerID}. TOTP verification required on next login.`, 'success', 4000);
+                    showToast(`2FA ${currentlyDisabled ? 'enabled (enforced)' : 'disabled (skipped)'} for ${dealerID}.`, 'success', 4000);
+                    openUserManagement();
                 } catch (e) {
                     showLoader(false);
-                    showAppAlert("Disable 2FA failed: " + e.message);
+                    showAppAlert(`${action} 2FA failed: ` + e.message);
                 }
             });
         }
