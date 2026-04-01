@@ -1424,6 +1424,14 @@
                     const roKey = String(match1['R/O No'] || match1['R/O No.'] || '').trim();
                     
                     if (!claimKey || !roKey || /^CANC(LE|EL)$/i.test(roKey)) return;
+
+                    // Standard Audit Filtering Logic
+                    const typeStr = String(match1['Claim Type'] || "").toUpperCase();
+                    const amtVal = parseFloat(match1['Total Amt'] || match1['Approve Amount by HMI']) || 0;
+                    const descStr = String(match1['Part Desc'] || match1['Part Description'] || "").toUpperCase();
+                    
+                    if (typeStr.includes("FREE SERVICE") || typeStr.includes("FSC")) return;
+                    if (typeStr.includes("CAMPAIGN") && amtVal < 300 && !descStr.includes("POWER WINDOW") && !descStr.includes("FUEL PUMP")) return;
                     
                     let target = ledgerMap[claimKey];
                     
@@ -1731,6 +1739,17 @@
         }
         window.addEventListener('message', (e) => {
             if (e.data && e.data.type === 'theme-change') applyTheme(e.data.theme);
+            if (e.data && e.data.type === 'filter-pending') {
+                const pending = rawData.filter(r => 
+                    (!r['AMT RECEIVED'] || r['AMT RECEIVED'] === 0) && 
+                    (!r['PAYMENT DATE'] || r['PAYMENT DATE'] === '' || r['PAYMENT DATE'] === '—')
+                );
+                renderData(pending);
+                // Clear search input to avoid confusion
+                const sInput = document.getElementById('tableSearch');
+                if (sInput) sInput.value = '';
+                showToast(`Showing ${pending.length} Pending Collections`, 'info');
+            }
         });
         window.addEventListener('load', () => setTimeout(initTable, 50));
 
