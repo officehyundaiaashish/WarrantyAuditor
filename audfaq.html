@@ -1,1066 +1,1688 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FAQ — Audit-it</title>
+    <title>MRS Assigner — Audit-it</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
     <style>
-        /* ── CSS Variables (matches main app) ── */
+        /* ══════════════════════════════════════════
+           §1 — VARIABLES (mirrors main.html exactly)
+           ══════════════════════════════════════════ */
         :root {
-            --bg-base: #f8fafc;
+            --bg-base: #f4f7f6;
             --surface: #ffffff;
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-            --primary: #0f172a;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --primary: #2ab5a5;
+            --primary-hover: #1e9587;
             --primary-text: #ffffff;
             --danger: #ef4444;
             --success: #10b981;
             --warning: #f59e0b;
-            --accent: #3b82f6;
-            --radius: 12px;
-            --shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+            --accent: #4dcfc3;
+            --radius: 16px;
+            --shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+            --modal-overlay: rgba(0, 0, 0, 0.4);
             color-scheme: light;
-        }
-        [data-theme="dark"] {
-            --bg-base: #09090b;
-            --surface: #18181b;
-            --text-main: #f4f4f5;
-            --text-muted: #a1a1aa;
-            --border: #27272a;
-            --primary: #ffffff;
-            --primary-text: #000000;
-            color-scheme: dark;
+            --surface-rgb: 255, 255, 255;
+            --notif-shimmer-bg: linear-gradient(90deg, transparent 20%, rgba(255, 255, 255, 0.35) 50%, transparent 80%);
         }
 
-        /* ── Reset & Base ── */
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        [data-theme="dark"] {
+            --bg-base: #111827;
+            --surface: #1f2937;
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
+            --border: #374151;
+            --primary: #2ab5a5;
+            --primary-hover: #4dcfc3;
+            --primary-text: #ffffff;
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --accent: #4dcfc3;
+            --shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.7);
+            --modal-overlay: rgba(0, 0, 0, 0.7);
+            color-scheme: dark;
+            --surface-rgb: 31, 41, 55;
+            --notif-shimmer-bg: linear-gradient(90deg, transparent 20%, rgba(255, 255, 255, 0.04) 50%, transparent 80%);
+        }
+
+        /* ══════════════════════════════════════════
+           §2 — RESET & BASE
+           ══════════════════════════════════════════ */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             -webkit-font-smoothing: antialiased;
+        }
+
+        body {
             background-color: var(--bg-base);
             color: var(--text-main);
             min-height: 100vh;
-            font-size: 14px;
-            -webkit-tap-highlight-color: transparent;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-
-        /* ── Buttons ── */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 14px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background: var(--surface);
-            color: var(--text-main);
-            font-size: 0.82rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-        .btn:hover { background: var(--bg-base); border-color: var(--accent); }
-        .btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-
-        /* ── Main Content ── */
-        .faq-content {
-            max-width: 680px;
-            margin: 0 auto;
-            padding: 20px 16px 48px;
-        }
-
-        /* ── Search ── */
-        .faq-search-wrap {
-            position: relative;
-            margin-bottom: 20px;
-        }
-        .faq-search-wrap svg {
-            position: absolute;
-            left: 12px; top: 50%;
-            transform: translateY(-50%);
-            width: 16px; height: 16px;
-            stroke: var(--text-muted);
-            fill: none; stroke-width: 2;
-            pointer-events: none;
-        }
-        .faq-search-input {
-            width: 100%;
-            background: var(--surface);
-            color: var(--text-main);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 11px 12px 11px 38px;
-            font-size: 0.88rem;
-            outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        .faq-search-input::placeholder { color: var(--text-muted); }
-        .faq-search-input:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
-        }
-
-        /* ── No Results ── */
-        .faq-no-results {
-            text-align: center;
-            padding: 40px 16px;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            display: none;
-        }
-
-        /* ── Category ── */
-        .faq-category { margin-bottom: 24px; }
-        .faq-category-title {
-            font-size: 0.64rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-            padding-left: 2px;
             display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .faq-category-title svg {
-            width: 12px; height: 12px;
-            stroke: currentColor; fill: none;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            flex-shrink: 0;
+            flex-direction: column;
+            transition: background-color 0.4s ease, color 0.4s ease;
+            font-size: 14px;
         }
 
-        /* ── FAQ Item ── */
-        .faq-item {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            margin-bottom: 6px;
-            overflow: hidden;
-            transition: border-color 0.2s;
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
         }
-        .faq-item:hover { border-color: var(--accent); }
-        .faq-item.faq-open { border-color: var(--accent); }
 
-        .faq-question {
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 20px;
+            border: 2.5px solid var(--bg-base);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-hover);
+        }
+
+        @supports (scrollbar-width: thin) {
+            * {
+                scrollbar-width: thin;
+                scrollbar-color: var(--primary) transparent;
+            }
+        }
+
+        /* ══════════════════════════════════════════
+           §3 — HEADER (matches main.html app-header)
+           ══════════════════════════════════════════ */
+        .page-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 10px;
-            padding: 13px 14px;
-            cursor: pointer;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            background-color: var(--bg-base);
+            flex-shrink: 0;
+            transition: background-color 0.4s ease;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
-        .faq-question-text {
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: var(--text-main);
-            line-height: 1.4;
-            flex: 1;
-        }
-        .faq-item.faq-open .faq-question-text { color: var(--accent); }
 
-        .faq-chevron {
-            width: 16px; height: 16px;
-            stroke: var(--text-muted);
-            fill: none; stroke-width: 2.2;
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-logo-icon {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(42, 181, 165, 0.3);
+        }
+
+        .header-logo-icon svg {
+            stroke: #fff;
+        }
+
+        .header-title-text {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+        }
+
+        .header-subtitle {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            margin-top: 2px;
+        }
+
+        /* Main Menu back button — matches main.html header-action-btn */
+        .btn-main-menu {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            height: 36px;
+            padding: 0 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-main-menu svg {
+            width: 14px;
+            height: 14px;
+            stroke: currentColor;
+            stroke-width: 2.2;
+            fill: none;
             stroke-linecap: round;
             stroke-linejoin: round;
             flex-shrink: 0;
-            transition: transform 0.25s cubic-bezier(0.16,1,0.3,1), stroke 0.2s;
-        }
-        .faq-item.faq-open .faq-chevron {
-            transform: rotate(180deg);
-            stroke: var(--accent);
         }
 
-        .faq-answer {
-            display: none;
-            padding: 12px 14px 14px;
-            font-size: 0.82rem;
-            color: var(--text-muted);
-            line-height: 1.65;
-            border-top: 1px solid var(--border);
-        }
-        .faq-item.faq-open .faq-answer {
-            display: block;
-            animation: faqFadeIn 0.18s ease;
-        }
-        .faq-answer strong { color: var(--text-main); font-weight: 700; }
-        .faq-answer em { color: var(--text-main); font-style: italic; }
-        .faq-answer ul { margin: 6px 0 0 16px; padding: 0; }
-        .faq-answer ul li { margin-bottom: 4px; }
-        .faq-answer code {
-            background: rgba(59,130,246,0.08);
-            color: var(--accent);
-            border-radius: 4px;
-            padding: 1px 5px;
-            font-family: monospace;
-            font-size: 0.8rem;
+        .btn-main-menu:hover {
+            color: var(--primary);
+            border-color: var(--primary);
+            background: rgba(42, 181, 165, 0.05);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(42, 181, 165, 0.15);
         }
 
-        /* Tags */
-        .faq-tag {
-            display: inline-block;
-            background: rgba(59,130,246,0.1);
-            color: var(--accent);
-            border: 1px solid rgba(59,130,246,0.25);
-            border-radius: 5px;
-            padding: 1px 7px;
-            font-size: 0.74rem;
-            font-weight: 700;
-            margin: 2px 2px 2px 0;
-        }
-        .faq-tag.green { background: rgba(16,185,129,0.1); color: var(--success); border-color: rgba(16,185,129,0.25); }
-        .faq-tag.amber { background: rgba(245,158,11,0.1); color: var(--warning); border-color: rgba(245,158,11,0.25); }
-        .faq-tag.red   { background: rgba(239,68,68,0.1);  color: var(--danger);  border-color: rgba(239,68,68,0.25); }
+        /* ══════════════════════════════════════════
+           §4 — ANIMATIONS
+           ══════════════════════════════════════════ */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
 
-        /* Highlight */
-        .faq-highlight {
-            background: rgba(245,158,11,0.28);
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes shimmerLeft {
+            0% {
+                background-position: -600px 0;
+            }
+
+            100% {
+                background-position: 600px 0;
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(0.94) translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        /* ══════════════════════════════════════════
+           §5 — CONTENT WRAP
+           ══════════════════════════════════════════ */
+        .content-wrap {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 1700px;
+            margin: 0 auto;
+            width: 100%;
+            animation: fadeInUp 0.45s ease-out backwards;
+            animation-delay: 0.05s;
+        }
+
+        /* ══════════════════════════════════════════
+           §6 — PREMIUM CARD
+           ══════════════════════════════════════════ */
+        .premium-card {
+            background: var(--surface);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            transition: box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .premium-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--notif-shimmer-bg);
+            background-size: 600px 100%;
+            animation: shimmerLeft 7s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .premium-card>* {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ══════════════════════════════════════════
+           §7 — SECTION HEADER
+           ══════════════════════════════════════════ */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-header .tile-icon,
+        .upload-tile .tile-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, rgba(42, 181, 165, 0.12) 0%, rgba(77, 207, 195, 0.08) 100%);
+            border: 1px solid rgba(42, 181, 165, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            color: var(--primary);
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 800;
             color: var(--text-main);
-            border-radius: 2px;
-            padding: 0 2px;
+            letter-spacing: -0.3px;
         }
 
-        /* ── Stats bar ── */
-        .faq-stats {
+        /* ══════════════════════════════════════════
+           §8 — UPLOAD TILE GRID
+           ══════════════════════════════════════════ */
+        .tile-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .upload-tile {
+            position: relative;
+            background: var(--bg-base);
+            border: 2px dashed var(--border);
+            border-radius: 14px;
+            padding: 20px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+            overflow: hidden;
+        }
+
+        .upload-tile .tile-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            border: 1px solid rgba(42, 181, 165, 0.18);
+            transition: all 0.25s ease;
+        }
+
+        .upload-tile:hover {
+            border-color: var(--primary);
+            background: rgba(42, 181, 165, 0.04);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px -4px rgba(42, 181, 165, 0.15);
+        }
+
+        .upload-tile:hover .tile-icon,
+        .upload-tile.active .tile-icon {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(42, 181, 165, 0.25);
+        }
+
+        .upload-tile.active {
+            border-color: var(--primary);
+            border-style: solid;
+            background: rgba(42, 181, 165, 0.06);
+        }
+
+        .upload-tile span {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .upload-tile p {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .upload-tile input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* ══════════════════════════════════════════
+           §9 — BUTTONS
+           ══════════════════════════════════════════ */
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn-premium {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 11px 20px;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border: 1.5px solid transparent;
+            white-space: nowrap;
+            letter-spacing: 0.1px;
+        }
+
+        .btn-premium svg {
+            flex-shrink: 0;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 4px 14px rgba(42, 181, 165, 0.25);
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.07);
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(42, 181, 165, 0.35);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary.loading {
+            opacity: 0.8;
+            pointer-events: none;
+        }
+
+        .btn-outline {
+            background: var(--surface);
+            color: var(--text-muted);
+            border-color: var(--border);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(42, 181, 165, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: transparent;
+            color: var(--danger);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: var(--danger);
+            color: #fff;
+            border-color: var(--danger);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+        }
+
+        /* ══════════════════════════════════════════
+           §10 — SEARCH ROW
+           ══════════════════════════════════════════ */
+        .search-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg-base);
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            padding: 9px 14px;
+            flex: 1;
+            max-width: 400px;
+            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+            color: var(--text-muted);
+        }
+
+        .search-bar:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(42, 181, 165, 0.12);
+            background: var(--surface);
+            color: var(--primary);
+        }
+
+        .search-bar input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-main);
+            width: 100%;
+            font-size: 0.875rem;
+            font-weight: 500;
+            font-family: inherit;
+        }
+
+        .search-bar input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .record-count {
+            font-size: 0.82rem;
+            font-weight: 800;
+            color: var(--primary);
+            white-space: nowrap;
+            padding: 6px 14px;
+            background: rgba(42, 181, 165, 0.08);
+            border-radius: 20px;
+            border: 1px solid rgba(42, 181, 165, 0.15);
+        }
+
+        /* Clear All button right before record pill */
+        .btn-clear-all {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            background: rgba(239, 68, 68, 0.06);
+            color: var(--danger);
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .btn-clear-all:hover {
+            background: var(--danger);
+            color: #fff;
+            border-color: var(--danger);
+        }
+
+        /* ══════════════════════════════════════════
+           §11 — TABLE (MAIN.HTML HARMONIZED)
+           ══════════════════════════════════════════ */
+        .table-wrap {
+            overflow: auto;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--surface);
+            width: 100%;
+            box-shadow: var(--shadow);
+            max-height: 800px; /* Force a taller height if screen allows */
+            min-height: 400px;
+            position: relative;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.68rem; /* Extremely compact font size */
+            min-width: 1000px; /* Fitting on standard laptops */
+            table-layout: auto;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: var(--bg-base);
+        }
+
+        th {
+            text-align: left;
+            padding: 8px 10px; /* Tighter padding */
+            font-weight: 800;
+            color: var(--text-muted);
+            border-bottom: 2px solid var(--border);
+            text-transform: uppercase;
+            font-size: 0.62rem; 
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 8px 10px; /* Tighter padding */
+            border-bottom: 1px solid var(--border);
+            color: var(--text-main);
+            transition: background-color 0.1s;
+            white-space: nowrap;
+        }
+
+        /* Essential columns should not cut off; Part Desc can have ellipsis */
+        td:nth-child(8) { 
+            max-width: 120px; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+        }
+
+        /* Prevent shift on hover by reserving space for the indicator border */
+        td:first-child {
+            border-left: 3px solid transparent;
+            padding-left: 7px; /* Tight padding */
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tbody tr:hover td {
+            background: rgba(42, 181, 165, 0.03);
+        }
+
+        /* ══════════════════════════════════════════
+           §12b — PAGINATION (MAIN.HTML HARMONIZED)
+           ══════════════════════════════════════════ */
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding: 0 4px;
+        }
+
+        .pagination .btn {
+            padding: 8px 18px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            border-radius: 10px;
+            border: 1.5px solid var(--border);
+            background: var(--surface);
+            color: var(--text-main);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            width: auto;
+            margin: 0;
+        }
+
+        .pagination .btn:hover:not(:disabled) {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(42, 181, 165, 0.05);
+            transform: translateY(-1px);
+        }
+
+        .pagination .btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .page-indicator {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 700;
+        }
+
+        /* Clickable rows (MRS modal trigger) */
+        tbody tr.row-clickable {
+            cursor: pointer;
+        }
+
+        tbody tr.row-clickable:hover td {
+            background: rgba(42, 181, 165, 0.07) !important;
+        }
+
+        tbody tr.row-clickable:hover td:first-child {
+            border-left-color: var(--primary);
+        }
+
+        /* Editable cell styling */
+        td.editable {
+            cursor: pointer;
+        }
+
+        td.editable:hover {
+            background: rgba(42, 181, 165, 0.08) !important;
+        }
+
+        td.editing {
+            padding: 0 !important;
+        }
+
+        td.editing input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            outline: none;
+            background: rgba(42, 181, 165, 0.1);
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.82rem;
+            padding: 12px 16px;
+        }
+
+        /* ══════════════════════════════════════════
+           §12 — BADGES
+           ══════════════════════════════════════════ */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            background: var(--bg-base);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .badge:hover {
+            transform: scale(1.04);
+        }
+
+        .badge-mrs {
+            background: rgba(42, 181, 165, 0.1);
+            color: var(--primary);
+            border-color: rgba(42, 181, 165, 0.2);
+        }
+
+        .badge-ro {
+            background: rgba(107, 114, 128, 0.08);
+            color: var(--text-muted);
+            border-color: transparent;
+        }
+
+        .badge-cancel {
+            background: rgba(239, 68, 68, 0.08);
+            color: var(--danger);
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+
+        /* ══════════════════════════════════════════
+           §13 — EMPTY STATE
+           ══════════════════════════════════════════ */
+        .empty-view {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            text-align: center;
+            color: var(--text-muted);
+            gap: 12px;
+        }
+
+        .empty-view svg {
+            opacity: 0.18;
+        }
+
+        .empty-view p {
+            font-size: 0.875rem;
+            font-weight: 500;
+            max-width: 280px;
+            line-height: 1.6;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        /* ══════════════════════════════════════════
+           §14 — LOADING SPINNER
+           ══════════════════════════════════════════ */
+        .loading-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2.5px solid rgba(255, 255, 255, 0.35);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            flex-shrink: 0;
+        }
+
+        /* ══════════════════════════════════════════
+           §15 — CUSTOM MODAL (mirrors main.html modal-backdrop + modal-dialog)
+           ══════════════════════════════════════════ */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background-color: var(--modal-overlay);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-backdrop.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-dialog {
+            width: 100%;
+            max-width: 400px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            margin: 16px;
+            background: var(--surface);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.35);
+            transform: scale(0.94) translateY(10px);
+            transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal-backdrop.active .modal-dialog {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            padding: 20px 24px 16px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(to right, rgba(42, 181, 165, 0.06), transparent);
+        }
+
+        .modal-header h3 {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 3px;
+        }
+
+        .modal-header p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin: 0;
+            font-weight: 500;
+        }
+
+        .modal-body {
+            padding: 20px 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        /* MRS input area */
+        .mrs-input-wrap {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .mrs-input-label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .mrs-number-input {
+            width: 100%;
+            background: var(--bg-base);
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--primary);
+            outline: none;
+            text-align: center;
+            letter-spacing: 4px;
+            font-family: inherit;
+            transition: all 0.25s ease;
+        }
+
+        .mrs-number-input:focus {
+            border-color: var(--primary);
+            background: var(--surface);
+            box-shadow: 0 0 0 4px rgba(42, 181, 165, 0.15);
+        }
+
+        .claim-info-box {
+            background: var(--bg-base);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 18px;
+            font-size: 0.82rem;
+            line-height: 1.7;
+        }
+
+        .claim-info-box span {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .claim-info-box strong {
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        .modal-btn-row {
             display: flex;
             gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 18px;
         }
-        .faq-stat-pill {
-            font-size: 0.72rem;
+
+        .modal-btn-row button {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 0.875rem;
             font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1.5px solid transparent;
+            font-family: inherit;
+        }
+
+        .modal-btn-confirm {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: #fff;
+        }
+
+        .modal-btn-confirm:hover {
+            filter: brightness(1.08);
+            transform: translateY(-1px);
+        }
+
+        .modal-btn-cancel {
+            background: var(--surface);
             color: var(--text-muted);
+            border-color: var(--border);
+        }
+
+        .modal-btn-cancel:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        /* ══════════════════════════════════════════
+           §16 — CUSTOM CONFIRM DIALOG (mirrors main.html app-dialog)
+           ══════════════════════════════════════════ */
+        .confirm-dialog {
+            position: fixed;
+            inset: 0;
+            background-color: var(--modal-overlay);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .confirm-dialog.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .confirm-box {
+            width: 100%;
+            max-width: 340px;
+            margin: 16px;
+            background: var(--surface);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.35);
+            padding: 32px 24px;
+            text-align: center;
+            transform: scale(0.94) translateY(10px);
+            transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .confirm-dialog.active .confirm-box {
+            transform: scale(1) translateY(0);
+        }
+
+        .confirm-icon {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 14px;
+        }
+
+        .confirm-msg {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 20px;
+            line-height: 1.5;
+            white-space: pre-line;
+        }
+
+        .confirm-btn-row {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .confirm-btn-row button {
+            padding: 11px 24px;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1.5px solid transparent;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .confirm-yes {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: #fff;
+        }
+
+        .confirm-yes:hover {
+            filter: brightness(1.08);
+            transform: translateY(-1px);
+        }
+
+        .confirm-no {
+            background: var(--surface);
+            color: var(--text-muted);
+            border-color: var(--border);
+        }
+
+        .confirm-no:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        /* — Toast notification — */
+        #toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
             background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 4px 12px;
-        }
-        .faq-stat-pill span { color: var(--accent); }
-
-        /* ── Animation ── */
-        @keyframes faqFadeIn {
-            from { opacity: 0; transform: translateY(4px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        /* ── Footer ── */
-        .faq-footer {
-            text-align: center;
-            padding: 12px 16px 24px;
-            font-size: 0.72rem;
-            color: var(--text-muted);
+            border-radius: 14px;
+            padding: 12px 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.15);
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+            opacity: 0;
+            z-index: 3000;
+            white-space: nowrap;
+            pointer-events: none;
         }
 
-        /* ── Scrollbar (Webkit) ── */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+        #toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
     </style>
 </head>
-<body>
 
-    <!-- ── Top Bar ── -->
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding:16px 16px 0;">
-        <h2 style="margin:0; font-size:1.6rem; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:10px;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+<body>
+    <!-- PAGE HEADER — matches main.html -->
+    <header class="page-header">
+        <div class="header-left">
+            <div class="header-logo-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+                </svg>
+            </div>
+            <div>
+                <div class="header-title-text">MRS Assigner</div>
+                <div class="header-subtitle">Record Ledger · Audit-it</div>
+            </div>
+        </div>
+        <!-- Feature #1: Main Menu button -->
+        <button class="btn-main-menu" id="btn-back-menu" onclick="goBack()">
+            <svg viewBox="0 0 24 24">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
             </svg>
-            FAQ's
-        </h2>
-        <button class="btn" onclick="goBack()" title="Back to Main Menu">
-            <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             Main Menu
         </button>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <div class="content-wrap" id="app-root">
+
+        <!-- Import Controls -->
+        <div class="premium-card">
+            <div class="section-header">
+                <div class="tile-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="section-title">Source Data Import</div>
+                    <p style="font-size:0.75rem;color:var(--text-muted);margin:2px 0 0 0;">Sync repair orders and
+                        payment records</p>
+                </div>
+            </div>
+            <div class="tile-grid">
+                <div class="upload-tile" id="tile-source1">
+                    <div class="tile-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2.2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                        </svg></div>
+                    <span>Source 1.xlsx</span>
+                    <p id="status-source1">Claim Records</p>
+                    <input type="file" id="file-source1" accept=".xlsx,.xls,.csv"
+                        onchange="handleFileSelect('source1')">
+                </div>
+                <div class="upload-tile" id="tile-source2">
+                    <div class="tile-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2.2">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                            <line x1="1" y1="10" x2="23" y2="10" />
+                        </svg></div>
+                    <span>Source 2.xlsx</span>
+                    <p id="status-source2">Payment Data</p>
+                    <input type="file" id="file-source2" accept=".xlsx,.xls,.csv"
+                        onchange="handleFileSelect('source2')">
+                </div>
+            </div>
+            <div class="btn-group">
+                <button class="btn-premium btn-primary btn-feed" onclick="feedToTable()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="23 4 23 10 17 10" />
+                        <polyline points="1 20 1 14 7 14" />
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                    </svg>
+                    Feed To Database Table
+                </button>
+            </div>
+        </div>
+
+        <!-- Ledger Table -->
+        <div class="premium-card">
+            <div class="section-header">
+                <div class="tile-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="8" y1="6" x2="21" y2="6" />
+                        <line x1="8" y1="12" x2="21" y2="12" />
+                        <line x1="8" y1="18" x2="21" y2="18" />
+                        <line x1="3" y1="6" x2="3.01" y2="6" />
+                        <line x1="3" y1="12" x2="3.01" y2="12" />
+                        <line x1="3" y1="18" x2="3.01" y2="18" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="section-title">Database Ledger</div>
+                    <p style="font-size:0.75rem;color:var(--text-muted);margin:2px 0 0 0;">Click any row to assign its
+                        MRS number · Double-click a cell to edit its value</p>
+                </div>
+            </div>
+
+            <div class="search-row">
+                <!-- Feature #4: typing a number auto-focuses search & filters by MRS -->
+                <div class="search-bar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <!-- Feature #7: search by RO suffix (last digits, any prefix) -->
+                    <input type="text" id="tableSearch" placeholder="Search by MRS or R/O suffix (e.g. 12345)..."
+                        oninput="filterTable()">
+                </div>
+                <!-- Feature #8: Clear All button before record pill -->
+                <button class="btn-clear-all" onclick="clearLedger()">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    </svg>
+                    Clear All
+                </button>
+                <div class="record-count" id="recordCount">0 Records</div>
+            </div>
+
+            <!-- HARMONIZED: table-wrap exactly matches main.html container style -->
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr id="tableHeader"></tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+                <div id="noData" class="empty-view" style="display:flex;">
+                    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                        <line x1="10" y1="9" x2="8" y2="9" />
+                    </svg>
+                    <p>No active ledger found.<br>Import source files to begin.</p>
+                </div>
+            </div>
+
+            <!-- HARMONIZED: pagination matching main.html Prev / Indicator / Next -->
+            <div class="pagination" id="paginationBar" style="display:none;">
+                <button class="btn" id="mrs-btn-prev" onclick="goToPage(currentPage - 1)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6" /></svg> Previous
+                </button>
+                <span class="page-indicator" id="mrs-page-indicator">Page 1</span>
+                <button class="btn" id="mrs-btn-next" onclick="goToPage(currentPage + 1)">
+                    Next <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+                </button>
+            </div>
+        </div>
     </div>
 
-    <!-- ── Content ── -->
-    <main class="faq-content" style="padding-top:12px;">
-
-        <!-- Search -->
-        <div class="faq-search-wrap">
-            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input class="faq-search-input" id="faq-search" type="text"
-                placeholder="Search FAQs… e.g. backup, unclear, finalize, TOTP"
-                oninput="faqSearch(this.value)" autocomplete="off" tabindex="-1"
-                readonly onfocus="this.removeAttribute('readonly')">
+    <!-- ══════════════════════════
+         Feature #5: MRS Entry Modal (matches main.html modal-backdrop style)
+         ══════════════════════════ -->
+    <div class="modal-backdrop" id="mrsModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3>Assign MRS Number</h3>
+                <p id="mrsModalSubtitle">Enter the MRS number for this claim</p>
+            </div>
+            <div class="modal-body">
+                <div class="claim-info-box" id="mrsClaimInfo">
+                    <span>R/O No: </span><strong id="mrsInfoRO">—</strong><br>
+                    <span>Claim No: </span><strong id="mrsInfoClaim">—</strong><br>
+                    <span>Claim Type: </span><strong id="mrsInfoType">—</strong>
+                </div>
+                <label class="mrs-input-label">MRS Number</label>
+                <div class="mrs-input-wrap">
+                    <!-- Feature #6: auto-focus on open, Enter to save -->
+                    <input type="number" id="mrsNumberInput" class="mrs-number-input" placeholder="e.g. 1001" min="1"
+                        step="1"
+                        onkeydown="if(event.key==='Enter') saveMRS(); if(event.key==='Escape') closeMRSModal();">
+                </div>
+                <div class="modal-btn-row">
+                    <button class="modal-btn-confirm" onclick="saveMRS()">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                            style="display:inline;vertical-align:middle;margin-right:6px;">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Save MRS
+                    </button>
+                    <button class="modal-btn-cancel" onclick="closeMRSModal()">Cancel</button>
+                </div>
+            </div>
         </div>
+    </div>
 
-        <!-- Stats -->
-        <div class="faq-stats">
-            <div class="faq-stat-pill"><span id="stat-visible">48</span> questions</div>
-            <div class="faq-stat-pill"><span>10</span> categories</div>
+    <!-- Custom Confirm Dialog (matches main.html app-dialog style) -->
+    <div class="confirm-dialog" id="confirmDialog">
+        <div class="confirm-box">
+            <div class="confirm-icon" id="confirmIcon"></div>
+            <div class="confirm-msg" id="confirmMsg"></div>
+            <div class="confirm-btn-row">
+                <button class="confirm-yes" id="confirmYes">Confirm</button>
+                <button class="confirm-no" id="confirmNo">Cancel</button>
+            </div>
         </div>
+    </div>
 
-        <!-- No Results -->
-        <div id="faq-no-results" class="faq-no-results">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                style="stroke:var(--border);display:block;margin:0 auto 10px;">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            No FAQs match your search. Try a different keyword.
-        </div>
-
-        <div id="faq-body">
-
-            <!-- ══ CATEGORY 1: Getting Started ══ -->
-            <div class="faq-category" data-cat="getting started login google firebase totp 2fa file format excel csv">
-                <div class="faq-category-title">
-                    <svg viewBox="0 0 24 24"><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V7L12 2z"/><path d="M9 12l2 2 4-4"/></svg>
-                    Getting Started
-                </div>
-
-                <div class="faq-item" data-keywords="what is audit-it used for dealership claims">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">What is this app used for?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        <strong>Audit-it</strong> is a professional dealership tool for auditing warranty claims. It lets you import Excel/CSV claim files, audit each claim for discrepancies, tag parts as Clean, Unclear, or Pending, then export finalized PDF or Excel reports — all with AES-256 encryption and cloud backup.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="start new audit setup period from to month">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">How do I start a new audit?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        Go to <strong>Main Menu → New Audit</strong>. Set the <strong>From</strong> and <strong>To</strong> audit period (month/year), then upload your Excel or CSV claim file. The app will detect columns automatically and load your claims into the workspace.
-                        <ul>
-                            <li>The audit period determines which month's data is expected in the file.</li>
-                            <li>If the file's dates don't match the period you set, the app will warn you.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="file format excel csv upload import columns">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">What file format is supported for import?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        Supported formats: <span class="faq-tag">.xlsx</span> <span class="faq-tag">.xls</span> <span class="faq-tag">.csv</span><br><br>
-                        The app auto-detects key columns: <strong>Claim No, Part Description, Amount, Claim Type, Date</strong>. If a required column like Claim No is missing, you'll see an error. Make sure column headers are on the first row.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="login google sign in firebase authentication">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">How do I log in?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        The app uses <strong>Google Sign-In via Firebase</strong>. Click <em>Sign in with Google</em> on the login screen and choose your authorised account. Your session is restored automatically — no need to sign in every time.
-                        <ul>
-                            <li>Only accounts registered by your admin can access the app.</li>
-                            <li>If your account is blocked, contact your administrator.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="totp 2fa two factor authenticator verification code 3 hour">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">Why does it ask for a verification code (TOTP)?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        The app uses <strong>Two-Factor Authentication (TOTP)</strong> for extra security. After signing in with Google you will be asked for a 6-digit code from your <strong>Authenticator app</strong> (e.g. Google Authenticator). This session is valid for <strong>3 hours</strong> — after that, you'll be asked again.
-                        <ul>
-                            <li>If the app keeps asking for TOTP, try refreshing the page once.</li>
-                            <li>Make sure your device clock is accurate — TOTP codes are time-sensitive.</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ══ CATEGORY 2: Auditing Claims ══ -->
-            <div class="faq-category" data-cat="auditing claims workspace discrepancy status suspense remark">
-                <div class="faq-category-title">
-                    <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    Auditing Claims
-                </div>
-
-                <div class="faq-item" data-keywords="audit claim tap open modal workspace discrepancy status">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">How do I audit a single claim?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        In the <strong>workspace</strong>, tap any claim row to open the audit modal. Select the <strong>Discrepancy Status</strong> from the dropdown, add an optional remark, then tap <strong>Save Entry</strong>.
-                        <ul>
-                            <li>The row colour updates instantly: <span class="faq-tag green">Green</span> = Clean, <span class="faq-tag amber">Amber</span> = Unclear, <span class="faq-tag" style="background:rgba(100,116,139,0.1);color:var(--text-muted);border-color:rgba(100,116,139,0.3);">Grey</span> = Pending.</li>
-                            <li>You can re-open any audited claim to change its status at any time while the audit is a Draft.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="claim status clean unclear pending what does mean">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">What do Clean, Unclear, and Pending mean?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        <span class="faq-tag green">Clean (Cln)</span> — Part audited, no discrepancy found. Claim is fine.<br><br>
-                        <span class="faq-tag amber">Unclear (Unc)</span> — A discrepancy was found (e.g. part missing, batch mismatch, not tagged). Needs follow-up.<br><br>
-                        <span class="faq-tag" style="background:rgba(100,116,139,0.1);color:var(--text-muted);border-color:rgba(100,116,139,0.3);">Pending (Pen)</span> — Claim has not been audited yet. No entry saved for this claim.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="discrepancy codes list part missing mismatch not tagged damaged default">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">What are the default discrepancy codes?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        The built-in discrepancy codes are:
-                        <ul>
-                            <li><strong>0</strong> — None Found <span class="faq-tag green">Clean</span></li>
-                            <li><strong>1</strong> — Part is clean (Sent HMIL Suspense) <span class="faq-tag green">Clean</span></li>
-                            <li><strong>3</strong> — Part is Missing <span class="faq-tag amber">Unclear</span></li>
-                            <li><strong>4</strong> — Part Batch Code Mismatch <span class="faq-tag amber">Unclear</span></li>
-                            <li><strong>5</strong> — Part Not Tagged <span class="faq-tag amber">Unclear</span></li>
-                            <li><strong>6</strong> — Part Packing Missing <span class="faq-tag amber">Unclear</span></li>
-                            <li><strong>7</strong> — Related Part Missing / Affected Part Missing <span class="faq-tag amber">Unclear</span></li>
-                            <li><strong>8</strong> — Part is Not Defective <span class="faq-tag amber">Unclear</span></li>
-                            <li><strong>9</strong> — Part is Damaged <span class="faq-tag amber">Unclear</span></li>
-                            <li><strong>10</strong> — Issue part casual issue. Else Fine <span class="faq-tag green">[CLN]</span></li>
-                            <li><strong>11</strong> — Labour Only Claim <span class="faq-tag green">[CLN]</span></li>
-                        </ul>
-                        You can add your own codes via <strong>Main Menu → Custom Codes</strong>.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="filter fsc free service campaign exclude auto filter why missing claims">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">Why are some claims not showing in my audit?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        The app automatically <strong>filters out</strong> certain claim types before loading:
-                        <ul>
-                            <li><span class="faq-tag red">Free Service / FSC</span> claims — excluded always.</li>
-                            <li><span class="faq-tag red">Campaign claims under ₹300</span> — excluded unless the part description contains <strong>Power Window</strong> or <strong>Fuel Pump</strong>.</li>
-                        </ul>
-                        This is by design so only auditable warranty claims appear in your workspace.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="suspense HMIL send pending POD suspense(p) technical centre sent">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">What is Suspense(P) and how do I handle it?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        <strong>Suspense(P)</strong> means a part was tagged as <em>Sent to HMIL Suspense</em> (Code 1) but the physical dispatch to the Technical Centre has <strong>not been confirmed yet</strong>.<br><br>
-                        To resolve it, open the claim, go to the <strong>Suspense</strong> section in the modal, and tap <strong>Sent</strong> once the part is dispatched. You can optionally enter a <strong>POD number</strong>.<br><br>
-                        A red <strong>Suspense(P) — Action Required</strong> banner will appear on the main menu until all pending suspense parts are marked as sent.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="remark note optional comment claim save">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">Can I add notes or remarks to a claim?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        Yes. Every claim modal has an <strong>Optional Remark</strong> field at the bottom. Type any note (e.g. "Part found in bin 3", "Will follow up Monday") and it will be saved with that claim entry and included in exported reports.
-                    </div>
-                </div>
-            </div>
-
-            <!-- ══ CATEGORY 3: Finalising & Reports ══ -->
-            <div class="faq-category" data-cat="finalize close audit number report export pdf excel draft discard refresh">
-                <div class="faq-category-title">
-                    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                    Finalising &amp; Reports
-                </div>
-
-                <div class="faq-item" data-keywords="finalize close audit what happens lock">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">What happens when I finalise an audit?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        Finalising <strong>locks the audit</strong> and moves it to <strong>Previous Audits (Closed)</strong>. After finalising:
-                        <ul>
-                            <li>The audit gets an <strong>Audit Number</strong> (e.g. WA-2025-001).</li>
-                            <li>No further edits can be made to claim entries.</li>
-                            <li>The audit appears in the <strong>Dashboard</strong> and <strong>Reports Export</strong>.</li>
-                            <li>Data is saved securely in local storage (AES-256 encrypted if security is on).</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="audit number generate cancel WA format what is">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">What is an Audit Number and how is it generated?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        An <strong>Audit Number</strong> is a unique reference assigned when you finalise an audit (e.g. <span class="faq-tag">WA-2025-003</span>). It is auto-incremented based on previous audits.<br><br>
-                        In the Archive screen you can also <strong>manually generate or cancel</strong> an audit number for a closed audit using the action buttons on each row.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="export report pdf excel all claims unclear filter">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">How do I export a report?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        Go to <strong>Main Menu → Reports Export</strong>. Choose your scope (Master / specific month) and filter (All Claims, Clear Only, Unclear Only), then tap <strong>Export Excel</strong> or <strong>Export PDF</strong>.<br><br>
-                        Reports include: Claim No, Part Description, Amount, Discrepancy Status, and Remarks — with totals at the bottom.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="draft discard delete cancel workspace in progress">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">How do I discard or delete a draft audit?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        Inside the active workspace, tap the <strong>⋮ menu (top-right)</strong> and select <strong>Discard Workspace</strong>. This permanently deletes the draft and all unsaved progress.<br><br>
-                        Alternatively, go to <strong>Drafts</strong> in the Archive and delete it from there. <span class="faq-tag red">This action cannot be undone.</span>
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="refresh update re-upload new file same audit period data">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">Can I refresh or update the claim file mid-audit?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        Yes. In the workspace header, tap the <strong>↻ Refresh</strong> (re-upload) button to upload a new version of the claim file for the same audit period. The app will validate the file dates match the audit period before replacing the data. Your existing audit entries are preserved where claim numbers match.
-                    </div>
-                </div>
-            </div>
-
-            <!-- ══ CATEGORY 4: Dashboard ══ -->
-            <div class="faq-category" data-cat="dashboard analytics stats chart safe zone danger zone notification action required">
-                <div class="faq-category-title">
-                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-                    Dashboard
-                </div>
-
-                <div class="faq-item" data-keywords="dashboard what shows stats chart unclear pending clean total">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">What does the Dashboard show?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        The Dashboard gives a <strong>summary view</strong> of all claims across one or all audits:
-                        <ul>
-                            <li><span class="faq-tag green">Clean</span> — Total claims with no discrepancy.</li>
-                            <li><span class="faq-tag amber">Unclear</span> — Claims with a discrepancy tagged.</li>
-                            <li><span class="faq-tag" style="background:rgba(100,116,139,0.1);color:var(--text-muted);border-color:rgba(100,116,139,0.3);">Pending</span> — Claims not yet audited.</li>
-                        </ul>
-                        It also shows a <strong>doughnut chart</strong> with percentages, claim amount breakdowns, and lets you filter the table by status.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="safe zone danger zone analytics percentage 70 15">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">What is Safe Zone vs Danger Zone in analytics?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        The analytics notification on the main menu shows your audit health:
-                        <ul>
-                            <li><span class="faq-tag green">✅ Safe Zone</span> — Clean ≥ 70% <strong>and</strong> Unclear ≤ 15%.</li>
-                            <li><span class="faq-tag red">⚠️ Danger Zone</span> — Clean &lt; 70% <strong>or</strong> Unclear &gt; 15%.</li>
-                        </ul>
-                        This gives a quick health indicator of your dealership's warranty audit performance across all finalised months.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="notification action required unclear pending click open dashboard">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">What is the "Action Required" notification on the menu?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        This red banner appears when one or more finalised audits still have <strong>Unclear or Pending claims</strong>. Click it to go directly to the Dashboard filtered to the affected month(s). The banner stays until all claims are resolved — it cannot be dismissed while issues remain.
-                    </div>
-                </div>
-            </div>
-
-            <!-- ══ CATEGORY 5: Backup & Restore ══ -->
-            <div class="faq-category" data-cat="backup restore local firebase github gist cloud sync auto">
-                <div class="faq-category-title">
-                    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    Backup &amp; Restore
-                </div>
-
-                <div class="faq-item" data-keywords="backup types local firebase github gist options difference">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">What backup options are available?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        There are three backup methods under <strong>Backup &amp; Restore</strong>:
-                        <ul>
-                            <li><span class="faq-tag">Local</span> — Download a full <strong>.json</strong> backup file to your device. Best for manual offline backup.</li>
-                            <li><span class="faq-tag">Firebase</span> — Sign in with Google to sync data to <strong>Firebase Firestore</strong> cloud. Ideal for multi-device access.</li>
-                            <li><span class="faq-tag">GitHub</span> — Connect via a <strong>Personal Access Token</strong> to sync to a private <strong>GitHub Gist</strong>. Can be set to auto-sync on every audit close.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="local backup download json how restore overwrite">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">How do I do a local backup and restore?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        <strong>Backup:</strong> Go to <em>Backup &amp; Restore → Local tab</em> and tap <strong>Download Full Backup</strong>. A <code>.json</code> file is saved to your device.<br><br>
-                        <strong>Restore:</strong> On the same screen, tap <strong>Browse File</strong> and select your <code>.json</code> backup. <span class="faq-tag red">Warning: this overwrites all current data.</span>
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="firebase google sign in cloud backup restore new device">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">How do I back up to Firebase / use on a new device?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        Go to <em>Backup &amp; Restore → Firebase tab</em> and tap <strong>Sign in with Google</strong>. Once connected:
-                        <ul>
-                            <li>Tap <strong>Backup to Firebase</strong> to push your data to the cloud.</li>
-                            <li>On a new device, sign in, then tap <strong>Restore from Firebase</strong> to pull it back.</li>
-                        </ul>
-                        The cloud status card shows when the last backup was made.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="github gist token auto sync personal access token setup">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">How do I set up GitHub Gist backup and auto-sync?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        Go to <em>Backup &amp; Restore → GitHub tab</em>. Paste your <strong>GitHub Personal Access Token</strong> (needs <code>gist</code> scope) and tap Connect. Once connected:
-                        <ul>
-                            <li>Use <strong>Backup to Gist</strong> / <strong>Restore from Gist</strong> manually.</li>
-                            <li>Enable <strong>Auto-Sync</strong> to automatically push to Gist every time you close/finalise an audit.</li>
-                        </ul>
-                        Your token is stored AES-256 encrypted locally — never sent to any server except GitHub.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="quick backup restore header button shortcut cloud icon">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">What are the quick backup/restore buttons in the header?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        The header has two shortcut icons (cloud upload and cloud download) for <strong>fast one-tap backup and restore</strong> using your connected cloud service (Firebase or GitHub Gist). You can also access them from the <strong>⋮ user menu</strong> → Backup to Cloud / Restore from Cloud.
-                    </div>
-                </div>
-            </div>
-
-            <!-- ══ CATEGORY 6: Security ══ -->
-            <div class="faq-category" data-cat="security password lock encryption master app archive AES">
-                <div class="faq-category-title">
-                    <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    Security
-                </div>
-
-                <div class="faq-item" data-keywords="app launch lock master password what is how enable">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">What is the App Launch Lock?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        When enabled, the app requires a <strong>Master Password</strong> every time it is opened. Go to <strong>Security Settings</strong> and toggle <em>App Launch Lock</em> on. You will be prompted to set a Master Password on first enable.<br><br>
-                        This is separate from your Google login — it is a local PIN/password to prevent unauthorised access on a shared device.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="archive protection lock closed audit view delete password">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">What is Archive Protection?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        When <strong>Archive Protection</strong> is enabled, opening or deleting a <strong>Closed (finalised) audit</strong> requires the Master Password. This prevents accidental deletion or unauthorised viewing of completed audit records.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="AES 256 encryption data stored local where safe">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">Is my audit data encrypted?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        Yes. When security is active, all audit data stored locally is encrypted with <strong>AES-256</strong>. Data is stored in your browser's <strong>IndexedDB</strong> (via localforage) — it never leaves your device unless you explicitly use a cloud backup feature.
-                    </div>
-                </div>
-            </div>
-
-            <!-- ══ CATEGORY 7: User Management ══ -->
-            <div class="faq-category" data-cat="user management admin roles permissions add block viewer">
-                <div class="faq-category-title">
-                    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                    User Management
-                </div>
-
-                <div class="faq-item" data-keywords="add user invite new account admin only">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">How do I add a new user?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        Only an <strong>Admin</strong> can add users. Go to <strong>User Management</strong> (visible to admins only) and fill in the user's <strong>Name, Email, Dealer ID</strong>, set their <strong>Role</strong> (Admin/Viewer), and choose which screens they can access. Tap <strong>Add User</strong> to register them in Firestore.<br><br>
-                        The new user can then sign in with their Google account matching that email.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="block user access revoke permissions disable account">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">How do I block a user?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        In <strong>User Management</strong>, find the user's card and tap <strong>Block</strong>. A blocked user will see an error when they try to log in and will be redirected immediately. Their data in Firestore is not deleted — you can unblock them at any time.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="permissions screens what can viewer admin see access control">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">What screens can each role access?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        When adding or editing a user, you can individually toggle access to:
-                        <ul>
-                            <li>New Audit &nbsp;·&nbsp; Drafts &amp; Archives &nbsp;·&nbsp; Dashboard</li>
-                            <li>Reports Export &nbsp;·&nbsp; Backup &amp; Restore</li>
-                            <li>Custom Codes &nbsp;·&nbsp; Security Settings</li>
-                        </ul>
-                        <strong>Admin</strong> accounts have all screens enabled by default. <strong>Viewer</strong> accounts only get New Audit and Drafts &amp; Archives by default.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="change password reset admin user forced google">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">Can an admin reset a user's password?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        Since login is via <strong>Google Sign-In</strong>, passwords are managed by Google — not by this app. Admins can however <strong>force-change the Master Password</strong> for local security locks via the admin panel in User Management (if enabled).
-                    </div>
-                </div>
-            </div>
-
-            <!-- ══ CATEGORY 8: Custom Codes ══ -->
-            <div class="faq-category" data-cat="custom codes add discrepancy code settings delete remove">
-                <div class="faq-category-title">
-                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                    Custom Codes
-                </div>
-
-                <div class="faq-item" data-keywords="add custom code new discrepancy type own label unclear clean">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">How do I add my own discrepancy code?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        Go to <strong>Main Menu → Custom Codes</strong>. Enter a unique <strong>Code Number</strong> and a <strong>Description</strong>, then choose whether it marks a claim as <span class="faq-tag amber">Unclear</span> or <span class="faq-tag green">Clean</span>. Tap <strong>+ Add Code</strong>.<br><br>
-                        Your custom code will immediately appear in the discrepancy dropdown inside the audit modal.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="delete remove custom code can I remove default">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">Can I delete a custom code?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        Yes. In the <strong>Custom Codes</strong> screen, tap the <strong>Delete</strong> button next to any code in the table. Custom codes can be deleted freely. <strong>Default system codes (0–11) cannot be deleted</strong> — only custom ones you've added appear in the table.
-                    </div>
-                </div>
-            </div>
-
-            <!-- ══ CATEGORY 9: Troubleshooting ══ -->
-            <div class="faq-category" data-cat="troubleshooting error problem issue fix help data lost wrong file column">
-                <div class="faq-category-title">
-                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                    Troubleshooting
-                </div>
-
-                <div class="faq-item" data-keywords="data lost refresh gone cleared browser storage missing">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">My data seems to have disappeared — what happened?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        All data is stored in your browser's <strong>IndexedDB</strong>. It can be lost if you:
-                        <ul>
-                            <li>Cleared browser data / site data / cookies.</li>
-                            <li>Used a different browser or private/incognito mode.</li>
-                            <li>Switched devices without restoring a backup first.</li>
-                        </ul>
-                        Always use <strong>Backup &amp; Restore</strong> regularly. If you had Firebase or GitHub Gist connected, try <strong>Restore from Cloud</strong> to recover your data.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="wrong file month date mismatch error upload rejected">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">I get a "Wrong File" error when uploading — why?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        The app checks that the <strong>dates in your claim file match the audit period</strong> you set (From/To months). If your file contains claims from a different month, you'll see a <em>Wrong File!</em> alert showing the mismatch.<br><br>
-                        Fix: either correct the audit period dates, or upload the correct file for that period.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="column not detected auto detect claim no amount part description error">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">The app can't detect my file columns — what should I check?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        The app looks for standard column names in the first row of your sheet. Make sure your file has recognisable headers such as:
-                        <ul>
-                            <li><strong>Claim No</strong> (or Claim Number, Claim ID)</li>
-                            <li><strong>Part Description</strong> (or Part Desc, Description)</li>
-                            <li><strong>Amount</strong> (or Claim Amount, Total)</li>
-                            <li><strong>Claim Type</strong> (or Type, Category)</li>
-                        </ul>
-                        If your headers are in a merged cell or a row other than row 1, the detection will fail. Try restructuring your file so headers are in row 1.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="keeps asking totp 2fa every time sign in loop session">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">The app keeps asking for TOTP every time I open it.</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        The TOTP session lasts <strong>3 hours</strong>. If it's expiring too quickly:
-                        <ul>
-                            <li>Check your <strong>device clock</strong> — TOTP is time-based; a wrong clock causes instant expiry.</li>
-                            <li>Make sure you're not using <strong>private/incognito mode</strong> (session storage is cleared on close).</li>
-                            <li>If you're on a shared device and multiple people log in, each user has their own session.</li>
-                        </ul>
-                        If the problem persists, try hard-refreshing the page (Ctrl+Shift+R).
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="dashboard dropdown not showing month selected notification click">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">After clicking a notification, the Dashboard dropdown looks empty.</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        The dropdown shows the selected month in <strong>blue bold text</strong> with a blue border when active. If it still looks grey/empty, try tapping the dropdown once to open and close it — this refreshes the visual state. The data will still be loaded correctly even if the visual appears blank.
-                    </div>
-                </div>
-            </div>
-
-            <!-- ══ CATEGORY 10: Tips & Shortcuts ══ -->
-            <div class="faq-category" data-cat="tips shortcuts dark mode theme keyboard navigation pagination search speed numeric">
-                <div class="faq-category-title">
-                    <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                    Tips &amp; Shortcuts
-                </div>
-
-                <div class="faq-item" data-keywords="dark mode light theme toggle switch how night">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">How do I switch between Dark Mode and Light Mode?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        Tap the <strong>sun / moon icon</strong> in the top-right corner of the header bar. The theme switches instantly between Light and Dark mode. Your preference is saved automatically and restored every time you open the app.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="keyboard shortcuts list what keys help overlay question mark">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">How do I see all keyboard shortcuts?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        Press <span class="faq-tag">?</span> on your keyboard at any time to open the <strong>Keyboard Shortcuts</strong> overlay. Key shortcuts include:
-                        <ul>
-                            <li><span class="faq-tag">Esc</span> — Go back / close modal / exit workspace</li>
-                            <li><span class="faq-tag">Enter</span> — Open first claim / save audit entry</li>
-                            <li><span class="faq-tag">← →</span> — Previous / Next page in workspace or dashboard</li>
-                            <li><span class="faq-tag">0–9 / A–Z</span> — Type to instantly search claims</li>
-                            <li><span class="faq-tag">↑ ↓</span> — Navigate dropdown options</li>
-                            <li><span class="faq-tag">0–9</span> — Quick-select discrepancy code inside audit modal</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="numeric keyboard toggle on screen number pad input tv">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">What is the keyboard icon next to number inputs?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        Some number input fields have a small <strong>keyboard icon button</strong> on the right side. Tapping it toggles between:
-                        <ul>
-                            <li><strong>Numeric-only mode</strong> — Shows a numeric keypad on mobile; restricts input to numbers only.</li>
-                            <li><strong>Full keyboard mode</strong> — Allows typing letters and symbols (useful for TV remotes or barcode scanners).</li>
-                        </ul>
-                        This is especially useful on TV or large-screen setups where a full keyboard is not available.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="pagination page claims per page workspace navigate rows">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">How does pagination work in the workspace and dashboard?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        Claims are shown in pages to keep the interface fast. Use the <strong>← Prev</strong> and <strong>Next →</strong> buttons at the bottom of the table to move between pages. You can also press the <span class="faq-tag">←</span> <span class="faq-tag">→</span> arrow keys on your keyboard to navigate pages quickly.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="search workspace find claim number part description filter">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">How do I quickly find a specific claim in the workspace?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        Use the <strong>Search bar</strong> at the top of the workspace to filter by Claim No or Part Description. You can also simply <strong>start typing</strong> (any letter or number) and the search bar activates automatically — no need to click it first. The table updates in real time as you type.
-                    </div>
-                </div>
-
-                <div class="faq-item" data-keywords="faq search how find question topic keyword highlight">
-                    <div class="faq-question" onclick="toggleFaq(this)">
-                        <span class="faq-question-text">How do I search in this FAQ?</span>
-                        <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                    <div class="faq-answer">
-                        Use the <strong>Search FAQs</strong> bar at the top of this page. Type any keyword — for example <em>backup</em>, <em>unclear</em>, <em>finalize</em>, <em>TOTP</em> — and only matching questions will show. The matching word in the question is highlighted in <mark class="faq-highlight">yellow</mark>. Clear the search bar to show all FAQs again.
-                    </div>
-                </div>
-            </div>
-
-        </div><!-- end faq-body -->
-    </main>
-
-    <footer class="faq-footer">Audit-it — FAQ's &nbsp;·&nbsp; by Aashish Giri H</footer>
+    <!-- Toast -->
+    <div id="toast"></div>
 
     <script>
-        // ── Prevent auto-focus scroll on mobile: always start at top ──
-        function _resetScrollTop() {
-            if (document.activeElement && document.activeElement !== document.body) {
-                document.activeElement.blur();
-            }
-            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-            document.documentElement.scrollTop = 0;
-            document.body.scrollTop = 0;
-        }
-        // Fire at multiple points — mobile browsers re-focus after load
-        document.addEventListener('DOMContentLoaded', _resetScrollTop);
-        window.addEventListener('load', _resetScrollTop);
-        setTimeout(_resetScrollTop, 50);
-        setTimeout(_resetScrollTop, 150);
-        setTimeout(_resetScrollTop, 300);
+        // ── Persistence ──
+        const LEDGER_KEY = 'mrs_ledger';
+        let rawData = [];
 
-        // ── Theme: sync with parent app (main.html) or localStorage ──
-        (function () {
+        async function loadLedger() {
             try {
-                // If loaded inside iframe, read theme from parent body
-                const parentTheme = window.parent.document.body.getAttribute('data-theme');
-                if (parentTheme === 'dark') document.body.setAttribute('data-theme', 'dark');
-            } catch(e) {
-                // Fallback: read localStorage directly
-                const saved = localStorage.getItem('auditor_theme') || 'light';
-                if (saved === 'dark') document.body.setAttribute('data-theme', 'dark');
-            }
-        })();
-
-        function toggleTheme() {
-            const isDark = document.body.getAttribute('data-theme') === 'dark';
-            if (isDark) {
-                document.body.removeAttribute('data-theme');
-                localStorage.setItem('auditor_theme', 'light');
-                try { window.parent.document.body.removeAttribute('data-theme'); } catch(e) {}
-            } else {
-                document.body.setAttribute('data-theme', 'dark');
-                localStorage.setItem('auditor_theme', 'dark');
-                try { window.parent.document.body.setAttribute('data-theme', 'dark'); } catch(e) {}
-            }
+                const saved = await localforage.getItem(LEDGER_KEY);
+                if (saved) { rawData = saved; renderData(rawData); }
+            } catch (e) { console.error('Load ledger:', e); }
+        }
+        async function saveLedger() {
+            try { await localforage.setItem(LEDGER_KEY, rawData); }
+            catch (e) { console.error('Save ledger:', e); }
         }
 
-        function goBack() {
+        // ── Columns ──
+        const columns = [
+            "MRS", "VIN", "Claim No", "Claim Date", "Claim Type",
+            "R/O No", "R/O Date", "Part Desc", "Total Amt", "Labour",
+            "part", "Sublet", "IGST", "AMT RECEIVED", "DIFF AMT",
+            "Invoice No", "PAYMENT DATE", "AUTH. SIGN", "REMARKS"
+        ];
+        // numeric columns that trigger recalculation
+        const numericCols = new Set(["Total Amt", "Labour", "part", "Sublet", "IGST", "AMT RECEIVED"]);
+
+        let source1Data = null, source2Data = null;
+        let currentEditingRowIdx = null; // for MRS modal
+
+        // ── File Select ──
+        function handleFileSelect(type) {
+            const input = document.getElementById(`file-${type}`);
+            const status = document.getElementById(`status-${type}`);
+            const tile = document.getElementById(`tile-${type}`);
+            if (!input.files.length) return;
+            const file = input.files[0];
+            status.innerText = 'Loading...'; status.style.color = 'var(--accent)';
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                if (type === 'source1') source1Data = data;
+                else source2Data = data;
+                status.innerText = '✓ ' + file.name; status.style.color = 'var(--primary)';
+                tile.classList.add('active');
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // ── Feed ──
+        async function feedToTable() {
+            if (!source1Data || !source2Data) {
+                showToast('Please upload both Source 1 and Source 2 files first.', 'warn'); return;
+            }
+            const btn = document.querySelector('.btn-feed');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<span class="loading-spinner"></span> Processing...';
+            btn.classList.add('loading');
+            await new Promise(r => setTimeout(r, 100));
             try {
-                window.parent.showScreen('screen-menu');
-            } catch(e) {
-                window.history.back();
-            }
-        }
-
-        // ── FAQ toggle (accordion) ──
-        function toggleFaq(questionEl) {
-            const item = questionEl.closest('.faq-item');
-            const isOpen = item.classList.contains('faq-open');
-            item.closest('.faq-category').querySelectorAll('.faq-item.faq-open').forEach(i => {
-                if (i !== item) i.classList.remove('faq-open');
-            });
-            item.classList.toggle('faq-open', !isOpen);
-            if (!isOpen) setTimeout(() => item.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
-        }
-
-        // ── FAQ search ──
-        function faqSearch(query) {
-            const q = query.trim().toLowerCase();
-            const noResults = document.getElementById('faq-no-results');
-            const categories = document.querySelectorAll('#faq-body .faq-category');
-            let anyVisible = false;
-            let visibleCount = 0;
-
-            categories.forEach(cat => {
-                const items = cat.querySelectorAll('.faq-item');
-                let catVisible = false;
-                items.forEach(item => {
-                    const keywords  = (item.dataset.keywords || '').toLowerCase();
-                    const qText     = item.querySelector('.faq-question-text').textContent.toLowerCase();
-                    const aText     = item.querySelector('.faq-answer').textContent.toLowerCase();
-                    const catText   = (cat.dataset.cat || '').toLowerCase();
-                    const match = !q || keywords.includes(q) || qText.includes(q) || aText.includes(q) || catText.includes(q);
-                    item.style.display = match ? '' : 'none';
-                    if (match) { catVisible = true; visibleCount++; }
-
-                    // Highlight in question text
-                    const qEl = item.querySelector('.faq-question-text');
-                    if (q && match) {
-                        const orig = qEl.textContent;
-                        const idx = orig.toLowerCase().indexOf(q);
-                        if (idx >= 0) {
-                            qEl.innerHTML = orig.substring(0, idx)
-                                + '<mark class="faq-highlight">' + orig.substring(idx, idx + q.length) + '</mark>'
-                                + orig.substring(idx + q.length);
-                        } else {
-                            qEl.innerHTML = qEl.textContent;
-                        }
-                    } else {
-                        qEl.innerHTML = qEl.textContent;
-                    }
+                const payMap = {};
+                source2Data.forEach(row => {
+                    const k = String(row['Claim No.'] || row['Claim No'] || '').trim();
+                    if (k) payMap[k] = row;
                 });
-                cat.style.display = catVisible ? '' : 'none';
-                if (catVisible) anyVisible = true;
-            });
+                // Process all rows from Source 1 (No longer filtering FSC/Small Campaigns as per user request to see all 50)
+                const existingROs = new Set(rawData.map(r => String(r['R/O No'] || '').trim()));
+                let newlyAdded = 0;
+                let lastMRS = rawData.length ? Math.max(...rawData.map(r => parseInt(r['MRS']) || 0)) : 1000;
 
-            noResults.style.display = anyVisible ? 'none' : 'block';
-            const statEl = document.getElementById('stat-visible');
-            if (statEl) statEl.textContent = q ? visibleCount : 48;
+                source1Data.forEach(match1 => {
+                    const roKey = String(match1['R/O No'] || match1['R/O No.'] || '').trim();
+                    if (!roKey || /^CANC(LE|EL)$/i.test(roKey)) return;
+                    let target, isNew = false;
+                    if (existingROs.has(roKey)) {
+                        target = rawData.find(r => String(r['R/O No']).trim() === roKey);
+                    } else {
+                        isNew = true; lastMRS++;
+                        target = { "MRS": lastMRS, "R/O No": roKey }; newlyAdded++;
+                    }
+                    target['VIN'] = match1['VIN'] || target['VIN'] || '';
+                    target['Claim No'] = match1['Claim No'] || target['Claim No'] || '';
+                    target['Claim Date'] = match1['Claim Date'] || target['Claim Date'] || '';
+                    target['Claim Type'] = match1['Claim Type'] || target['Claim Type'] || '';
+                    target['R/O Date'] = match1['R/O Date'] || target['R/O Date'] || '';
+                    target['Part Desc'] = match1['Part Desc'] || match1['Part Description'] || target['Part Desc'] || '';
+                    target['Total Amt'] = match1['Total Amt'] || match1['Approve Amount by HMI'] || target['Total Amt'] || 0;
+                    target['Labour'] = match1['Labour'] || target['Labour'] || 0;
+                    target['part'] = match1['part'] || target['part'] || 0;
+                    target['Sublet'] = match1['Sublet'] || target['Sublet'] || 0;
+                    target['IGST'] = match1['IGST'] || match1['Total Approved Tax Amt'] || target['IGST'] || 0;
+                    target['Invoice No'] = match1['Invoice No'] || target['Invoice No'] || '';
+                    if (isNew) rawData.push(target);
+                    const claimKey = String(target['Claim No'] || '').trim();
+                    const match2 = payMap[claimKey];
+                    if (match2) {
+                        target['AMT RECEIVED'] = match2['Gross Amount'] || match2['Ramittance Amt.'] || target['AMT RECEIVED'] || 0;
+                        target['PAYMENT DATE'] = match2['Payment Cheque Date'] || target['PAYMENT DATE'] || '';
+                    }
+                    recalcRow(target);
+                });
+                saveLedger(); renderData(rawData);
+                showToast(`✓ Ledger processed! New: ${newlyAdded} | Total: ${rawData.length}`);
+            } catch (err) {
+                console.error(err); showToast('Error during mapping: ' + err.message, 'danger');
+            } finally { btn.innerHTML = orig; btn.classList.remove('loading'); }
         }
+
+        // ── Recalculate DIFF AMT & REMARKS ──
+        function recalcRow(row) {
+            const total = parseFloat(row['Total Amt']) || 0;
+            const received = parseFloat(row['AMT RECEIVED']) || 0;
+            if (total > 0 || received > 0) {
+                const diff = total - received;
+                row['DIFF AMT'] = Math.round(diff);
+                if (diff > 50) row['REMARKS'] = 'PAYMENT SHORT';
+                else if (diff < -50) row['REMARKS'] = 'EXCESS PAYMENT';
+                else row['REMARKS'] = 'PAID';
+            }
+        }
+
+        // ── Clear Database ──
+        function clearLedger() {
+            if (!rawData.length) { showToast('Ledger is already empty.', 'warn'); return; }
+            showConfirm(
+                'Clear entire database?\nThis cannot be undone.',
+                '⚠️',
+                () => {
+                    rawData.length = 0; saveLedger(); renderData(rawData);
+                    showToast('✓ Ledger cleared.', 'success');
+                }
+            );
+        }
+
+        // ── Pagination state ──
+        const PAGE_SIZE = 50;
+        let currentPage = 1;
+        let currentDataset = []; // the active filtered/full dataset
+
+        // ── Render Table (paginated) ──
+        function renderData(data) {
+            currentDataset = data;
+            currentPage = Math.min(currentPage, Math.max(1, Math.ceil(data.length / PAGE_SIZE)));
+            renderPage();
+        }
+
+        // ── Render Page (paginated 50 per page) ──
+        function renderPage() {
+            const data   = currentDataset;
+            const tbody  = document.getElementById('tableBody');
+            const noData = document.getElementById('noData');
+            const pagBar = document.getElementById('paginationBar');
+
+            if (!data.length) {
+                tbody.innerHTML = '';
+                noData.style.display = 'flex';
+                pagBar.style.display = 'none';
+                document.getElementById('recordCount').innerText = '0 Records';
+                return;
+            }
+
+            noData.style.display = 'none';
+            const totalPages = Math.ceil(data.length / PAGE_SIZE);
+            const start = (currentPage - 1) * PAGE_SIZE;
+            const end   = Math.min(start + PAGE_SIZE, data.length);
+            const pageRows = data.slice(start, end);
+
+            tbody.innerHTML = pageRows.map((row) => {
+                const ri = rawData.indexOf(row);
+                const mrsVal = (row['MRS'] !== undefined && row['MRS'] !== null && row['MRS'] !== '') ? row['MRS'] : '\u2014';
+                const cells = columns.map(col => {
+                    let val = (row[col] !== undefined && row[col] !== null && row[col] !== '') ? row[col] : '\u2014';
+                    if (col === 'MRS') {
+                        return `<td><span class="badge badge-mrs" title="Click row to assign MRS">${val} <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5;vertical-align:middle;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span></td>`;
+                    }
+                    if (col === 'R/O No') {
+                        let css = 'badge badge-ro';
+                        if (/^CANC/i.test(String(val))) css = 'badge badge-cancel';
+                        return `<td><span class="${css}">${val}</span></td>`;
+                    }
+                    return `<td class="editable" ondblclick="startEdit(event,this,${ri},'${col}')" title="Double-click to edit">${val}</td>`;
+                }).join('');
+                return `<tr class="row-clickable" onclick="openMRSModal(${ri})" title="Click to assign MRS #${mrsVal}">${cells}</tr>`;
+            }).join('');
+
+            // Scroll table back to top on page change
+            document.querySelector('.table-wrap').scrollTop = 0;
+
+            // Record count
+            document.getElementById('recordCount').innerText = `${data.length} Record${data.length !== 1 ? 's' : ''}`;
+
+            // Pagination UI (Harmonized with main.html style)
+            if (totalPages <= 1) {
+                pagBar.style.display = 'none';
+            } else {
+                pagBar.style.display = 'flex';
+                document.getElementById('mrs-page-indicator').textContent = `Page ${currentPage} of ${totalPages}`;
+                document.getElementById('mrs-btn-prev').disabled = (currentPage === 1);
+                document.getElementById('mrs-btn-next').disabled = (currentPage === totalPages);
+            }
+        }
+
+        function goToPage(page) {
+            const totalPages = Math.ceil(currentDataset.length / PAGE_SIZE);
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderPage();
+        }
+
+        // ── Search / Filter (Feature #7: RO suffix search) ──
+        function filterTable() {
+            currentPage = 1; // reset to first page on new search
+            const query = document.getElementById('tableSearch').value.trim().toLowerCase();
+            if (!query) { renderData(rawData); return; }
+            const filtered = rawData.filter(row => {
+                const mrs    = String(row['MRS'] || '').toLowerCase();
+                const ro     = String(row['R/O No'] || '').toLowerCase();
+                const claim  = String(row['Claim No'] || '').toLowerCase();
+                const roSuffix = ro.replace(/^[^0-9]*/, '');
+                return mrs.includes(query) || claim.includes(query) || roSuffix.endsWith(query) || ro.includes(query);
+            });
+            renderData(filtered);
+        }
+
+        // ── Feature #4: Global keydown — type number → focus search & insert digit ──
+        // ── Feature #4: Keyboard Listener (Type to search & Enter to open) ──
+        document.addEventListener('keydown', (e) => {
+            const active = document.activeElement;
+            const inInput = (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+            const searchInput = document.getElementById('tableSearch');
+            const modalOpen = (document.getElementById('mrsModal').classList.contains('active') ||
+                             document.getElementById('confirmDialog').classList.contains('active'));
+
+            if (modalOpen) return;
+
+            // Handle typing digits 0-9 when NOT in an input (or specifically in search bar)
+            if (!inInput || active === searchInput) {
+                if (e.key >= '0' && e.key <= '9') {
+                    // Only preventDefault and focus if we are NOT already in the search input
+                    if (active !== searchInput) {
+                        e.preventDefault();
+                        searchInput.focus();
+                        searchInput.value += e.key;
+                        filterTable();
+                    }
+                    return;
+                }
+            }
+
+            // Handle Enter key while search bar is focused
+            if (active === searchInput && e.key === 'Enter') {
+                e.preventDefault();
+                if (currentDataset.length > 0) {
+                    const firstRealIdx = rawData.indexOf(currentDataset[0]);
+                    if (firstRealIdx !== -1) openMRSModal(firstRealIdx);
+                }
+                return;
+            }
+        });
+
+        // ── Feature #5+6: MRS Modal ──
+        function openMRSModal(rowIdx) {
+            currentEditingRowIdx = rowIdx;
+            const row = rawData[rowIdx];
+            document.getElementById('mrsInfoRO').textContent = row['R/O No'] || '—';
+            document.getElementById('mrsInfoClaim').textContent = row['Claim No'] || '—';
+            document.getElementById('mrsInfoType').textContent = row['Claim Type'] || '—';
+            const inp = document.getElementById('mrsNumberInput');
+            inp.value = (row['MRS'] && row['MRS'] !== '—') ? row['MRS'] : '';
+            document.getElementById('mrsModal').classList.add('active');
+            setTimeout(() => inp.focus(), 280); // wait for transition
+        }
+        function closeMRSModal() {
+            document.getElementById('mrsModal').classList.remove('active');
+            currentEditingRowIdx = null;
+        }
+        function saveMRS() {
+            if (currentEditingRowIdx === null) return;
+            const val = parseInt(document.getElementById('mrsNumberInput').value);
+            if (!val || val < 1) { showToast('Please enter a valid MRS number.', 'warn'); return; }
+            rawData[currentEditingRowIdx]['MRS'] = val;
+            saveLedger(); filterTable(); closeMRSModal();
+            showToast(`✓ MRS ${val} saved.`, 'success');
+        }
+        // Close modal on backdrop click
+        document.getElementById('mrsModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeMRSModal();
+        });
+
+        // ── Feature #9: Inline Cell Edit ──
+        function startEdit(evt, td, rowIdx, col) {
+            // Stop propagation so the row-click (openMRSModal) doesn't fire
+            if (evt) evt.stopPropagation();
+            if (td.classList.contains('editing')) return;
+            const row = rawData[rowIdx];
+            const currentVal = (row[col] !== undefined && row[col] !== null) ? row[col] : '';
+            td.classList.add('editing');
+            const input = document.createElement('input');
+            input.type = numericCols.has(col) ? 'number' : 'text';
+            input.value = currentVal;
+            input.style.cssText = 'width:100%;height:100%;padding:10px 16px;border:none;outline:none;background:rgba(42,181,165,0.1);color:var(--text-main);font-family:inherit;font-size:0.82rem;';
+            td.innerHTML = '';
+            td.appendChild(input);
+            input.focus(); input.select();
+            // Prevent click inside input from bubbling to row
+            input.addEventListener('click', e => e.stopPropagation());
+
+            function commitEdit() {
+                const newVal = input.value.trim();
+                td.classList.remove('editing');
+                if (newVal !== '') {
+                    row[col] = numericCols.has(col) ? (parseFloat(newVal) || 0) : newVal;
+                    // Recalc if amount changed
+                    if (numericCols.has(col) && (col === 'Total Amt' || col === 'AMT RECEIVED')) {
+                        recalcRow(row);
+                    }
+                    saveLedger();
+                }
+                filterTable();
+            }
+            function cancelEdit() { td.classList.remove('editing'); filterTable(); }
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); commitEdit(); }
+                if (e.key === 'Escape') { e.preventDefault(); cancelEdit(); }
+            });
+            input.addEventListener('blur', commitEdit);
+        }
+
+        // ── Init ──
+        function initTable() {
+            updateTheme();
+            document.getElementById('tableHeader').innerHTML = columns.map(c => `<th>${c}</th>`).join('');
+            loadLedger();
+        }
+        function updateTheme() {
+            const t = localStorage.getItem('auditor_theme') || 'light';
+            applyTheme(t);
+        }
+        function applyTheme(theme) {
+            if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+            else document.documentElement.removeAttribute('data-theme');
+            document.documentElement.style.setProperty('--surface-rgb', theme === 'dark' ? '31,41,55' : '255,255,255');
+        }
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'theme-change') applyTheme(e.data.theme);
+        });
+        window.addEventListener('load', () => setTimeout(initTable, 50));
+
+        // Navigation
+        function goBack() {
+            try { window.parent.showScreen('screen-menu'); }
+            catch (ex) { window.history.back(); }
+        }
+
+        // ══════════════════════════
+        // Custom UI Utilities
+        // ══════════════════════════
+
+        // Toast
+        let _toastTimer;
+        function showToast(msg, type) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.style.borderColor = type === 'danger' ? 'rgba(239,68,68,0.4)' :
+                type === 'warn' ? 'rgba(245,158,11,0.4)' :
+                    type === 'success' ? 'rgba(16,185,129,0.4)' : 'var(--border)';
+            t.classList.add('show');
+            clearTimeout(_toastTimer);
+            _toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        // Confirm Dialog (replaces browser confirm())
+        function showConfirm(msg, iconEmoji, onYes, onNo) {
+            const dlg = document.getElementById('confirmDialog');
+            const iconEl = document.getElementById('confirmIcon');
+            const msgEl = document.getElementById('confirmMsg');
+            const yesBtn = document.getElementById('confirmYes');
+            const noBtn = document.getElementById('confirmNo');
+            msgEl.textContent = msg;
+            iconEl.innerHTML = iconEmoji ? `<span style="font-size:2.5rem;line-height:1;">${iconEmoji}</span>` : '';
+            dlg.classList.add('active');
+            function cleanup() { dlg.classList.remove('active'); yesBtn.onclick = null; noBtn.onclick = null; }
+            yesBtn.onclick = () => { cleanup(); if (onYes) onYes(); };
+            noBtn.onclick = () => { cleanup(); if (onNo) onNo(); };
+        }
+        // Close confirm on backdrop click
+        document.getElementById('confirmDialog').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                document.getElementById('confirmDialog').classList.remove('active');
+            }
+        });
     </script>
 </body>
+
 </html>
