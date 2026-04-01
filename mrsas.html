@@ -1701,6 +1701,11 @@
         function closeMRSModal() {
             document.getElementById('mrsModal').classList.remove('active');
             currentEditingRowIdx = null;
+            // Refocus search bar for continuous typing
+            setTimeout(() => {
+                const searchInput = document.getElementById('tableSearch');
+                if (searchInput) searchInput.focus();
+            }, 100);
         }
         function saveMRS() {
             if (currentEditingRowIdx === null) return;
@@ -1737,6 +1742,7 @@
                 const newVal = input.value.trim();
                 td.classList.remove('editing');
                 if (newVal !== '') {
+                    const row = rawData[rowIdx];
                     row[col] = numericCols.has(col) ? (parseFloat(newVal) || 0) : newVal;
                     // Recalc if amount changed
                     if (numericCols.has(col) && (col === 'Total Amt' || col === 'AMT RECEIVED')) {
@@ -1745,8 +1751,15 @@
                     saveLedger();
                 }
                 filterTable();
+                const sInput = document.getElementById('tableSearch');
+                if (sInput) sInput.focus();
             }
-            function cancelEdit() { td.classList.remove('editing'); filterTable(); }
+            function cancelEdit() { 
+                td.classList.remove('editing'); 
+                filterTable(); 
+                const sInput = document.getElementById('tableSearch');
+                if (sInput) sInput.focus();
+            }
 
             input.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') { e.preventDefault(); commitEdit(); }
@@ -1760,6 +1773,11 @@
             updateTheme();
             document.getElementById('tableHeader').innerHTML = columns.map(c => `<th>${c}</th>`).join('');
             loadLedger();
+            // Focus search bar immediately on startup
+            setTimeout(() => {
+                const sInput = document.getElementById('tableSearch');
+                if (sInput) sInput.focus();
+            }, 300);
         }
         function updateTheme() {
             const t = localStorage.getItem('auditor_theme') || 'light';
@@ -1819,7 +1837,10 @@
             msgEl.textContent = msg;
             iconEl.innerHTML = iconEmoji ? `<span style="font-size:2.5rem;line-height:1;">${iconEmoji}</span>` : '';
             dlg.classList.add('active');
-            function cleanup() { dlg.classList.remove('active'); yesBtn.onclick = null; noBtn.onclick = null; }
+            function cleanup() { 
+                dlg.classList.remove('active'); yesBtn.onclick = null; noBtn.onclick = null; 
+                setTimeout(() => { const s = document.getElementById('tableSearch'); if(s) s.focus(); }, 150);
+            }
             yesBtn.onclick = () => { cleanup(); if (onYes) onYes(); };
             noBtn.onclick = () => { cleanup(); if (onNo) onNo(); };
         }
