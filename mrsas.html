@@ -577,8 +577,8 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.68rem; /* Extremely compact font size */
-            min-width: 1000px; /* Fitting on standard laptops */
+            font-size: 0.65rem; 
+            min-width: 900px; 
             table-layout: auto;
         }
 
@@ -591,18 +591,18 @@
 
         th {
             text-align: left;
-            padding: 8px 10px; /* Tighter padding */
+            padding: 6px 8px; 
             font-weight: 800;
             color: var(--text-muted);
             border-bottom: 2px solid var(--border);
             text-transform: uppercase;
-            font-size: 0.62rem; 
+            font-size: 0.6rem; 
             letter-spacing: 0.5px;
             white-space: nowrap;
         }
 
         td {
-            padding: 8px 10px; /* Tighter padding */
+            padding: 6px 8px; /* Tighter padding */
             border-bottom: 1px solid var(--border);
             color: var(--text-main);
             transition: background-color 0.1s;
@@ -610,10 +610,16 @@
         }
 
         /* Essential columns should not cut off; Part Desc can have ellipsis */
-        td:nth-child(8) { 
-            max-width: 120px; 
+        td:nth-child(2), td:nth-child(8) { 
+            max-width: 100px; 
             overflow: hidden; 
             text-overflow: ellipsis; 
+        }
+
+        /* Tighter widths for amount columns */
+        td:nth-child(9), td:nth-child(10), td:nth-child(11), td:nth-child(12), td:nth-child(13), td:nth-child(14), td:nth-child(15) {
+            max-width: 70px;
+            text-align: right;
         }
 
         /* Prevent shift on hover by reserving space for the indicator border */
@@ -778,6 +784,14 @@
             margin-left: 10px;
             vertical-align: middle;
             animation: pulse-danger 2s infinite;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .pending-badge-header:hover {
+            transform: scale(1.05) !important;
+            background: #ffe4e6;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
         }
 
         [data-theme="dark"] .pending-badge-header {
@@ -1228,7 +1242,7 @@
                 <div>
                     <div class="section-title">
                         Database Ledger
-                        <span id="mrs-header-pending" class="pending-badge-header" style="display:none;">0 Payments Pending</span>
+                        <span id="mrs-header-pending" class="pending-badge-header" style="display:none;" onclick="triggerPendingFilter()" title="Click to filter pending payments">0 Payments Pending</span>
                     </div>
                     <p style="font-size:0.75rem;color:var(--text-muted);margin:2px 0 0 0;">Click any row to assign its
                         MRS number · Double-click a cell to edit its value</p>
@@ -1788,19 +1802,24 @@
             else document.documentElement.removeAttribute('data-theme');
             document.documentElement.style.setProperty('--surface-rgb', theme === 'dark' ? '31,41,55' : '255,255,255');
         }
+        function triggerPendingFilter() {
+            const pending = rawData.filter(r => 
+                (!r['AMT RECEIVED'] || r['AMT RECEIVED'] === 0) && 
+                (!r['PAYMENT DATE'] || r['PAYMENT DATE'] === '' || r['PAYMENT DATE'] === '—')
+            );
+            if (pending.length === 0) {
+                showToast("No pending payments found.", "info");
+                return;
+            }
+            renderData(pending);
+            const sInput = document.getElementById('tableSearch');
+            if (sInput) sInput.value = '';
+            showToast(`Showing ${pending.length} Pending Collections`, 'success');
+        }
+
         window.addEventListener('message', (e) => {
             if (e.data && e.data.type === 'theme-change') applyTheme(e.data.theme);
-            if (e.data && e.data.type === 'filter-pending') {
-                const pending = rawData.filter(r => 
-                    (!r['AMT RECEIVED'] || r['AMT RECEIVED'] === 0) && 
-                    (!r['PAYMENT DATE'] || r['PAYMENT DATE'] === '' || r['PAYMENT DATE'] === '—')
-                );
-                renderData(pending);
-                // Clear search input to avoid confusion
-                const sInput = document.getElementById('tableSearch');
-                if (sInput) sInput.value = '';
-                showToast(`Showing ${pending.length} Pending Collections`, 'info');
-            }
+            if (e.data && e.data.type === 'filter-pending') triggerPendingFilter();
         });
         window.addEventListener('load', () => setTimeout(initTable, 50));
 
