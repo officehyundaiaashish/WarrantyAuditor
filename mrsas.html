@@ -969,18 +969,33 @@
             border-radius: 12px;
             padding: 14px 16px;
             margin-bottom: 18px;
-            font-size: 0.82rem;
-            line-height: 1.7;
+            font-size: 0.78rem;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px 16px;
+            line-height: normal;
+        }
+
+        .claim-info-box div {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
         }
 
         .claim-info-box span {
             color: var(--text-muted);
             font-weight: 500;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
 
         .claim-info-box strong {
             color: var(--text-main);
             font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .modal-btn-row {
@@ -1317,9 +1332,14 @@
             </div>
             <div class="modal-body">
                 <div class="claim-info-box" id="mrsClaimInfo">
-                    <span>R/O No: </span><strong id="mrsInfoRO">—</strong><br>
-                    <span>Claim No: </span><strong id="mrsInfoClaim">—</strong><br>
-                    <span>Claim Type: </span><strong id="mrsInfoType">—</strong>
+                    <div><span>R/O No</span><strong id="mrsInfoRO">—</strong></div>
+                    <div><span>Claim No</span><strong id="mrsInfoClaim">—</strong></div>
+                    <div><span>Claim Type</span><strong id="mrsInfoType">—</strong></div>
+                    <div><span>VIN</span><strong id="mrsInfoVIN">—</strong></div>
+                    <div><span>Total Amt</span><strong id="mrsInfoTotal">—</strong></div>
+                    <div><span>Received Amt</span><strong id="mrsInfoReceived">—</strong></div>
+                    <div><span>Difference</span><strong id="mrsInfoDiff">—</strong></div>
+                    <div><span>Status</span><strong id="mrsInfoStatus">—</strong></div>
                 </div>
                 <label class="mrs-input-label">MRS Number</label>
                 <div class="mrs-input-wrap">
@@ -1707,6 +1727,12 @@
             document.getElementById('mrsInfoRO').textContent = row['R/O No'] || '—';
             document.getElementById('mrsInfoClaim').textContent = row['Claim No'] || '—';
             document.getElementById('mrsInfoType').textContent = row['Claim Type'] || '—';
+            document.getElementById('mrsInfoVIN').textContent = row['VIN'] || '—';
+            document.getElementById('mrsInfoTotal').textContent = row['Total Amt'] || '—';
+            document.getElementById('mrsInfoReceived').textContent = row['AMT RECEIVED'] || '—';
+            document.getElementById('mrsInfoDiff').textContent = row['DIFF AMT'] || '—';
+            document.getElementById('mrsInfoStatus').textContent = row['REMARKS'] || '—';
+            
             const inp = document.getElementById('mrsNumberInput');
             inp.value = (row['MRS'] && row['MRS'] !== '—') ? row['MRS'] : '';
             document.getElementById('mrsModal').classList.add('active');
@@ -1807,14 +1833,24 @@
                 (!r['AMT RECEIVED'] || r['AMT RECEIVED'] === 0) && 
                 (!r['PAYMENT DATE'] || r['PAYMENT DATE'] === '' || r['PAYMENT DATE'] === '—')
             );
-            if (pending.length === 0) {
-                showToast("No pending payments found.", "info");
-                return;
+            
+            // Toggle Logic: If we are already exactly showing the pending list, show all
+            const isCurrentlyShowingOnlyPending = (currentDataset.length === pending.length && 
+                                                    currentDataset.every((v, i) => v === pending[i]));
+            
+            if (isCurrentlyShowingOnlyPending) {
+                renderData(rawData);
+                showToast("Showing All Records", "info");
+            } else {
+                if (pending.length === 0) {
+                    showToast("No pending payments found.", "info");
+                    return;
+                }
+                renderData(pending);
+                const sInput = document.getElementById('tableSearch');
+                if (sInput) sInput.value = '';
+                showToast(`Showing ${pending.length} Pending Collections`, 'success');
             }
-            renderData(pending);
-            const sInput = document.getElementById('tableSearch');
-            if (sInput) sInput.value = '';
-            showToast(`Showing ${pending.length} Pending Collections`, 'success');
         }
 
         window.addEventListener('message', (e) => {
