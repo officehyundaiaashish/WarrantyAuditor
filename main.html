@@ -3145,9 +3145,9 @@
                 </div>
                 <!-- MRS Assigner Data Integration -->
                 <div class="stat-card claim-card" id="dash-card-mrs"
-                    style="border-top: 4px solid var(--primary);" onclick="scrollToMRSDash()">
+                    style="border-top: 4px solid var(--primary);" onclick="setDashFilter('mrs')">
                     <div class="stat-value" id="dash-mrs-pending" style="color:var(--primary)">0</div>
-                    <div class="stat-label">MRS Payments Pending</div>
+                    <div class="stat-label">MRS Based Claims</div>
                 </div>
             </div>
 
@@ -3298,7 +3298,7 @@
                     </svg></button>
             </div>
 
-            <div class="table-wrap">
+            <div class="table-wrap" id="dash-table-wrap">
                 <table id="dash-table">
                     <thead>
                         <tr>
@@ -4607,17 +4607,7 @@
             if (e.data && e.data.type === 'mrs-data-changed') loadDashboardNotifications();
         });
 
-        // ── MRS Assigner Smart Dashboard Integration ──
-        function scrollToMRSDash() {
-            const el = document.getElementById('dash-mrs-ledger-area');
-            if (el) {
-                el.style.display = 'block';
-                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                // Highlight temporarily
-                el.style.boxShadow = '0 0 0 2px var(--primary)';
-                setTimeout(() => el.style.boxShadow = 'none', 1000);
-            }
-        }
+
 
         // --- UNIFIED SECURITY MODULE ---
         let secConfig = JSON.parse(localStorage.getItem('auditor_sec')) || { protectArchive: false, appLock: false, masterHash: '' };
@@ -5235,7 +5225,7 @@
             </div>
         `;
 
-            setDashFilter('all');
+            setDashFilter(sessionStorage.getItem('dash_last_filter') || 'all');
             document.getElementById('dash-content-area').style.display = 'block';
             setTimeout(() => { renderDashChart(); }, 100);
             showLoader(false);
@@ -5247,7 +5237,33 @@
             document.querySelectorAll('#dash-content-area .stat-card.active-filter').forEach(c => c.classList.remove('active-filter'));
             const btn = document.getElementById('dash-card-' + filterType);
             if (btn) btn.classList.add('active-filter');
-            applyDashFilters();
+
+            const tableWrap = document.getElementById('dash-table-wrap');
+            const pagination = document.querySelector('#screen-dashboard .pagination');
+            const searchBar = document.getElementById('dash-search').parentElement;
+            const chartArea = document.getElementById('dash-chart-container');
+            const mrsLedger = document.getElementById('dash-mrs-ledger-area');
+            const amountStats = document.getElementById('dash-amount-stats');
+
+            if (filterType === 'mrs') {
+                if (tableWrap) tableWrap.style.display = 'none';
+                if (pagination) pagination.style.display = 'none';
+                if (searchBar) searchBar.style.display = 'none';
+                if (chartArea) chartArea.style.display = 'none';
+                if (amountStats) amountStats.style.display = 'none';
+                if (mrsLedger) {
+                    mrsLedger.style.display = 'block';
+                    mrsLedger.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            } else {
+                if (tableWrap) tableWrap.style.display = 'block';
+                if (pagination) pagination.style.display = 'flex';
+                if (searchBar) searchBar.style.display = 'block';
+                if (chartArea) chartArea.style.display = 'block';
+                if (amountStats) amountStats.style.display = 'block';
+                if (mrsLedger) mrsLedger.style.display = 'none';
+                applyDashFilters();
+            }
         }
 
         function handleDashSearch() { applyDashFilters(); }
