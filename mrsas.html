@@ -1649,7 +1649,7 @@
 
             if (modalOpen) return;
 
-            // Handle typing digits 0-9 when NOT in an input (or specifically in search bar)
+            // Handle typing digits 0-9 or Backspace when NOT in an input (or specifically in search bar)
             if (!inInput || active === searchInput) {
                 if (e.key >= '0' && e.key <= '9') {
                     // Only preventDefault and focus if we are NOT already in the search input
@@ -1659,6 +1659,18 @@
                         searchInput.value += e.key;
                         filterTable();
                     }
+                    return;
+                }
+                if (e.key === 'Backspace') {
+                    // If not in search input, focus it and remove last char
+                    if (active !== searchInput) {
+                        e.preventDefault();
+                        searchInput.focus();
+                        searchInput.value = searchInput.value.slice(0, -1);
+                        filterTable();
+                    }
+                    // If in search input, it works naturally, but we'll ensure filter is updated
+                    // (Note: oninput already handles it, so no extra work needed here if focused)
                     return;
                 }
             }
