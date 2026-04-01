@@ -1407,10 +1407,16 @@
             btn.innerHTML = '<span class="loading-spinner"></span> Processing...';
             btn.classList.add('loading');
             await new Promise(r => setTimeout(r, 100));
+            const findVal = (m, terms) => {
+                const lowTerms = terms.map(t => t.toLowerCase().replace(/[\s_\-\.]/g, ''));
+                const key = Object.keys(m).find(k => lowTerms.includes(k.toLowerCase().replace(/[\s_\-\.]/g, '')));
+                return key ? m[key] : null;
+            };
+
             try {
                 const payMap = {};
                 source2Data.forEach(row => {
-                    const k = String(row['Claim No.'] || row['Claim No'] || '').trim();
+                    const k = String(findVal(row, ["Claim No", "Clm No", "Claim Number", "Claim#"]) || "").trim();
                     if (k) payMap[k] = row;
                 });
                 // Filter existing rawData to remove any old invalid claims (Cleanup pass)
@@ -1432,17 +1438,12 @@
                 let newlyAdded = 0;
 
                 source1Data.forEach(match1 => {
-                    const claimKey = String(match1['Claim No'] || match1['Claim No.'] || '').trim();
-                    const roKey = String(match1['R/O No'] || match1['R/O No.'] || '').trim();
+                    const claimKey = String(findVal(match1, ["Claim No", "Clm No", "Claim Number", "Claim#"]) || "").trim();
+                    const roKey = String(findVal(match1, ["R/O No", "RO No", "RO Number", "Repair Order", "RO Suffix"]) || "").trim();
                     
                     if (!claimKey || !roKey || /^CANC(LE|EL)$/i.test(roKey)) return;
 
                     // Standard Audit Filtering Logic (Robust Detection)
-                    const findVal = (m, terms) => {
-                        const lowTerms = terms.map(t => t.toLowerCase().replace(/[\s_\-\.]/g, ''));
-                        const key = Object.keys(m).find(k => lowTerms.includes(k.toLowerCase().replace(/[\s_\-\.]/g, '')));
-                        return key ? m[key] : null;
-                    };
 
                     const typeStr = String(findVal(match1, ["Claim Type", "Clm Type", "TypeOfClaim"]) || "").toUpperCase().replace(/[\s_\-\.]/g, '');
                     const amtRaw = String(findVal(match1, ["Total Amt", "Total Amount", "Claim Amount", "Approve Amount by HMI", "Amt"]) || "0");
