@@ -252,6 +252,18 @@
         tr:last-child td { border-bottom: none; }
         tbody tr:hover td { background: rgba(42,181,165,0.04); }
 
+        /* Clickable rows (MRS modal trigger) */
+        tbody tr.row-clickable { cursor: pointer; }
+        tbody tr.row-clickable:hover td {
+            background: rgba(42,181,165,0.07) !important;
+            transition: background 0.12s ease;
+        }
+        tbody tr.row-clickable:hover td:first-child {
+            border-left: 3px solid var(--primary);
+            padding-left: 13px;
+        }
+        tbody tr.row-clickable:active td { background: rgba(42,181,165,0.13) !important; }
+
         /* Editable cell styling */
         td.editable { cursor: pointer; }
         td.editable:hover { background: rgba(42,181,165,0.08) !important; }
@@ -460,7 +472,7 @@
                 </div>
                 <div>
                     <div class="section-title">Database Ledger</div>
-                    <p style="font-size:0.75rem;color:var(--text-muted);margin:2px 0 0 0;">Historical payment tracking records — click MRS badge to assign number, double-click cell to edit</p>
+                    <p style="font-size:0.75rem;color:var(--text-muted);margin:2px 0 0 0;">Click any row to assign its MRS number · Double-click a cell to edit its value</p>
                 </div>
             </div>
 
@@ -691,29 +703,28 @@
                 document.getElementById('recordCount').innerText = '0 Records'; return;
             }
             noData.style.display = 'none';
-            tbody.innerHTML = data.map((row, dataIdx) => {
-                // find the actual index in rawData for editing
+            tbody.innerHTML = data.map((row) => {
+                // get the real index in rawData (works because renderData receives object refs)
                 const ri = rawData.indexOf(row);
-                return `<tr>${columns.map(col => {
+                const mrsBadgeClass = 'badge badge-mrs';
+                const mrsVal = (row['MRS'] !== undefined && row['MRS'] !== null && row['MRS'] !== '') ? row['MRS'] : '—';
+                const cells = columns.map(col => {
                     let val = (row[col] !== undefined && row[col] !== null && row[col] !== '') ? row[col] : '—';
-                    let css = '';
-                    let inner = '';
                     if (col === 'MRS') {
-                        // Feature #5: click badge opens MRS modal
-                        css = 'badge badge-mrs';
-                        inner = `<td><span class="${css}" title="Click to assign MRS" onclick="openMRSModal(${ri})">${val}</span></td>`;
-                        return inner;
+                        // Show badge — clicking the ROW opens modal (handled on <tr>)
+                        return `<td><span class="badge badge-mrs" title="Click row to assign MRS">${val} <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5;vertical-align:middle;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span></td>`;
                     }
                     if (col === 'R/O No') {
-                        css = 'badge badge-ro';
+                        let css = 'badge badge-ro';
                         const v = String(val).toUpperCase();
                         if (v === 'CANCLE' || v === 'CANCEL') css = 'badge badge-cancel';
                         return `<td><span class="${css}">${val}</span></td>`;
                     }
-                    // Feature #9: double-click to edit cell (except MRS, R/O No)
-                    const isEditable = col !== 'DIFF AMT' && col !== 'REMARKS';
-                    return `<td class="editable" ondblclick="startEdit(this,${ri},'${col}')" title="${isEditable?'Double-click to edit':''}">${val}</td>`;
-                }).join('')}</tr>`;
+                    // Feature #9: double-click to edit (stops event so row-click doesn't fire)
+                    return `<td class="editable" ondblclick="startEdit(event,this,${ri},'${col}')" title="Double-click to edit">${val}</td>`;
+                }).join('');
+                // Entire row click → open MRS modal (Feature #5)
+                return `<tr class="row-clickable" onclick="openMRSModal(${ri})" title="Click to assign MRS #${mrsVal}">${cells}</tr>`;
             }).join('');
             document.getElementById('recordCount').innerText = `${data.length} Record${data.length!==1?'s':''}`;
         }
@@ -733,16 +744,20 @@
             renderData(filtered);
         }
 
-        // ── Feature #4: Global keydown — type number → focus search ──
+        // ── Feature #4: Global keydown — type number → focus search & insert digit ──
         document.addEventListener('keydown', (e) => {
-            // Only when no modal is open and no input focused
             const active = document.activeElement;
             const inInput = active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable;
-            if (inInput) return;
+            // If a modal is open, skip
+            const modalOpen = document.getElementById('mrsModal').classList.contains('active') ||
+                              document.getElementById('confirmDialog').classList.contains('active');
+            if (inInput || modalOpen) return;
             if (e.key >= '0' && e.key <= '9') {
+                e.preventDefault();
                 const searchInput = document.getElementById('tableSearch');
+                searchInput.value += e.key;  // append typed digit
                 searchInput.focus();
-                // prepend typed digit (browser will add it naturally on focus + keypress)
+                filterTable();
             }
         });
 
@@ -776,12 +791,13 @@
         });
 
         // ── Feature #9: Inline Cell Edit ──
-        function startEdit(td, rowIdx, col) {
+        function startEdit(evt, td, rowIdx, col) {
+            // Stop propagation so the row-click (openMRSModal) doesn't fire
+            if (evt) evt.stopPropagation();
             if (td.classList.contains('editing')) return;
             const row = rawData[rowIdx];
-            const currentVal = row[col] || '';
+            const currentVal = (row[col] !== undefined && row[col] !== null) ? row[col] : '';
             td.classList.add('editing');
-            const origContent = td.innerHTML;
             const input = document.createElement('input');
             input.type = numericCols.has(col) ? 'number' : 'text';
             input.value = currentVal;
@@ -789,6 +805,8 @@
             td.innerHTML = '';
             td.appendChild(input);
             input.focus(); input.select();
+            // Prevent click inside input from bubbling to row
+            input.addEventListener('click', e => e.stopPropagation());
 
             function commitEdit() {
                 const newVal = input.value.trim();
