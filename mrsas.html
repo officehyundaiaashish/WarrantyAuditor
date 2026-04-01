@@ -5,11 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MRS Assigner — Audit-it</title>
+    <!-- Google Fonts: Poppins (matches main.html) -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
     <style>
-        /* ── CSS Variables ── */
+        /* ════════════════════════════════════════════════════════
+           § 1 — CSS VARIABLES (mirrors main.html exactly)
+           ════════════════════════════════════════════════════════ */
         :root {
-            /* Light Theme */
             --bg-base: #f4f7f6;
             --surface: #ffffff;
             --text-main: #1f2937;
@@ -23,16 +27,15 @@
             --warning: #f59e0b;
             --accent: #4dcfc3;
             --radius: 16px;
-            --shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
+            --shadow: 0 4px 20px -2px rgba(0,0,0,0.05);
+            --modal-overlay: rgba(0,0,0,0.4);
             color-scheme: light;
-
-            /* --- SHIMMER VISIBILITY (LIGHT THEME) --- */
-            --notif-shimmer-bg: linear-gradient(90deg, transparent 20%, rgba(255, 255, 255, 0.4) 50%, transparent 80%);
-            --notif-shimmer-crit-bg: linear-gradient(90deg, transparent 20%, rgba(255, 255, 255, 0.6) 50%, transparent 80%);
+            --surface-rgb: 255, 255, 255;
+            --notif-shimmer-bg: linear-gradient(90deg, transparent 20%, rgba(255,255,255,0.35) 50%, transparent 80%);
+            --notif-shimmer-crit-bg: linear-gradient(90deg, transparent 20%, rgba(255,255,255,0.5) 50%, transparent 80%);
         }
 
         [data-theme="dark"] {
-            /* Dark Theme */
             --bg-base: #111827;
             --surface: #1f2937;
             --text-main: #f9fafb;
@@ -45,21 +48,24 @@
             --success: #10b981;
             --warning: #f59e0b;
             --accent: #4dcfc3;
-            --shadow: 0 10px 40px -5px rgba(0, 0, 0, 0.7);
-            --modal-overlay: rgba(0, 0, 0, 0.7);
+            --shadow: 0 4px 20px -2px rgba(0,0,0,0.7);
+            --modal-overlay: rgba(0,0,0,0.7);
             color-scheme: dark;
-
-            /* --- SHIMMER VISIBILITY (DARK THEME) --- */
-            --notif-shimmer-bg: linear-gradient(90deg, transparent 20%, rgba(255, 255, 255, 0.04) 50%, transparent 80%);
-            --notif-shimmer-crit-bg: linear-gradient(90deg, transparent 20%, rgba(255, 255, 255, 0.055) 50%, transparent 80%);
+            --surface-rgb: 31, 41, 55;
+            --notif-shimmer-bg: linear-gradient(90deg, transparent 20%, rgba(255,255,255,0.04) 50%, transparent 80%);
+            --notif-shimmer-crit-bg: linear-gradient(90deg, transparent 20%, rgba(255,255,255,0.055) 50%, transparent 80%);
         }
 
-        /* ── Reset & Base ── */
+        /* ════════════════════════════════════════════════════════
+           § 2 — RESET & BASE (matches main.html)
+           ════════════════════════════════════════════════════════ */
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Inter', -apple-system, sans-serif;
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         body {
@@ -68,181 +74,390 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            transition: background 0.3s ease;
+            transition: background-color 0.4s ease, color 0.4s ease;
+            font-size: 14px;
         }
 
         /* --- MODERN PREMIUM SCROLLBAR --- */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 20px; border: 2.5px solid var(--bg-base); }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary-hover); }
+        @supports (scrollbar-width: thin) {
+            * { scrollbar-width: thin; scrollbar-color: var(--primary) transparent; }
         }
 
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--primary);
-            border-radius: 20px;
-            border: 2.5px solid var(--bg-base);
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--primary-hover);
-        }
-
-        /* ── Header ── */
+        /* ════════════════════════════════════════════════════════
+           § 3 — PAGE HEADER (matches main.html app-header style)
+           ════════════════════════════════════════════════════════ */
         .page-header {
-            padding: 20px 32px;
-            background: rgba(var(--surface-rgb), 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            background-color: var(--bg-base);
+            flex-shrink: 0;
+            transition: background-color 0.4s ease;
             position: sticky;
             top: 0;
             z-index: 100;
         }
 
-        .header-left h1 {
-            font-size: 1.6rem;
-            font-weight: 800;
-            letter-spacing: -1px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .header-left {
             display: flex;
             align-items: center;
             gap: 12px;
         }
 
-        .header-left p {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-            font-weight: 500;
-            letter-spacing: 0.2px;
-        }
-
-        .btn-back {
+        .header-logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            border-radius: 10px;
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
-            border-radius: 14px;
-            border: 1px solid var(--border);
-            background: var(--surface);
-            color: var(--text-main);
-            font-weight: 700;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.05);
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(42,181,165,0.25);
         }
 
-        .btn-back:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-            transform: translateX(-4px);
-            box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+        .header-logo-icon svg {
+            stroke: #fff;
         }
 
-        /* ── main-animation ── */
+        .header-title-text {
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+        }
+
+        .header-subtitle {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            letter-spacing: 0.2px;
+            margin-top: 2px;
+        }
+
+        /* ════════════════════════════════════════════════════════
+           § 4 — ANIMATIONS
+           ════════════════════════════════════════════════════════ */
         @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(15px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        /* ── Main Layout ── */
+        @keyframes shimmerLeft {
+            0%   { background-position: -600px 0; }
+            100% { background-position:  600px 0; }
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ════════════════════════════════════════════════════════
+           § 5 — CONTENT WRAP
+           ════════════════════════════════════════════════════════ */
         .content-wrap {
             flex: 1;
-            padding: 24px 32px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 24px;
+            gap: 20px;
             max-width: 1700px;
             margin: 0 auto;
             width: 100%;
-            animation: fadeInUp 0.5s ease-out backwards;
-            animation-delay: 0.1s;
+            animation: fadeInUp 0.45s ease-out backwards;
+            animation-delay: 0.05s;
         }
 
-        /* ── Table Section (Header Reference) ── */
-        .table-card {
+        /* ════════════════════════════════════════════════════════
+           § 6 — PREMIUM CARD  (the main white surface container)
+           ════════════════════════════════════════════════════════ */
+        .premium-card {
             background: var(--surface);
             border-radius: 20px;
             border: 1px solid var(--border);
             box-shadow: var(--shadow);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            max-height: calc(100vh - 160px);
+            padding: 24px;
+            transition: box-shadow 0.3s ease, transform 0.3s ease;
             position: relative;
+            overflow: hidden;
         }
 
-        /* --- SHIMMER ANIMATION --- */
-        @keyframes shimmerLeft {
-            0% {
-                background-position: -600px 0;
-            }
-
-            100% {
-                background-position: 600px 0;
-            }
-        }
-
-        .table-card::after {
+        .premium-card::after {
             content: '';
             position: absolute;
             inset: 0;
             background: var(--notif-shimmer-bg);
             background-size: 600px 100%;
-            animation: shimmerLeft 6s ease-in-out infinite;
+            animation: shimmerLeft 7s ease-in-out infinite;
             pointer-events: none;
-            z-index: 5;
+            z-index: 0;
         }
 
-        .card-header {
-            padding: 20px 24px;
-            border-bottom: 1px solid var(--border);
-            background: linear-gradient(to right, rgba(42, 181, 165, 0.04), transparent);
+        .premium-card > * { position: relative; z-index: 1; }
+
+        [data-theme="dark"] .premium-card {
+            border-color: var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        /* ════════════════════════════════════════════════════════
+           § 7 — SECTION HEADER (icon + title + subtitle row)
+           ════════════════════════════════════════════════════════ */
+        .section-header {
             display: flex;
-            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-header .tile-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, rgba(42,181,165,0.12) 0%, rgba(77,207,195,0.08) 100%);
+            border: 1px solid rgba(42,181,165,0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            color: var(--primary);
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.3px;
+        }
+
+        /* ════════════════════════════════════════════════════════
+           § 8 — UPLOAD TILE GRID
+           ════════════════════════════════════════════════════════ */
+        .tile-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .upload-tile {
+            position: relative;
+            background: var(--bg-base);
+            border: 2px dashed var(--border);
+            border-radius: 14px;
+            padding: 20px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+            overflow: hidden;
+        }
+
+        .upload-tile:hover {
+            border-color: var(--primary);
+            background: rgba(42,181,165,0.04);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px -4px rgba(42,181,165,0.15);
+        }
+
+        .upload-tile.active {
+            border-color: var(--primary);
+            border-style: solid;
+            background: rgba(42,181,165,0.06);
+        }
+
+        .upload-tile .tile-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, rgba(42,181,165,0.1) 0%, rgba(77,207,195,0.07) 100%);
+            border: 1px solid rgba(42,181,165,0.18);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            transition: all 0.25s ease;
+        }
+
+        .upload-tile:hover .tile-icon,
+        .upload-tile.active .tile-icon {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(42,181,165,0.25);
+        }
+
+        .upload-tile span {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .upload-tile p {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        /* Hidden file input over tile */
+        .upload-tile input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* ════════════════════════════════════════════════════════
+           § 9 — PREMIUM BUTTONS
+           ════════════════════════════════════════════════════════ */
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
             align-items: center;
         }
 
-        .card-title {
+        .btn-premium {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 22px;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border: 1.5px solid transparent;
+            white-space: nowrap;
+            letter-spacing: 0.1px;
+        }
+
+        .btn-premium svg { flex-shrink: 0; }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 4px 14px rgba(42,181,165,0.25);
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.08);
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(42,181,165,0.35);
+        }
+
+        .btn-primary:active { transform: scale(0.98); }
+
+        .btn-primary.loading {
+            opacity: 0.8;
+            pointer-events: none;
+        }
+
+        .btn-outline {
+            background: var(--surface);
+            color: var(--text-muted);
+            border-color: var(--border);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(42,181,165,0.05);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(42,181,165,0.1);
+        }
+
+        /* ════════════════════════════════════════════════════════
+           § 10 — SEARCH BAR
+           ════════════════════════════════════════════════════════ */
+        .search-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .search-bar {
             display: flex;
             align-items: center;
             gap: 10px;
-            font-weight: 800;
-            font-size: 0.95rem;
-            color: var(--primary);
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
+            background: var(--bg-base);
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            padding: 10px 14px;
+            flex: 1;
+            max-width: 380px;
+            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+            color: var(--text-muted);
         }
 
-        .table-container {
+        .search-bar:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(42,181,165,0.12);
+            background: var(--surface);
+            color: var(--primary);
+        }
+
+        .search-bar input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-main);
+            width: 100%;
+            font-size: 0.875rem;
+            font-weight: 500;
+            font-family: inherit;
+        }
+
+        .search-bar input::placeholder { color: var(--text-muted); }
+
+        .record-count {
+            font-size: 0.82rem;
+            font-weight: 800;
+            color: var(--primary);
+            white-space: nowrap;
+            padding: 6px 14px;
+            background: rgba(42,181,165,0.08);
+            border-radius: 20px;
+            border: 1px solid rgba(42,181,165,0.15);
+        }
+
+        /* ════════════════════════════════════════════════════════
+           § 11 — TABLE WRAP & TABLE
+           ════════════════════════════════════════════════════════ */
+        .table-wrap {
+            border-radius: 14px;
+            border: 1px solid var(--border);
             overflow: auto;
-            flex: 1;
+            max-height: calc(100vh - 360px);
+            min-height: 200px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             min-width: 1800px;
-            /* Force scroll for many columns */
         }
 
         thead {
@@ -254,379 +469,259 @@
 
         th {
             text-align: left;
-            padding: 14px 18px;
+            padding: 13px 16px;
             font-weight: 700;
             color: var(--text-muted);
             border-bottom: 2px solid var(--border);
             text-transform: uppercase;
-            font-size: 0.72rem;
+            font-size: 0.7rem;
             letter-spacing: 0.8px;
             white-space: nowrap;
+            background: linear-gradient(to bottom, var(--surface), rgba(var(--surface-rgb), 0.95));
         }
 
         td {
-            padding: 12px 18px;
+            padding: 11px 16px;
             border-bottom: 1px solid var(--border);
             color: var(--text-main);
-            transition: background 0.2s;
+            transition: background 0.15s ease;
             white-space: nowrap;
         }
 
-        tr:hover td {
-            background: rgba(16, 185, 129, 0.04);
+        tr:last-child td { border-bottom: none; }
+
+        tbody tr:hover td {
+            background: rgba(42,181,165,0.04);
         }
 
+        /* ════════════════════════════════════════════════════════
+           § 12 — BADGES
+           ════════════════════════════════════════════════════════ */
         .badge {
-            padding: 4px 10px;
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
             border-radius: 6px;
-            font-size: 0.7rem;
+            font-size: 0.72rem;
             font-weight: 700;
             background: var(--bg-base);
             border: 1px solid var(--border);
         }
 
         .badge-mrs {
-            color: var(--accent);
-            border-color: rgba(59, 130, 246, 0.2);
-            background: rgba(59, 130, 246, 0.05);
+            background: rgba(42,181,165,0.1);
+            color: var(--primary);
+            border-color: rgba(42,181,165,0.2);
         }
 
         .badge-ro {
-            color: var(--primary);
-            border-color: rgba(16, 185, 129, 0.2);
-            background: rgba(16, 185, 129, 0.05);
+            background: rgba(107,114,128,0.08);
+            color: var(--text-muted);
+            border-color: transparent;
         }
 
         .badge-cancel {
+            background: rgba(239,68,68,0.08);
             color: var(--danger);
-            border-color: rgba(239, 68, 68, 0.2);
-            background: rgba(239, 68, 68, 0.05);
+            border-color: rgba(239,68,68,0.2);
         }
 
-        /* ── Search/Filter bar ── */
-        .filter-bar {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-
-        .search-box {
-            position: relative;
-            width: 280px;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 8px 12px 8px 36px;
-            border-radius: 10px;
-            border: 1px solid var(--border);
-            background: var(--bg-base);
-            color: var(--text-main);
-            font-size: 0.85rem;
-            outline: none;
-        }
-
-        .search-box input:focus {
-            border-color: var(--primary);
-        }
-
-        .search-box svg {
-            position: absolute;
-            left: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 16px;
-            height: 16px;
-            stroke: var(--text-muted);
-            fill: none;
-            stroke-width: 2;
-        }
-
-        /* ── Action Buttons ── */
-        .card-actions {
-            display: flex;
-            gap: 12px;
-            margin-top: 10px;
-        }
-
-        .btn-feed {
-            width: 100%;
-            display: flex;
+        /* ════════════════════════════════════════════════════════
+           § 13 — EMPTY STATE
+           ════════════════════════════════════════════════════════ */
+        .empty-view {
+            display: none;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            padding: 14px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            color: white;
-            border: none;
-            font-weight: 800;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            box-shadow: 0 4px 15px -2px rgba(42, 181, 165, 0.3);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            padding: 60px 20px;
+            text-align: center;
+            color: var(--text-muted);
+            gap: 12px;
         }
 
-        .btn-feed:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px -2px rgba(42, 181, 165, 0.4);
-            filter: brightness(1.05);
+        .empty-view svg { opacity: 0.18; }
+
+        .empty-view p {
+            font-size: 0.875rem;
+            font-weight: 500;
+            max-width: 280px;
+            line-height: 1.6;
+            color: var(--text-muted);
+            margin: 0;
         }
 
-        .btn-feed:active {
-            transform: scale(0.98);
-        }
-
-        .btn-feed.loading {
-            opacity: 0.7;
-            pointer-events: none;
-        }
-
+        /* ════════════════════════════════════════════════════════
+           § 14 — LOADING SPINNER
+           ════════════════════════════════════════════════════════ */
         .loading-spinner {
-            width: 18px;
-            height: 18px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-top-color: white;
+            width: 16px;
+            height: 16px;
+            border: 2.5px solid rgba(255,255,255,0.35);
+            border-top-color: #fff;
             border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .upload-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .upload-tile {
-            background: var(--surface);
-            border: 2px dashed var(--border);
-            border-radius: 14px;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
-        }
-
-        .upload-tile:hover {
-            border-color: var(--primary);
-            background: rgba(42, 181, 165, 0.02);
-        }
-
-        .upload-tile.active {
-            border-style: solid;
-            border-color: var(--primary);
-            background: rgba(42, 181, 165, 0.05);
-        }
-
-        .upload-tile svg {
-            width: 28px;
-            height: 28px;
-            stroke: var(--text-muted);
-            margin-bottom: 8px;
-            transition: stroke 0.2s;
-        }
-
-        .upload-tile:hover svg {
-            stroke: var(--primary);
-        }
-
-        .upload-tile span {
-            display: block;
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: var(--text-main);
-        }
-
-        .upload-tile p {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
-
-        .upload-tile input {
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            cursor: pointer;
-        }
-
-        /* ── Empty State ── */
-        .empty-state {
-            padding: 60px;
-            text-align: center;
-            color: var(--text-muted);
-        }
-
-        /* ── Footer ── */
-        .page-footer {
-            padding: 16px;
-            text-align: center;
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            opacity: 0.7;
+            animation: spin 0.7s linear infinite;
+            flex-shrink: 0;
         }
     </style>
 </head>
 
 <body>
-    <div id="app-root">
-        <!-- Header -->
-        <header class="page-header">
-            <div class="header-left">
-                <h1>
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--primary)"
-                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                        <polyline points="10 9 9 9 8 9"></polyline>
-                    </svg>
-                    MRS Assigner
-                </h1>
-                <p>Payment Verification Database <strong>Table</strong></p>
-            </div>
-            <button class="btn-back" onclick="goBack()" title="Back to Main Menu">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="19" y1="12" x2="5" y2="12"></line>
-                    <polyline points="12 19 5 12 12 5"></polyline>
+    <!-- ── PAGE HEADER (matches main.html app-header aesthetic) ── -->
+    <header class="page-header">
+        <div class="header-left">
+            <div class="header-logo-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
                 </svg>
-                Main Menu
-            </button>
-        </header>
+            </div>
+            <div>
+                <div class="header-title-text">MRS Assigner</div>
+                <div class="header-subtitle">Record Ledger · Audit-it</div>
+            </div>
+        </div>
+    </header>
 
-        <!-- Content -->
-        <main class="content-wrap">
-            <!-- Source Control Card -->
-            <div class="table-card" style="margin-bottom: 0; max-height: none; padding: 24px;">
-                <div class="card-title" style="margin-bottom: 20px;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="17 8 12 3 7 8"></polyline>
-                        <line x1="12" y1="3" x2="12" y2="15"></line>
+    <!-- ── MAIN CONTENT ── -->
+    <div class="content-wrap" id="app-root">
+
+        <!-- ── Import Controls Card ── -->
+        <div class="premium-card">
+            <div class="section-header">
+                <div class="tile-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
                     </svg>
-                    Source Data Import
                 </div>
-                
-                <div class="upload-grid">
-                    <div class="upload-tile" id="tile-source1">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                        <span>Source 1.xlsx</span>
-                        <p id="status-source1">Primary Claim Records</p>
-                        <input type="file" id="file-source1" accept=".xlsx,.xls,.csv" onchange="handleFileSelect('source1')">
-                    </div>
-                    <div class="upload-tile" id="tile-source2">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
-                        <span>Source 2.xlsx</span>
-                        <p id="status-source2">Payment Verification Data</p>
-                        <input type="file" id="file-source2" accept=".xlsx,.xls,.csv" onchange="handleFileSelect('source2')">
-                    </div>
-                </div>
-
-                <div class="card-actions">
-                        <div class="flex-center" style="gap: 12px; margin-top: 12px;">
-                            <button class="btn btn-feed" onclick="feedToTable()">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                                </svg>
-                                Feed To Database Table
-                            </button>
-                            <button class="btn" style="background: var(--surface); color: var(--danger); border: 1px solid var(--border);" onclick="clearLedger()">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" />
-                                </svg>
-                                Clear Database
-                            </button>
-                        </div>
+                <div>
+                    <div class="section-title">Source Data Import</div>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin: 2px 0 0 0;">Sync repair orders and payment records</p>
                 </div>
             </div>
 
-            <div class="table-card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="8" y1="6" x2="21" y2="6"></line>
-                            <line x1="8" y1="12" x2="21" y2="12"></line>
-                            <line x1="8" y1="18" x2="21" y2="18"></line>
-                            <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                            <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+            <div class="tile-grid">
+                <div class="upload-tile" id="tile-source1">
+                    <div class="tile-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
                         </svg>
-                        Database Table
                     </div>
-                    <div class="filter-bar">
-                        <div class="search-box">
-                            <svg viewBox="0 0 24 24">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                            </svg>
-                            <input type="text" id="tableSearch" placeholder="Search MRS or R/O No..."
-                                oninput="filterTable()">
-                        </div>
-                        <div id="recordCount" style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted);">
-                            Loading...
-                        </div>
-                    </div>
+                    <span>Source 1.xlsx</span>
+                    <p id="status-source1">Claim Records</p>
+                    <input type="file" id="file-source1" accept=".xlsx,.xls,.csv" onchange="handleFileSelect('source1')">
                 </div>
 
-                <div class="table-container">
-                    <table id="mrsTable">
-                        <thead>
-                            <tr id="tableHeader">
-                                <!-- Headers injected here -->
-                            </tr>
-                        </thead>
-                        <tbody id="tableBody">
-                            <!-- Data injected here -->
-                        </tbody>
-                    </table>
-                    <div id="noData" class="empty-state" style="display: none;">
-                        No records found matching your search.
+                <div class="upload-tile" id="tile-source2">
+                    <div class="tile-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                            <line x1="1" y1="10" x2="23" y2="10"/>
+                        </svg>
                     </div>
+                    <span>Source 2.xlsx</span>
+                    <p id="status-source2">Payment Data</p>
+                    <input type="file" id="file-source2" accept=".xlsx,.xls,.csv" onchange="handleFileSelect('source2')">
                 </div>
             </div>
-        </main>
 
-        <footer class="page-footer">
-            Precision Warranty Auditing Tool &copy; 2026 — Advanced Data Mapping
-        </footer>
+            <div class="btn-group">
+                <button class="btn-premium btn-primary btn-feed" onclick="feedToTable()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="23 4 23 10 17 10"/>
+                        <polyline points="1 20 1 14 7 14"/>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                    </svg>
+                    Feed To Database Table
+                </button>
+                <button class="btn-premium btn-outline" style="color: var(--danger); border-color: rgba(239,68,68,0.25);" onclick="clearLedger()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/>
+                    </svg>
+                    Clear Database
+                </button>
+            </div>
+        </div>
+
+        <!-- ── Ledger Table Card ── -->
+        <div class="premium-card">
+            <div class="section-header">
+                <div class="tile-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="8" y1="6" x2="21" y2="6"/>
+                        <line x1="8" y1="12" x2="21" y2="12"/>
+                        <line x1="8" y1="18" x2="21" y2="18"/>
+                        <line x1="3" y1="6" x2="3.01" y2="6"/>
+                        <line x1="3" y1="12" x2="3.01" y2="12"/>
+                        <line x1="3" y1="18" x2="3.01" y2="18"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="section-title">Database Ledger</div>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin: 2px 0 0 0;">Historical payment tracking records</p>
+                </div>
+            </div>
+
+            <div class="search-row">
+                <div class="search-bar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <input type="text" id="tableSearch" placeholder="Search by MRS, R/O, Claim No..." oninput="filterTable()">
+                </div>
+                <div class="record-count" id="recordCount">0 Records</div>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr id="tableHeader"></tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+                <div id="noData" class="empty-view" style="display: flex;">
+                    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <line x1="10" y1="9" x2="8" y2="9"/>
+                    </svg>
+                    <p>No active ledger found.<br>Import source files to begin.</p>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        // MRS Ledger Persistence
+        // ── MRS Ledger Persistence ──
         const LEDGER_KEY = 'mrs_ledger';
         let rawData = [];
 
-        // Load ledger on startup
-        try {
-            const saved = localStorage.getItem(LEDGER_KEY);
-            if (saved) rawData = JSON.parse(saved);
-        } catch (e) {
-            console.error("Failed to load ledger:", e);
-        }
-
-        function saveLedger() {
+        async function loadLedger() {
             try {
-                localStorage.setItem(LEDGER_KEY, JSON.stringify(rawData));
+                const saved = await localforage.getItem(LEDGER_KEY);
+                if (saved) {
+                    rawData = saved;
+                    renderData(rawData);
+                }
             } catch (e) {
-                console.error("Failed to save ledger:", e);
-                alert("Storage full or unavailable. Data may not be saved.");
+                console.error("Failed to load ledger:", e);
             }
         }
 
-        // Column Config
+        async function saveLedger() {
+            try {
+                await localforage.setItem(LEDGER_KEY, rawData);
+            } catch (e) {
+                console.error("Failed to save ledger:", e);
+            }
+        }
+
+        // ── Column Config ──
         const columns = [
             "MRS", "VIN", "Claim No", "Claim Date", "Claim Type",
             "R/O No", "R/O Date", "Part Desc", "Total Amt", "Labour",
@@ -638,26 +733,25 @@
         let source2Data = null;
 
         function handleFileSelect(type) {
-            const input = document.getElementById(`file-${type}`);
+            const input  = document.getElementById(`file-${type}`);
             const status = document.getElementById(`status-${type}`);
-            const tile = document.getElementById(`tile-${type}`);
-            
+            const tile   = document.getElementById(`tile-${type}`);
+
             if (input.files.length > 0) {
                 const file = input.files[0];
                 status.innerText = "Loading...";
                 status.style.color = 'var(--accent)';
-                
+
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    const data = new Uint8Array(e.target.result);
+                    const data     = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
-                    const sheetName = workbook.SheetNames[0];
-                    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-                    
-                    if (type === 'source1') source1Data = jsonData;
-                    else source2Data = jsonData;
+                    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
 
-                    status.innerText = "Ready: " + file.name;
+                    if (type === 'source1') source1Data = jsonData;
+                    else                   source2Data = jsonData;
+
+                    status.innerText = "✓ " + file.name;
                     status.style.color = 'var(--primary)';
                     tile.classList.add('active');
                 };
@@ -672,108 +766,89 @@
             }
 
             const btn = document.querySelector('.btn-feed');
-            const originalText = btn.innerHTML;
+            const orig = btn.innerHTML;
             btn.innerHTML = `<span class="loading-spinner"></span> Processing...`;
             btn.classList.add('loading');
 
-            // Wait a moment for UI
             await new Promise(r => setTimeout(r, 100));
 
             try {
-                // Map Source 2 into a fast lookup object by Claim No
                 const payMap = {};
                 source2Data.forEach(row => {
                     const claimNo = String(row['Claim No.'] || row['Claim No'] || '').trim();
                     if (claimNo) payMap[claimNo] = row;
                 });
 
-                // Filter Source 1 using the standard Audit rules
                 const filteredSource1 = source1Data.filter(row => {
                     const type = String(row['Claim Type'] || '').toUpperCase();
-                    const amt = parseFloat(row['Total Amt'] || row['Approve Amount by HMI']) || 0;
+                    const amt  = parseFloat(row['Total Amt'] || row['Approve Amount by HMI']) || 0;
                     const desc = String(row['Part Desc'] || row['Part Description'] || '').toUpperCase();
-                    
-                    // Exclude FSC / Free Service
                     if (type.includes('FREE SERVICE') || type.includes('FSC')) return false;
-                    
-                    // Campaign under 300 filter
                     if (type.includes('CAMPAIGN') && amt < 300 && !desc.includes('POWER WINDOW') && !desc.includes('FUEL PUMP')) return false;
-                    
                     return true;
                 });
 
-                // Get existing R/O Nos to prevent duplicates
                 const existingROs = new Set(rawData.map(r => String(r['R/O No'] || '').trim()));
                 let newlyAdded = 0;
                 let lastMRS = rawData.length > 0 ? Math.max(...rawData.map(r => parseInt(r['MRS']) || 0)) : 1000;
 
-                // Process each row in Source 1 as a LEDGER record
                 filteredSource1.forEach((match1) => {
                     const roKey = String(match1['R/O No'] || match1['R/O No.'] || '').trim();
                     if (!roKey || roKey.toUpperCase() === 'CANCLE' || roKey.toUpperCase() === 'CANCEL') return;
 
-                    // If R/O exists, we just update it; if not, we add new
                     let targetRow;
                     let isNew = false;
-                    
+
                     if (existingROs.has(roKey)) {
                         targetRow = rawData.find(r => String(r['R/O No']).trim() === roKey);
                     } else {
                         isNew = true;
                         lastMRS++;
-                        targetRow = {
-                            "MRS": lastMRS,
-                            "R/O No": roKey
-                        };
+                        targetRow = { "MRS": lastMRS, "R/O No": roKey };
                         newlyAdded++;
                     }
 
-                    // Map/Update Fields
-                    targetRow['VIN'] = match1['VIN'] || targetRow['VIN'] || '';
-                    targetRow['Claim No'] = match1['Claim No'] || targetRow['Claim No'] || '';
+                    targetRow['VIN']        = match1['VIN']        || targetRow['VIN']        || '';
+                    targetRow['Claim No']   = match1['Claim No']   || targetRow['Claim No']   || '';
                     targetRow['Claim Date'] = match1['Claim Date'] || targetRow['Claim Date'] || '';
                     targetRow['Claim Type'] = match1['Claim Type'] || targetRow['Claim Type'] || '';
-                    targetRow['R/O Date'] = match1['R/O Date'] || targetRow['R/O Date'] || '';
-                    targetRow['Part Desc'] = match1['Part Desc'] || match1['Part Description'] || targetRow['Part Desc'] || '';
-                    targetRow['Total Amt'] = match1['Total Amt'] || match1['Approve Amount by HMI'] || targetRow['Total Amt'] || 0;
-                    targetRow['Labour'] = match1['Labour'] || targetRow['Labour'] || 0;
-                    targetRow['part'] = match1['part'] || targetRow['part'] || 0;
-                    targetRow['Sublet'] = match1['Sublet'] || targetRow['Sublet'] || 0;
-                    targetRow['IGST'] = match1['IGST'] || match1['Total Approved Tax Amt'] || targetRow['IGST'] || 0;
+                    targetRow['R/O Date']   = match1['R/O Date']   || targetRow['R/O Date']   || '';
+                    targetRow['Part Desc']  = match1['Part Desc']  || match1['Part Description']  || targetRow['Part Desc']  || '';
+                    targetRow['Total Amt']  = match1['Total Amt']  || match1['Approve Amount by HMI'] || targetRow['Total Amt']  || 0;
+                    targetRow['Labour']     = match1['Labour']     || targetRow['Labour']     || 0;
+                    targetRow['part']       = match1['part']       || targetRow['part']       || 0;
+                    targetRow['Sublet']     = match1['Sublet']     || targetRow['Sublet']     || 0;
+                    targetRow['IGST']       = match1['IGST']       || match1['Total Approved Tax Amt'] || targetRow['IGST'] || 0;
                     targetRow['Invoice No'] = match1['Invoice No'] || targetRow['Invoice No'] || '';
-                    
+
                     if (isNew) rawData.push(targetRow);
 
-                    // Then lookup Source 2 via Claim No
                     const claimKey = String(targetRow['Claim No'] || '').trim();
-                    const match2 = payMap[claimKey];
+                    const match2   = payMap[claimKey];
                     if (match2) {
                         targetRow['AMT RECEIVED'] = match2['Gross Amount'] || match2['Ramittance Amt.'] || targetRow['AMT RECEIVED'] || 0;
                         targetRow['PAYMENT DATE'] = match2['Payment Cheque Date'] || targetRow['PAYMENT DATE'] || '';
                     }
 
-                    // Calculations
-                    const total = parseFloat(targetRow['Total Amt']) || 0;
+                    const total    = parseFloat(targetRow['Total Amt'])    || 0;
                     const received = parseFloat(targetRow['AMT RECEIVED']) || 0;
                     if (total > 0 || received > 0) {
                         const diff = total - received;
                         targetRow['DIFF AMT'] = Math.round(diff);
-                        if (diff > 50) targetRow['REMARKS'] = "PAYMENT SHORT";
+                        if      (diff >  50) targetRow['REMARKS'] = "PAYMENT SHORT";
                         else if (diff < -50) targetRow['REMARKS'] = "EXCESS PAYMENT";
-                        else targetRow['REMARKS'] = "PAID";
+                        else                 targetRow['REMARKS'] = "PAID";
                     }
                 });
 
                 saveLedger();
                 renderData(rawData);
-                alert(`Ledger processed!
-New Records: ${newlyAdded}
-Total Records: ${rawData.length}`);
+                alert(`Ledger processed!\nNew Records: ${newlyAdded}\nTotal Records: ${rawData.length}`);
             } catch (err) {
                 console.error(err);
                 alert("An error occurred during mapping: " + err.message);
             } finally {
-                btn.innerHTML = originalText;
+                btn.innerHTML = orig;
                 btn.classList.remove('loading');
             }
         }
@@ -782,7 +857,7 @@ Total Records: ${rawData.length}`);
             if (confirm("Are you sure you want to clear the entire database ledger? This cannot be undone.")) {
                 if (confirm("Final Confirmation: All recorded data will be permanently deleted from this browser.")) {
                     rawData.length = 0;
-                    localStorage.removeItem(LEDGER_KEY);
+                    saveLedger();
                     renderData(rawData);
                 }
             }
@@ -790,13 +865,8 @@ Total Records: ${rawData.length}`);
 
         function initTable() {
             updateTheme();
-            const headerRow = document.getElementById('tableHeader');
-            const tbody = document.getElementById('tableBody');
-
-            // Build Header
-            headerRow.innerHTML = columns.map(c => `<th>${c}</th>`).join('');
-
-            renderData(rawData);
+            document.getElementById('tableHeader').innerHTML = columns.map(c => `<th>${c}</th>`).join('');
+            loadLedger();
         }
 
         function updateTheme() {
@@ -806,14 +876,12 @@ Total Records: ${rawData.length}`);
 
         function applyTheme(theme) {
             if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-            else document.documentElement.removeAttribute('data-theme');
-            
-            // Force RGB variables for glassmorphism
+            else                  document.documentElement.removeAttribute('data-theme');
             const surfaceStr = theme === 'dark' ? '31, 41, 55' : '255, 255, 255';
             document.documentElement.style.setProperty('--surface-rgb', surfaceStr);
         }
 
-        // --- Handle Theme Changes from Parent ---
+        // Handle theme changes broadcast from parent (main.html)
         window.addEventListener('message', (event) => {
             if (event.data && event.data.type === 'theme-change') {
                 applyTheme(event.data.theme);
@@ -821,61 +889,49 @@ Total Records: ${rawData.length}`);
         });
 
         function renderData(data) {
-            const tbody = document.getElementById('tableBody');
+            const tbody  = document.getElementById('tableBody');
             const noData = document.getElementById('noData');
 
             if (data.length === 0) {
                 tbody.innerHTML = '';
-                noData.style.display = 'block';
+                noData.style.display = 'flex';
                 document.getElementById('recordCount').innerText = '0 Records';
                 return;
             }
 
             noData.style.display = 'none';
             tbody.innerHTML = data.map(row => {
-                return `<tr>
-                    ${columns.map(col => {
-                    let val = row[col] || '-';
+                return `<tr>${columns.map(col => {
+                    let val = (row[col] !== undefined && row[col] !== null && row[col] !== '') ? row[col] : '—';
                     let css = '';
-
                     if (col === 'MRS') css = 'badge badge-mrs';
                     if (col === 'R/O No') {
                         css = 'badge badge-ro';
-                        if (val.toUpperCase() === 'CANCLE' || val.toUpperCase() === 'CANCEL') {
-                            css = 'badge badge-cancel';
-                        }
+                        const v = String(val).toUpperCase();
+                        if (v === 'CANCLE' || v === 'CANCEL') css = 'badge badge-cancel';
                     }
-
-                    return `<td><span class="${css}">${val}</span></td>`;
-                }).join('')}
-                </tr>`;
+                    return `<td>${css ? `<span class="${css}">${val}</span>` : val}</td>`;
+                }).join('')}</tr>`;
             }).join('');
 
-            document.getElementById('recordCount').innerText = `${data.length} Records found`;
+            document.getElementById('recordCount').innerText = `${data.length} Record${data.length !== 1 ? 's' : ''}`;
         }
 
         function filterTable() {
             const query = document.getElementById('tableSearch').value.toLowerCase();
-            const filtered = rawData.filter(row => {
-                return (row['MRS'] && row['MRS'].toString().toLowerCase().includes(query)) ||
-                    (row['R/O No'] && row['R/O No'].toLowerCase().includes(query)) ||
-                    (row['Claim No'] && row['Claim No'].toLowerCase().includes(query));
-            });
+            const filtered = rawData.filter(row =>
+                (row['MRS']      && String(row['MRS']).toLowerCase().includes(query)) ||
+                (row['R/O No']   && String(row['R/O No']).toLowerCase().includes(query)) ||
+                (row['Claim No'] && String(row['Claim No']).toLowerCase().includes(query))
+            );
             renderData(filtered);
         }
 
-        // Handle JSON injection placeholder
-        window.addEventListener('load', () => {
-            // Wait a frame for better perceived performance
-            setTimeout(initTable, 50);
-        });
+        window.addEventListener('load', () => { setTimeout(initTable, 50); });
 
         function goBack() {
-            try {
-                window.parent.showScreen('screen-menu');
-            } catch (e) {
-                window.history.back();
-            }
+            try { window.parent.showScreen('screen-menu'); }
+            catch (e) { window.history.back(); }
         }
     </script>
 </body>
