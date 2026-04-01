@@ -3149,6 +3149,12 @@
                     <div class="stat-value" id="dash-mrs-pending" style="color:var(--primary)">0</div>
                     <div class="stat-label">MRS Based Claims</div>
                 </div>
+                <div class="stat-card claim-card" id="dash-card-suspense"
+                    style="border-top: 4px solid var(--danger); display:none;"
+                    onclick="setDashFilter('suspense')">
+                    <div class="stat-value" id="dash-suspense-count" style="color:var(--danger)">0</div>
+                    <div class="stat-label">Suspense Urgent</div>
+                </div>
             </div>
 
             <!-- MRS DATA DASHBOARD (Read Only Status Screen) -->
@@ -3184,15 +3190,7 @@
                 </div>
                 <div id="dash-mrs-nodata" style="padding:30px; text-align:center; color:var(--text-muted); display:none;">No MRS collection records found.</div>
             </div>
-            <!-- Suspense Urgent Card — centred in its own row -->
-            <div id="dash-suspense-row" style="display:none; margin-bottom:8px;">
-                <div class="stat-card claim-card" id="dash-card-suspense"
-                    style="border-top: 4px solid var(--danger); max-width:260px; margin:0 auto;"
-                    onclick="setDashFilter('suspense')">
-                    <div class="stat-value" id="dash-suspense-count" style="color:var(--danger)">0</div>
-                    <div class="stat-label">Suspense Urgent</div>
-                </div>
-            </div>
+
 
             <div id="dash-amount-stats" style="margin-bottom:20px;"></div>
 
@@ -5200,15 +5198,12 @@
 
             document.getElementById('dash-total').innerText = dashCurrentData.length; document.getElementById('dash-clean').innerText = clr;
             document.getElementById('dash-unclear').innerText = aud - clr; document.getElementById('dash-pending').innerText = dashCurrentData.length - aud;
-            // Update suspense card — show in centred row
+            // Update suspense card
             const suspCard = document.getElementById('dash-card-suspense');
-            const suspRow = document.getElementById('dash-suspense-row');
             const suspCountEl = document.getElementById('dash-suspense-count');
             if (suspCard && suspCountEl) {
                 suspCountEl.innerText = suspenseUrgent;
-                const show = suspenseUrgent > 0;
-                suspCard.style.display = show ? 'block' : 'none';
-                if (suspRow) suspRow.style.display = show ? 'block' : 'none';
+                suspCard.style.display = suspenseUrgent > 0 ? 'block' : 'none';
             }
 
             document.getElementById('dash-amount-stats').innerHTML = `
@@ -5242,15 +5237,19 @@
             const pagination = document.querySelector('#screen-dashboard .pagination');
             const searchBar = document.getElementById('dash-search').parentElement;
             const chartArea = document.getElementById('dash-chart-container');
+            const chartBtn = document.getElementById('btn-toggle-chart');
             const mrsLedger = document.getElementById('dash-mrs-ledger-area');
             const amountStats = document.getElementById('dash-amount-stats');
+            const suspenseNotif = document.getElementById('dash-suspense-notif');
 
             if (filterType === 'mrs') {
                 if (tableWrap) tableWrap.style.display = 'none';
                 if (pagination) pagination.style.display = 'none';
                 if (searchBar) searchBar.style.display = 'none';
                 if (chartArea) chartArea.style.display = 'none';
+                if (chartBtn) chartBtn.style.display = 'none';
                 if (amountStats) amountStats.style.display = 'none';
+                if (suspenseNotif) suspenseNotif.style.display = 'none';
                 if (mrsLedger) {
                     mrsLedger.style.display = 'block';
                     mrsLedger.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -5260,7 +5259,13 @@
                 if (pagination) pagination.style.display = 'flex';
                 if (searchBar) searchBar.style.display = 'block';
                 if (chartArea) chartArea.style.display = 'block';
+                if (chartBtn) chartBtn.style.display = 'inline-flex';
                 if (amountStats) amountStats.style.display = 'block';
+                // Only show suspense notif if it was meant to be shown (count > 0)
+                if (suspenseNotif) {
+                    const count = parseInt(document.getElementById('dash-suspense-count').innerText) || 0;
+                    if (count > 0) suspenseNotif.style.display = 'flex';
+                }
                 if (mrsLedger) mrsLedger.style.display = 'none';
                 applyDashFilters();
             }
