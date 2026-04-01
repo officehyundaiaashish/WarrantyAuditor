@@ -5,7 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MRS Assigner — Audit-it</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
     <style>
@@ -26,12 +27,13 @@
             --warning: #f59e0b;
             --accent: #4dcfc3;
             --radius: 16px;
-            --shadow: 0 4px 20px -2px rgba(0,0,0,0.05);
-            --modal-overlay: rgba(0,0,0,0.4);
+            --shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+            --modal-overlay: rgba(0, 0, 0, 0.4);
             color-scheme: light;
             --surface-rgb: 255, 255, 255;
-            --notif-shimmer-bg: linear-gradient(90deg, transparent 20%, rgba(255,255,255,0.35) 50%, transparent 80%);
+            --notif-shimmer-bg: linear-gradient(90deg, transparent 20%, rgba(255, 255, 255, 0.35) 50%, transparent 80%);
         }
+
         [data-theme="dark"] {
             --bg-base: #111827;
             --surface: #1f2937;
@@ -45,21 +47,26 @@
             --success: #10b981;
             --warning: #f59e0b;
             --accent: #4dcfc3;
-            --shadow: 0 4px 20px -2px rgba(0,0,0,0.7);
-            --modal-overlay: rgba(0,0,0,0.7);
+            --shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.7);
+            --modal-overlay: rgba(0, 0, 0, 0.7);
             color-scheme: dark;
             --surface-rgb: 31, 41, 55;
-            --notif-shimmer-bg: linear-gradient(90deg, transparent 20%, rgba(255,255,255,0.04) 50%, transparent 80%);
+            --notif-shimmer-bg: linear-gradient(90deg, transparent 20%, rgba(255, 255, 255, 0.04) 50%, transparent 80%);
         }
 
         /* ══════════════════════════════════════════
            §2 — RESET & BASE
            ══════════════════════════════════════════ */
-        *, *::before, *::after {
-            box-sizing: border-box; margin: 0; padding: 0;
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
             font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             -webkit-font-smoothing: antialiased;
         }
+
         body {
             background-color: var(--bg-base);
             color: var(--text-main);
@@ -69,11 +76,32 @@
             transition: background-color 0.4s ease, color 0.4s ease;
             font-size: 14px;
         }
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 20px; border: 2.5px solid var(--bg-base); }
-        ::-webkit-scrollbar-thumb:hover { background: var(--primary-hover); }
-        @supports (scrollbar-width: thin) { * { scrollbar-width: thin; scrollbar-color: var(--primary) transparent; } }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 20px;
+            border: 2.5px solid var(--bg-base);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-hover);
+        }
+
+        @supports (scrollbar-width: thin) {
+            * {
+                scrollbar-width: thin;
+                scrollbar-color: var(--primary) transparent;
+            }
+        }
 
         /* ══════════════════════════════════════════
            §3 — HEADER (matches main.html app-header)
@@ -91,51 +119,141 @@
             top: 0;
             z-index: 100;
         }
-        .header-left { display: flex; align-items: center; gap: 12px; }
-        .header-logo-icon {
-            width: 38px; height: 38px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            border-radius: 10px; display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0; box-shadow: 0 4px 12px rgba(42,181,165,0.3);
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
-        .header-logo-icon svg { stroke: #fff; }
-        .header-title-text {
-            font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px;
+
+        .header-logo-icon {
+            width: 38px;
+            height: 38px;
             background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(42, 181, 165, 0.3);
+        }
+
+        .header-logo-icon svg {
+            stroke: #fff;
+        }
+
+        .header-title-text {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
             line-height: 1;
         }
+
         .header-subtitle {
-            font-size: 0.7rem; color: var(--text-muted);
-            font-weight: 500; letter-spacing: 0.3px; margin-top: 2px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            margin-top: 2px;
         }
+
         /* Main Menu back button — matches main.html header-action-btn */
         .btn-main-menu {
-            display: inline-flex; align-items: center; gap: 6px;
-            height: 36px; padding: 0 14px; border-radius: 10px;
-            border: 1px solid var(--border); background: var(--surface);
-            cursor: pointer; color: var(--text-muted); font-size: 0.75rem;
-            font-weight: 600; letter-spacing: 0.3px; white-space: nowrap;
-            transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            height: 36px;
+            padding: 0 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .btn-main-menu svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
-        .btn-main-menu:hover { color: var(--primary); border-color: var(--primary); background: rgba(42,181,165,0.05); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(42,181,165,0.15); }
+
+        .btn-main-menu svg {
+            width: 14px;
+            height: 14px;
+            stroke: currentColor;
+            stroke-width: 2.2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            flex-shrink: 0;
+        }
+
+        .btn-main-menu:hover {
+            color: var(--primary);
+            border-color: var(--primary);
+            background: rgba(42, 181, 165, 0.05);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(42, 181, 165, 0.15);
+        }
 
         /* ══════════════════════════════════════════
            §4 — ANIMATIONS
            ══════════════════════════════════════════ */
-        @keyframes fadeInUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
-        @keyframes shimmerLeft { 0%{ background-position:-600px 0; } 100%{ background-position:600px 0; } }
-        @keyframes spin { to { transform:rotate(360deg); } }
-        @keyframes modalIn { from { opacity:0; transform:scale(0.94) translateY(10px); } to { opacity:1; transform:scale(1) translateY(0); } }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes shimmerLeft {
+            0% {
+                background-position: -600px 0;
+            }
+
+            100% {
+                background-position: 600px 0;
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(0.94) translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
 
         /* ══════════════════════════════════════════
            §5 — CONTENT WRAP
            ══════════════════════════════════════════ */
         .content-wrap {
-            flex: 1; padding: 20px;
-            display: flex; flex-direction: column; gap: 20px;
-            max-width: 1700px; margin: 0 auto; width: 100%;
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 1700px;
+            margin: 0 auto;
+            width: 100%;
             animation: fadeInUp 0.45s ease-out backwards;
             animation-delay: 0.05s;
         }
@@ -144,251 +262,869 @@
            §6 — PREMIUM CARD
            ══════════════════════════════════════════ */
         .premium-card {
-            background: var(--surface); border-radius: 20px;
-            border: 1px solid var(--border); box-shadow: var(--shadow);
-            padding: 24px; transition: box-shadow 0.3s ease;
-            position: relative; overflow: hidden;
+            background: var(--surface);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            transition: box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
+
         .premium-card::after {
-            content:''; position:absolute; inset:0;
-            background: var(--notif-shimmer-bg); background-size:600px 100%;
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--notif-shimmer-bg);
+            background-size: 600px 100%;
             animation: shimmerLeft 7s ease-in-out infinite;
-            pointer-events:none; z-index:0;
+            pointer-events: none;
+            z-index: 0;
         }
-        .premium-card > * { position:relative; z-index:1; }
+
+        .premium-card>* {
+            position: relative;
+            z-index: 1;
+        }
 
         /* ══════════════════════════════════════════
            §7 — SECTION HEADER
            ══════════════════════════════════════════ */
         .section-header {
-            display: flex; align-items: center; gap: 14px;
-            margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
         }
-        .section-header .tile-icon, .upload-tile .tile-icon {
-            width: 44px; height: 44px;
-            background: linear-gradient(135deg, rgba(42,181,165,0.12) 0%, rgba(77,207,195,0.08) 100%);
-            border: 1px solid rgba(42,181,165,0.2); border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0; color: var(--primary);
+
+        .section-header .tile-icon,
+        .upload-tile .tile-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, rgba(42, 181, 165, 0.12) 0%, rgba(77, 207, 195, 0.08) 100%);
+            border: 1px solid rgba(42, 181, 165, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            color: var(--primary);
         }
-        .section-title { font-size: 1rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.3px; }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.3px;
+        }
 
         /* ══════════════════════════════════════════
            §8 — UPLOAD TILE GRID
            ══════════════════════════════════════════ */
-        .tile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
-        .upload-tile {
-            position: relative; background: var(--bg-base);
-            border: 2px dashed var(--border); border-radius: 14px;
-            padding: 20px 16px; display: flex; flex-direction: column;
-            align-items: center; gap: 10px; text-align: center;
-            cursor: pointer; transition: all 0.25s cubic-bezier(0.25,0.8,0.25,1); overflow: hidden;
+        .tile-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
         }
-        .upload-tile .tile-icon { width: 48px; height: 48px; border-radius: 12px; border: 1px solid rgba(42,181,165,0.18); transition: all 0.25s ease; }
-        .upload-tile:hover { border-color: var(--primary); background: rgba(42,181,165,0.04); transform: translateY(-2px); box-shadow: 0 6px 20px -4px rgba(42,181,165,0.15); }
-        .upload-tile:hover .tile-icon, .upload-tile.active .tile-icon { background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); color: #fff; border-color: transparent; box-shadow: 0 4px 12px rgba(42,181,165,0.25); }
-        .upload-tile.active { border-color: var(--primary); border-style: solid; background: rgba(42,181,165,0.06); }
-        .upload-tile span { font-size: 0.85rem; font-weight: 700; color: var(--text-main); }
-        .upload-tile p { font-size: 0.72rem; color: var(--text-muted); margin: 0; line-height: 1.4; }
-        .upload-tile input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+
+        .upload-tile {
+            position: relative;
+            background: var(--bg-base);
+            border: 2px dashed var(--border);
+            border-radius: 14px;
+            padding: 20px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+            overflow: hidden;
+        }
+
+        .upload-tile .tile-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            border: 1px solid rgba(42, 181, 165, 0.18);
+            transition: all 0.25s ease;
+        }
+
+        .upload-tile:hover {
+            border-color: var(--primary);
+            background: rgba(42, 181, 165, 0.04);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px -4px rgba(42, 181, 165, 0.15);
+        }
+
+        .upload-tile:hover .tile-icon,
+        .upload-tile.active .tile-icon {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(42, 181, 165, 0.25);
+        }
+
+        .upload-tile.active {
+            border-color: var(--primary);
+            border-style: solid;
+            background: rgba(42, 181, 165, 0.06);
+        }
+
+        .upload-tile span {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .upload-tile p {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .upload-tile input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
 
         /* ══════════════════════════════════════════
            §9 — BUTTONS
            ══════════════════════════════════════════ */
-        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-        .btn-premium {
-            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-            padding: 11px 20px; border-radius: 12px; font-size: 0.875rem; font-weight: 700;
-            cursor: pointer; transition: all 0.25s cubic-bezier(0.25,0.8,0.25,1);
-            border: 1.5px solid transparent; white-space: nowrap; letter-spacing: 0.1px;
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
         }
-        .btn-premium svg { flex-shrink: 0; }
-        .btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); color: #fff; border-color: transparent; box-shadow: 0 4px 14px rgba(42,181,165,0.25); }
-        .btn-primary:hover { filter: brightness(1.07); transform: translateY(-2px); box-shadow: 0 7px 20px rgba(42,181,165,0.35); }
-        .btn-primary:active { transform: scale(0.98); }
-        .btn-primary.loading { opacity: 0.8; pointer-events: none; }
-        .btn-outline { background: var(--surface); color: var(--text-muted); border-color: var(--border); }
-        .btn-outline:hover { border-color: var(--primary); color: var(--primary); background: rgba(42,181,165,0.05); transform: translateY(-2px); }
-        .btn-danger { background: transparent; color: var(--danger); border-color: rgba(239,68,68,0.3); }
-        .btn-danger:hover { background: var(--danger); color: #fff; border-color: var(--danger); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(239,68,68,0.2); }
+
+        .btn-premium {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 11px 20px;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border: 1.5px solid transparent;
+            white-space: nowrap;
+            letter-spacing: 0.1px;
+        }
+
+        .btn-premium svg {
+            flex-shrink: 0;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 4px 14px rgba(42, 181, 165, 0.25);
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.07);
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(42, 181, 165, 0.35);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary.loading {
+            opacity: 0.8;
+            pointer-events: none;
+        }
+
+        .btn-outline {
+            background: var(--surface);
+            color: var(--text-muted);
+            border-color: var(--border);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(42, 181, 165, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: transparent;
+            color: var(--danger);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: var(--danger);
+            color: #fff;
+            border-color: var(--danger);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+        }
 
         /* ══════════════════════════════════════════
            §10 — SEARCH ROW
            ══════════════════════════════════════════ */
-        .search-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
-        .search-bar {
-            display: flex; align-items: center; gap: 10px;
-            background: var(--bg-base); border: 1.5px solid var(--border);
-            border-radius: 12px; padding: 9px 14px; flex: 1; max-width: 400px;
-            transition: all 0.25s cubic-bezier(0.25,0.8,0.25,1); color: var(--text-muted);
+        .search-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
         }
-        .search-bar:focus-within { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(42,181,165,0.12); background: var(--surface); color: var(--primary); }
-        .search-bar input { background: transparent; border: none; outline: none; color: var(--text-main); width: 100%; font-size: 0.875rem; font-weight: 500; font-family: inherit; }
-        .search-bar input::placeholder { color: var(--text-muted); }
-        .record-count { font-size: 0.82rem; font-weight: 800; color: var(--primary); white-space: nowrap; padding: 6px 14px; background: rgba(42,181,165,0.08); border-radius: 20px; border: 1px solid rgba(42,181,165,0.15); }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg-base);
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            padding: 9px 14px;
+            flex: 1;
+            max-width: 400px;
+            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+            color: var(--text-muted);
+        }
+
+        .search-bar:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(42, 181, 165, 0.12);
+            background: var(--surface);
+            color: var(--primary);
+        }
+
+        .search-bar input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-main);
+            width: 100%;
+            font-size: 0.875rem;
+            font-weight: 500;
+            font-family: inherit;
+        }
+
+        .search-bar input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .record-count {
+            font-size: 0.82rem;
+            font-weight: 800;
+            color: var(--primary);
+            white-space: nowrap;
+            padding: 6px 14px;
+            background: rgba(42, 181, 165, 0.08);
+            border-radius: 20px;
+            border: 1px solid rgba(42, 181, 165, 0.15);
+        }
+
         /* Clear All button right before record pill */
         .btn-clear-all {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(239,68,68,0.3);
-            background: rgba(239,68,68,0.06); color: var(--danger);
-            font-size: 0.78rem; font-weight: 700; cursor: pointer;
-            transition: all 0.2s ease; white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            background: rgba(239, 68, 68, 0.06);
+            color: var(--danger);
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
         }
-        .btn-clear-all:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+
+        .btn-clear-all:hover {
+            background: var(--danger);
+            color: #fff;
+            border-color: var(--danger);
+        }
 
         /* ══════════════════════════════════════════
-           §11 — TABLE
+           §11 — TABLE (MAIN.HTML HARMONIZED)
            ══════════════════════════════════════════ */
-        .table-wrap { border-radius: 14px; border: 1px solid var(--border); overflow: auto; max-height: calc(100vh - 360px); min-height: 200px; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 1800px; }
-        thead { position: sticky; top: 0; z-index: 10; background: var(--surface); }
-        th {
-            text-align: left; padding: 13px 16px; font-weight: 700; color: var(--text-muted);
-            border-bottom: 2px solid var(--border); text-transform: uppercase;
-            font-size: 0.7rem; letter-spacing: 0.8px; white-space: nowrap;
-            background: linear-gradient(to bottom, var(--surface), rgba(var(--surface-rgb),0.95));
+        .table-wrap {
+            overflow: auto;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--surface);
+            width: 100%;
+            box-shadow: var(--shadow);
+            max-height: 800px; /* Force a taller height if screen allows */
+            min-height: 400px;
+            position: relative;
         }
-        td { padding: 10px 16px; border-bottom: 1px solid var(--border); color: var(--text-main); transition: background 0.15s ease; white-space: nowrap; }
-        tr:last-child td { border-bottom: none; }
-        tbody tr:hover td { background: rgba(42,181,165,0.04); }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.68rem; /* Extremely compact font size */
+            min-width: 1000px; /* Fitting on standard laptops */
+            table-layout: auto;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: var(--bg-base);
+        }
+
+        th {
+            text-align: left;
+            padding: 8px 10px; /* Tighter padding */
+            font-weight: 800;
+            color: var(--text-muted);
+            border-bottom: 2px solid var(--border);
+            text-transform: uppercase;
+            font-size: 0.62rem; 
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 8px 10px; /* Tighter padding */
+            border-bottom: 1px solid var(--border);
+            color: var(--text-main);
+            transition: background-color 0.1s;
+            white-space: nowrap;
+        }
+
+        /* Essential columns should not cut off; Part Desc can have ellipsis */
+        td:nth-child(8) { 
+            max-width: 120px; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+        }
+
+        /* Prevent shift on hover by reserving space for the indicator border */
+        td:first-child {
+            border-left: 3px solid transparent;
+            padding-left: 7px; /* Tight padding */
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tbody tr:hover td {
+            background: rgba(42, 181, 165, 0.03);
+        }
+
+        /* ══════════════════════════════════════════
+           §12b — PAGINATION (MAIN.HTML HARMONIZED)
+           ══════════════════════════════════════════ */
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding: 0 4px;
+        }
+
+        .pagination .btn {
+            padding: 8px 18px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            border-radius: 10px;
+            border: 1.5px solid var(--border);
+            background: var(--surface);
+            color: var(--text-main);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            width: auto;
+            margin: 0;
+        }
+
+        .pagination .btn:hover:not(:disabled) {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(42, 181, 165, 0.05);
+            transform: translateY(-1px);
+        }
+
+        .pagination .btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .page-indicator {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 700;
+        }
 
         /* Clickable rows (MRS modal trigger) */
-        tbody tr.row-clickable { cursor: pointer; }
+        tbody tr.row-clickable {
+            cursor: pointer;
+        }
+
         tbody tr.row-clickable:hover td {
-            background: rgba(42,181,165,0.07) !important;
-            transition: background 0.12s ease;
+            background: rgba(42, 181, 165, 0.07) !important;
         }
+
         tbody tr.row-clickable:hover td:first-child {
-            border-left: 3px solid var(--primary);
-            padding-left: 13px;
+            border-left-color: var(--primary);
         }
-        tbody tr.row-clickable:active td { background: rgba(42,181,165,0.13) !important; }
 
         /* Editable cell styling */
-        td.editable { cursor: pointer; }
-        td.editable:hover { background: rgba(42,181,165,0.08) !important; }
-        td.editing { padding: 0 !important; }
+        td.editable {
+            cursor: pointer;
+        }
+
+        td.editable:hover {
+            background: rgba(42, 181, 165, 0.08) !important;
+        }
+
+        td.editing {
+            padding: 0 !important;
+        }
+
         td.editing input {
-            width: 100%; height: 100%; padding: 10px 16px;
-            border: none; outline: 2px solid var(--primary) inset;
-            background: rgba(42,181,165,0.08); color: var(--text-main);
-            font-family: inherit; font-size: 0.82rem; font-weight: 500;
+            width: 100%;
+            height: 100%;
+            border: none;
+            outline: none;
+            background: rgba(42, 181, 165, 0.1);
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.82rem;
+            padding: 12px 16px;
         }
 
         /* ══════════════════════════════════════════
            §12 — BADGES
            ══════════════════════════════════════════ */
-        .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; background: var(--bg-base); border: 1px solid var(--border); cursor: pointer; transition: all 0.15s ease; }
-        .badge:hover { transform: scale(1.04); }
-        .badge-mrs { background: rgba(42,181,165,0.1); color: var(--primary); border-color: rgba(42,181,165,0.2); }
-        .badge-ro { background: rgba(107,114,128,0.08); color: var(--text-muted); border-color: transparent; }
-        .badge-cancel { background: rgba(239,68,68,0.08); color: var(--danger); border-color: rgba(239,68,68,0.2); }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            background: var(--bg-base);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .badge:hover {
+            transform: scale(1.04);
+        }
+
+        .badge-mrs {
+            color: var(--primary);
+            border-color: var(--primary);
+            background: rgba(42, 181, 165, 0.08);
+        }
+
+        .badge-short {
+            background: #fef2f2;
+            color: #b91c1c;
+            border-color: #fecaca;
+        }
+
+        [data-theme="dark"] .badge-short {
+            background: #450a0a;
+            color: #fca5a5;
+            border-color: #7f1d1d;
+        }
+
+        .badge-paid {
+            background: #f0fdf4;
+            color: #15803d;
+            border-color: #bbf7d0;
+        }
+
+        [data-theme="dark"] .badge-paid {
+            background: #064e3b;
+            color: #6ee7b7;
+            border-color: #065f46;
+        }
+
+        .pending-badge-header {
+            display: inline-flex;
+            align-items: center;
+            background: #fef2f2;
+            color: #b91c1c;
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 20px;
+            border: 1px solid #fecaca;
+            margin-left: 10px;
+            vertical-align: middle;
+            animation: pulse-danger 2s infinite;
+        }
+
+        [data-theme="dark"] .pending-badge-header {
+            background: #450a0a;
+            color: #fca5a5;
+            border-color: #7f1d1d;
+        }
+
+        @keyframes pulse-danger {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
+
+        .badge-ro {
+            background: rgba(107, 114, 128, 0.08);
+            color: var(--text-muted);
+            border-color: transparent;
+        }
+
+        .badge-cancel {
+            background: rgba(239, 68, 68, 0.08);
+            color: var(--danger);
+            border-color: rgba(239, 68, 68, 0.2);
+        }
 
         /* ══════════════════════════════════════════
            §13 — EMPTY STATE
            ══════════════════════════════════════════ */
-        .empty-view { display: none; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; text-align: center; color: var(--text-muted); gap: 12px; }
-        .empty-view svg { opacity: 0.18; }
-        .empty-view p { font-size: 0.875rem; font-weight: 500; max-width: 280px; line-height: 1.6; color: var(--text-muted); margin: 0; }
+        .empty-view {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            text-align: center;
+            color: var(--text-muted);
+            gap: 12px;
+        }
+
+        .empty-view svg {
+            opacity: 0.18;
+        }
+
+        .empty-view p {
+            font-size: 0.875rem;
+            font-weight: 500;
+            max-width: 280px;
+            line-height: 1.6;
+            color: var(--text-muted);
+            margin: 0;
+        }
 
         /* ══════════════════════════════════════════
            §14 — LOADING SPINNER
            ══════════════════════════════════════════ */
-        .loading-spinner { width: 16px; height: 16px; border: 2.5px solid rgba(255,255,255,0.35); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+        .loading-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2.5px solid rgba(255, 255, 255, 0.35);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            flex-shrink: 0;
+        }
 
         /* ══════════════════════════════════════════
            §15 — CUSTOM MODAL (mirrors main.html modal-backdrop + modal-dialog)
            ══════════════════════════════════════════ */
         .modal-backdrop {
-            position: fixed; inset: 0;
+            position: fixed;
+            inset: 0;
             background-color: var(--modal-overlay);
-            display: flex; align-items: center; justify-content: center;
-            z-index: 1000; opacity: 0; pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
             transition: opacity 0.25s ease;
             backdrop-filter: blur(5px);
         }
-        .modal-backdrop.active { opacity: 1; pointer-events: auto; }
+
+        .modal-backdrop.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
         .modal-dialog {
-            width: 100%; max-width: 400px; max-height: 90vh;
-            display: flex; flex-direction: column; margin: 16px;
-            background: var(--surface); border-radius: 20px; overflow: hidden;
-            box-shadow: 0 25px 60px -12px rgba(0,0,0,0.35);
+            width: 100%;
+            max-width: 400px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            margin: 16px;
+            background: var(--surface);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.35);
             transform: scale(0.94) translateY(10px);
-            transition: transform 0.28s cubic-bezier(0.16,1,0.3,1);
+            transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .modal-backdrop.active .modal-dialog { transform: scale(1) translateY(0); }
+
+        .modal-backdrop.active .modal-dialog {
+            transform: scale(1) translateY(0);
+        }
+
         .modal-header {
-            padding: 20px 24px 16px; border-bottom: 1px solid var(--border);
-            background: linear-gradient(to right, rgba(42,181,165,0.06), transparent);
+            padding: 20px 24px 16px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(to right, rgba(42, 181, 165, 0.06), transparent);
         }
-        .modal-header h3 { font-size: 1rem; font-weight: 800; color: var(--text-main); margin-bottom: 3px; }
-        .modal-header p { font-size: 0.75rem; color: var(--text-muted); margin: 0; font-weight: 500; }
-        .modal-body { padding: 20px 24px; overflow-y: auto; flex: 1; }
+
+        .modal-header h3 {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 3px;
+        }
+
+        .modal-header p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin: 0;
+            font-weight: 500;
+        }
+
+        .modal-body {
+            padding: 20px 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
 
         /* MRS input area */
-        .mrs-input-wrap { position: relative; margin-bottom: 20px; }
-        .mrs-input-label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .mrs-input-wrap {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .mrs-input-label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
         .mrs-number-input {
-            width: 100%; background: var(--bg-base); border: 1.5px solid var(--border);
-            border-radius: 12px; padding: 14px 16px; font-size: 1.3rem;
-            font-weight: 800; color: var(--primary); outline: none;
-            text-align: center; letter-spacing: 4px; font-family: inherit;
+            width: 100%;
+            background: var(--bg-base);
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--primary);
+            outline: none;
+            text-align: center;
+            letter-spacing: 4px;
+            font-family: inherit;
             transition: all 0.25s ease;
         }
-        .mrs-number-input:focus { border-color: var(--primary); background: var(--surface); box-shadow: 0 0 0 4px rgba(42,181,165,0.15); }
-        .claim-info-box {
-            background: var(--bg-base); border: 1px solid var(--border);
-            border-radius: 12px; padding: 14px 16px; margin-bottom: 18px;
-            font-size: 0.82rem; line-height: 1.7;
+
+        .mrs-number-input:focus {
+            border-color: var(--primary);
+            background: var(--surface);
+            box-shadow: 0 0 0 4px rgba(42, 181, 165, 0.15);
         }
-        .claim-info-box span { color: var(--text-muted); font-weight: 500; }
-        .claim-info-box strong { color: var(--text-main); font-weight: 700; }
-        .modal-btn-row { display: flex; gap: 10px; }
-        .modal-btn-row button { flex: 1; padding: 12px 16px; border-radius: 12px; font-size: 0.875rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease; border: 1.5px solid transparent; font-family: inherit; }
-        .modal-btn-confirm { background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); color: #fff; }
-        .modal-btn-confirm:hover { filter: brightness(1.08); transform: translateY(-1px); }
-        .modal-btn-cancel { background: var(--surface); color: var(--text-muted); border-color: var(--border); }
-        .modal-btn-cancel:hover { border-color: var(--danger); color: var(--danger); }
+
+        .claim-info-box {
+            background: var(--bg-base);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 18px;
+            font-size: 0.82rem;
+            line-height: 1.7;
+        }
+
+        .claim-info-box span {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .claim-info-box strong {
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        .modal-btn-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-btn-row button {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1.5px solid transparent;
+            font-family: inherit;
+        }
+
+        .modal-btn-confirm {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: #fff;
+        }
+
+        .modal-btn-confirm:hover {
+            filter: brightness(1.08);
+            transform: translateY(-1px);
+        }
+
+        .modal-btn-cancel {
+            background: var(--surface);
+            color: var(--text-muted);
+            border-color: var(--border);
+        }
+
+        .modal-btn-cancel:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
 
         /* ══════════════════════════════════════════
            §16 — CUSTOM CONFIRM DIALOG (mirrors main.html app-dialog)
            ══════════════════════════════════════════ */
         .confirm-dialog {
-            position: fixed; inset: 0;
+            position: fixed;
+            inset: 0;
             background-color: var(--modal-overlay);
-            display: flex; align-items: center; justify-content: center;
-            z-index: 2000; opacity: 0; pointer-events: none;
-            transition: opacity 0.25s ease; backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+            backdrop-filter: blur(5px);
         }
-        .confirm-dialog.active { opacity: 1; pointer-events: auto; }
+
+        .confirm-dialog.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
         .confirm-box {
-            width: 100%; max-width: 340px; margin: 16px;
-            background: var(--surface); border-radius: 20px; overflow: hidden;
-            box-shadow: 0 25px 60px -12px rgba(0,0,0,0.35);
-            padding: 32px 24px; text-align: center;
+            width: 100%;
+            max-width: 340px;
+            margin: 16px;
+            background: var(--surface);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.35);
+            padding: 32px 24px;
+            text-align: center;
             transform: scale(0.94) translateY(10px);
-            transition: transform 0.28s cubic-bezier(0.16,1,0.3,1);
+            transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .confirm-dialog.active .confirm-box { transform: scale(1) translateY(0); }
-        .confirm-icon { display: flex; justify-content: center; margin-bottom: 14px; }
-        .confirm-msg { font-size: 1rem; font-weight: 700; color: var(--text-main); margin-bottom: 20px; line-height: 1.5; white-space: pre-line; }
-        .confirm-btn-row { display: flex; gap: 12px; justify-content: center; }
-        .confirm-btn-row button { padding: 11px 24px; border-radius: 12px; font-size: 0.875rem; font-weight: 700; cursor: pointer; border: 1.5px solid transparent; font-family: inherit; transition: all 0.2s ease; }
-        .confirm-yes { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; }
-        .confirm-yes:hover { filter: brightness(1.08); transform: translateY(-1px); }
-        .confirm-no { background: var(--surface); color: var(--text-muted); border-color: var(--border); }
-        .confirm-no:hover { border-color: var(--danger); color: var(--danger); }
+
+        .confirm-dialog.active .confirm-box {
+            transform: scale(1) translateY(0);
+        }
+
+        .confirm-icon {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 14px;
+        }
+
+        .confirm-msg {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 20px;
+            line-height: 1.5;
+            white-space: pre-line;
+        }
+
+        .confirm-btn-row {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .confirm-btn-row button {
+            padding: 11px 24px;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1.5px solid transparent;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .confirm-yes {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: #fff;
+        }
+
+        .confirm-yes:hover {
+            filter: brightness(1.08);
+            transform: translateY(-1px);
+        }
+
+        .confirm-no {
+            background: var(--surface);
+            color: var(--text-muted);
+            border-color: var(--border);
+        }
+
+        .confirm-no:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
 
         /* — Toast notification — */
         #toast {
-            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
-            background: var(--surface); border: 1px solid var(--border);
-            border-radius: 14px; padding: 12px 20px; font-size: 0.85rem; font-weight: 600;
-            color: var(--text-main); box-shadow: 0 10px 30px -5px rgba(0,0,0,0.15);
-            transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), opacity 0.3s ease;
-            opacity: 0; z-index: 3000; white-space: nowrap; pointer-events: none;
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 12px 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.15);
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+            opacity: 0;
+            z-index: 3000;
+            white-space: nowrap;
+            pointer-events: none;
         }
-        #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        #toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
     </style>
 </head>
 
@@ -397,8 +1133,9 @@
     <header class="page-header">
         <div class="header-left">
             <div class="header-logo-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
                 </svg>
             </div>
             <div>
@@ -408,7 +1145,11 @@
         </div>
         <!-- Feature #1: Main Menu button -->
         <button class="btn-main-menu" id="btn-back-menu" onclick="goBack()">
-            <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            <svg viewBox="0 0 24 24">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
             Main Menu
         </button>
     </header>
@@ -420,34 +1161,50 @@
         <div class="premium-card">
             <div class="section-header">
                 <div class="tile-icon">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
                     </svg>
                 </div>
                 <div>
                     <div class="section-title">Source Data Import</div>
-                    <p style="font-size:0.75rem;color:var(--text-muted);margin:2px 0 0 0;">Sync repair orders and payment records</p>
+                    <p style="font-size:0.75rem;color:var(--text-muted);margin:2px 0 0 0;">Sync repair orders and
+                        payment records</p>
                 </div>
             </div>
             <div class="tile-grid">
                 <div class="upload-tile" id="tile-source1">
-                    <div class="tile-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+                    <div class="tile-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2.2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                        </svg></div>
                     <span>Source 1.xlsx</span>
                     <p id="status-source1">Claim Records</p>
-                    <input type="file" id="file-source1" accept=".xlsx,.xls,.csv" onchange="handleFileSelect('source1')">
+                    <input type="file" id="file-source1" accept=".xlsx,.xls,.csv"
+                        onchange="handleFileSelect('source1')">
                 </div>
                 <div class="upload-tile" id="tile-source2">
-                    <div class="tile-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+                    <div class="tile-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2.2">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                            <line x1="1" y1="10" x2="23" y2="10" />
+                        </svg></div>
                     <span>Source 2.xlsx</span>
                     <p id="status-source2">Payment Data</p>
-                    <input type="file" id="file-source2" accept=".xlsx,.xls,.csv" onchange="handleFileSelect('source2')">
+                    <input type="file" id="file-source2" accept=".xlsx,.xls,.csv"
+                        onchange="handleFileSelect('source2')">
                 </div>
             </div>
             <div class="btn-group">
                 <button class="btn-premium btn-primary btn-feed" onclick="feedToTable()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
-                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="23 4 23 10 17 10" />
+                        <polyline points="1 20 1 14 7 14" />
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
                     </svg>
                     Feed To Database Table
                 </button>
@@ -458,45 +1215,79 @@
         <div class="premium-card">
             <div class="section-header">
                 <div class="tile-icon">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
-                        <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
-                        <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="8" y1="6" x2="21" y2="6" />
+                        <line x1="8" y1="12" x2="21" y2="12" />
+                        <line x1="8" y1="18" x2="21" y2="18" />
+                        <line x1="3" y1="6" x2="3.01" y2="6" />
+                        <line x1="3" y1="12" x2="3.01" y2="12" />
+                        <line x1="3" y1="18" x2="3.01" y2="18" />
                     </svg>
                 </div>
                 <div>
-                    <div class="section-title">Database Ledger</div>
-                    <p style="font-size:0.75rem;color:var(--text-muted);margin:2px 0 0 0;">Click any row to assign its MRS number · Double-click a cell to edit its value</p>
+                    <div class="section-title">
+                        Database Ledger
+                        <span id="mrs-header-pending" class="pending-badge-header" style="display:none;">0 Payments Pending</span>
+                    </div>
+                    <p style="font-size:0.75rem;color:var(--text-muted);margin:2px 0 0 0;">Click any row to assign its
+                        MRS number · Double-click a cell to edit its value</p>
                 </div>
             </div>
 
             <div class="search-row">
                 <!-- Feature #4: typing a number auto-focuses search & filters by MRS -->
                 <div class="search-bar">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
                     <!-- Feature #7: search by RO suffix (last digits, any prefix) -->
-                    <input type="text" id="tableSearch" placeholder="Search by MRS or R/O suffix (e.g. 12345)..." oninput="filterTable()">
+                    <input type="text" id="tableSearch" placeholder="Search by MRS or R/O suffix (e.g. 12345)..."
+                        oninput="filterTable()">
                 </div>
                 <!-- Feature #8: Clear All button before record pill -->
                 <button class="btn-clear-all" onclick="clearLedger()">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    </svg>
                     Clear All
                 </button>
                 <div class="record-count" id="recordCount">0 Records</div>
             </div>
 
+            <!-- HARMONIZED: table-wrap exactly matches main.html container style -->
             <div class="table-wrap">
                 <table>
-                    <thead><tr id="tableHeader"></tr></thead>
+                    <thead>
+                        <tr id="tableHeader"></tr>
+                    </thead>
                     <tbody id="tableBody"></tbody>
                 </table>
                 <div id="noData" class="empty-view" style="display:flex;">
-                    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>
+                    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                        <line x1="10" y1="9" x2="8" y2="9" />
                     </svg>
                     <p>No active ledger found.<br>Import source files to begin.</p>
                 </div>
+            </div>
+
+            <!-- HARMONIZED: pagination matching main.html Prev / Indicator / Next -->
+            <div class="pagination" id="paginationBar" style="display:none;">
+                <button class="btn" id="mrs-btn-prev" onclick="goToPage(currentPage - 1)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6" /></svg> Previous
+                </button>
+                <span class="page-indicator" id="mrs-page-indicator">Page 1</span>
+                <button class="btn" id="mrs-btn-next" onclick="goToPage(currentPage + 1)">
+                    Next <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+                </button>
             </div>
         </div>
     </div>
@@ -519,12 +1310,17 @@
                 <label class="mrs-input-label">MRS Number</label>
                 <div class="mrs-input-wrap">
                     <!-- Feature #6: auto-focus on open, Enter to save -->
-                    <input type="number" id="mrsNumberInput" class="mrs-number-input" placeholder="e.g. 1001" min="1" step="1"
-                           onkeydown="if(event.key==='Enter') saveMRS(); if(event.key==='Escape') closeMRSModal();">
+                    <input type="number" id="mrsNumberInput" class="mrs-number-input" placeholder="e.g. 1001" min="1"
+                        step="1"
+                        onkeydown="if(event.key==='Enter') saveMRS(); if(event.key==='Escape') closeMRSModal();">
                 </div>
                 <div class="modal-btn-row">
                     <button class="modal-btn-confirm" onclick="saveMRS()">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:6px;"><polyline points="20 6 9 17 4 12"/></svg>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                            style="display:inline;vertical-align:middle;margin-right:6px;">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
                         Save MRS
                     </button>
                     <button class="modal-btn-cancel" onclick="closeMRSModal()">Cancel</button>
@@ -557,37 +1353,41 @@
             try {
                 const saved = await localforage.getItem(LEDGER_KEY);
                 if (saved) { rawData = saved; renderData(rawData); }
-            } catch(e) { console.error('Load ledger:', e); }
+            } catch (e) { console.error('Load ledger:', e); }
         }
         async function saveLedger() {
-            try { await localforage.setItem(LEDGER_KEY, rawData); }
-            catch(e) { console.error('Save ledger:', e); }
+            try { 
+                await localforage.setItem(LEDGER_KEY, rawData);
+                // Notify parent for real-time dashboard updates
+                window.parent.postMessage({ type: 'mrs-data-changed' }, '*');
+            }
+            catch (e) { console.error('Save ledger:', e); }
         }
 
         // ── Columns ──
         const columns = [
-            "MRS","VIN","Claim No","Claim Date","Claim Type",
-            "R/O No","R/O Date","Part Desc","Total Amt","Labour",
-            "part","Sublet","IGST","AMT RECEIVED","DIFF AMT",
-            "Invoice No","PAYMENT DATE","AUTH. SIGN","REMARKS"
+            "MRS", "VIN", "Claim No", "Claim Date", "Claim Type",
+            "R/O No", "R/O Date", "Part Desc", "Total Amt", "Labour",
+            "part", "Sublet", "IGST", "AMT RECEIVED", "DIFF AMT",
+            "Invoice No", "PAYMENT DATE", "AUTH. SIGN", "REMARKS"
         ];
         // numeric columns that trigger recalculation
-        const numericCols = new Set(["Total Amt","Labour","part","Sublet","IGST","AMT RECEIVED"]);
+        const numericCols = new Set(["Total Amt", "Labour", "part", "Sublet", "IGST", "AMT RECEIVED"]);
 
         let source1Data = null, source2Data = null;
         let currentEditingRowIdx = null; // for MRS modal
 
         // ── File Select ──
         function handleFileSelect(type) {
-            const input  = document.getElementById(`file-${type}`);
+            const input = document.getElementById(`file-${type}`);
             const status = document.getElementById(`status-${type}`);
-            const tile   = document.getElementById(`tile-${type}`);
+            const tile = document.getElementById(`tile-${type}`);
             if (!input.files.length) return;
             const file = input.files[0];
             status.innerText = 'Loading...'; status.style.color = 'var(--accent)';
             const reader = new FileReader();
             reader.onload = (e) => {
-                const wb = XLSX.read(new Uint8Array(e.target.result), { type:'array' });
+                const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
                 const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
                 if (type === 'source1') source1Data = data;
                 else source2Data = data;
@@ -613,66 +1413,82 @@
                     const k = String(row['Claim No.'] || row['Claim No'] || '').trim();
                     if (k) payMap[k] = row;
                 });
-                const filtered = source1Data.filter(row => {
-                    const type = String(row['Claim Type'] || '').toUpperCase();
-                    const amt  = parseFloat(row['Total Amt'] || row['Approve Amount by HMI']) || 0;
-                    const desc = String(row['Part Desc'] || row['Part Description'] || '').toUpperCase();
-                    if (type.includes('FREE SERVICE') || type.includes('FSC')) return false;
-                    if (type.includes('CAMPAIGN') && amt < 300 && !desc.includes('POWER WINDOW') && !desc.includes('FUEL PUMP')) return false;
-                    return true;
-                });
-                const existingROs = new Set(rawData.map(r => String(r['R/O No'] || '').trim()));
+                // Process rows from Source 1 (Optimized for Claim-No deduplication and data protection)
+                const ledgerMap = {};
+                rawData.forEach(r => { if (r['Claim No']) ledgerMap[String(r['Claim No']).trim()] = r; });
+                
                 let newlyAdded = 0;
-                let lastMRS = rawData.length ? Math.max(...rawData.map(r => parseInt(r['MRS']) || 0)) : 1000;
-                filtered.forEach(match1 => {
+
+                source1Data.forEach(match1 => {
+                    const claimKey = String(match1['Claim No'] || match1['Claim No.'] || '').trim();
                     const roKey = String(match1['R/O No'] || match1['R/O No.'] || '').trim();
-                    if (!roKey || /^CANC(LE|EL)$/i.test(roKey)) return;
-                    let target, isNew = false;
-                    if (existingROs.has(roKey)) {
-                        target = rawData.find(r => String(r['R/O No']).trim() === roKey);
-                    } else {
-                        isNew = true; lastMRS++;
-                        target = { "MRS": lastMRS, "R/O No": roKey }; newlyAdded++;
+                    
+                    if (!claimKey || !roKey || /^CANC(LE|EL)$/i.test(roKey)) return;
+                    
+                    let target = ledgerMap[claimKey];
+                    
+                    if (!target) {
+                        // Disable auto-filling MRS; leave it blank initially
+                        target = { "MRS": "", "Claim No": claimKey, "R/O No": roKey };
+                        rawData.push(target);
+                        ledgerMap[claimKey] = target;
+                        newlyAdded++;
                     }
-                    target['VIN']        = match1['VIN'] || target['VIN'] || '';
-                    target['Claim No']   = match1['Claim No'] || target['Claim No'] || '';
-                    target['Claim Date'] = match1['Claim Date'] || target['Claim Date'] || '';
-                    target['Claim Type'] = match1['Claim Type'] || target['Claim Type'] || '';
-                    target['R/O Date']   = match1['R/O Date'] || target['R/O Date'] || '';
-                    target['Part Desc']  = match1['Part Desc'] || match1['Part Description'] || target['Part Desc'] || '';
-                    target['Total Amt']  = match1['Total Amt'] || match1['Approve Amount by HMI'] || target['Total Amt'] || 0;
-                    target['Labour']     = match1['Labour'] || target['Labour'] || 0;
-                    target['part']       = match1['part'] || target['part'] || 0;
-                    target['Sublet']     = match1['Sublet'] || target['Sublet'] || 0;
-                    target['IGST']       = match1['IGST'] || match1['Total Approved Tax Amt'] || target['IGST'] || 0;
-                    target['Invoice No'] = match1['Invoice No'] || target['Invoice No'] || '';
-                    if (isNew) rawData.push(target);
-                    const claimKey = String(target['Claim No'] || '').trim();
+
+                    // 100% Matching/Updating logic
+                    const updateField = (f, val) => {
+                        if (val !== undefined && val !== null && val !== '') {
+                            // Only update if current field is empty or missing (protects existing data)
+                            if (!target[f] || target[f] === '—' || target[f] === 0) {
+                                target[f] = val;
+                            }
+                        }
+                    };
+
+                    updateField('VIN', match1['VIN']);
+                    updateField('Claim Date', match1['Claim Date']);
+                    updateField('Claim Type', match1['Claim Type']);
+                    updateField('R/O Date', match1['R/O Date']);
+                    updateField('Part Desc', match1['Part Desc'] || match1['Part Description']);
+                    updateField('Total Amt', match1['Total Amt'] || match1['Approve Amount by HMI']);
+                    updateField('Labour', match1['Labour']);
+                    updateField('part', match1['part']);
+                    updateField('Sublet', match1['Sublet']);
+                    updateField('IGST', match1['IGST'] || match1['Total Approved Tax Amt']);
+                    updateField('Invoice No', match1['Invoice No']);
+
+                    // SOURCE 2 MAPPING (Payment details) - Protect existing payment data
                     const match2 = payMap[claimKey];
                     if (match2) {
-                        target['AMT RECEIVED'] = match2['Gross Amount'] || match2['Ramittance Amt.'] || target['AMT RECEIVED'] || 0;
-                        target['PAYMENT DATE'] = match2['Payment Cheque Date'] || target['PAYMENT DATE'] || '';
+                        // "recived amount and payment date reset dont change" - only fill if empty
+                        if (!target['AMT RECEIVED'] || target['AMT RECEIVED'] === 0) {
+                            target['AMT RECEIVED'] = match2['Gross Amount'] || match2['Ramittance Amt.'] || 0;
+                        }
+                        if (!target['PAYMENT DATE'] || target['PAYMENT DATE'] === '—' || !target['PAYMENT DATE']) {
+                            target['PAYMENT DATE'] = match2['Payment Cheque Date'] || '';
+                        }
                     }
                     recalcRow(target);
                 });
                 saveLedger(); renderData(rawData);
-                showToast(`✓ Ledger processed! New: ${newlyAdded} | Total: ${rawData.length}`);
-            } catch(err) {
+                showToast(`✓ Feed processed! New: ${newlyAdded} | Total: ${rawData.length}`);
+            } catch (err) {
                 console.error(err); showToast('Error during mapping: ' + err.message, 'danger');
             } finally { btn.innerHTML = orig; btn.classList.remove('loading'); }
         }
 
         // ── Recalculate DIFF AMT & REMARKS ──
         function recalcRow(row) {
-            const total    = parseFloat(row['Total Amt']) || 0;
+            const total = parseFloat(row['Total Amt']) || 0;
             const received = parseFloat(row['AMT RECEIVED']) || 0;
-            if (total > 0 || received > 0) {
-                const diff = total - received;
-                row['DIFF AMT'] = Math.round(diff);
-                if      (diff >  50) row['REMARKS'] = 'PAYMENT SHORT';
-                else if (diff < -50) row['REMARKS'] = 'EXCESS PAYMENT';
-                else                 row['REMARKS'] = 'PAID';
-            }
+            const diff = total - received;
+            row['DIFF AMT'] = Math.round(diff);
+
+            // Updated status logic: 
+            // if diff > 0 -> PAYMENT SHORT
+            // if diff <= 0 -> PAID
+            if (diff > 0) row['REMARKS'] = 'PAYMENT SHORT';
+            else row['REMARKS'] = 'PAID';
         }
 
         // ── Clear Database ──
@@ -688,70 +1504,144 @@
             );
         }
 
-        // ── Render Table ──
+        // ── Pagination state ──
+        const PAGE_SIZE = 50;
+        let currentPage = 1;
+        let currentDataset = []; // the active filtered/full dataset
+
+        // ── Render Table (paginated) ──
         function renderData(data) {
+            currentDataset = data;
+            currentPage = Math.min(currentPage, Math.max(1, Math.ceil(data.length / PAGE_SIZE)));
+            renderPage();
+
+            // Real-time counter update for header
+            const pendingCount = rawData.filter(r => 
+                (!r['AMT RECEIVED'] || r['AMT RECEIVED'] === 0) && 
+                (!r['PAYMENT DATE'] || r['PAYMENT DATE'] === '' || r['PAYMENT DATE'] === '—')
+            ).length;
+            const hBadge = document.getElementById('mrs-header-pending');
+            if (hBadge) {
+                hBadge.textContent = `${pendingCount} Payments Pending`;
+                hBadge.style.display = pendingCount > 0 ? 'inline-flex' : 'none';
+            }
+        }
+
+        // ── Render Page (paginated 50 per page) ──
+        function renderPage() {
+            const data   = currentDataset;
             const tbody  = document.getElementById('tableBody');
             const noData = document.getElementById('noData');
+            const pagBar = document.getElementById('paginationBar');
+
             if (!data.length) {
-                tbody.innerHTML = ''; noData.style.display = 'flex';
-                document.getElementById('recordCount').innerText = '0 Records'; return;
+                tbody.innerHTML = '';
+                noData.style.display = 'flex';
+                pagBar.style.display = 'none';
+                document.getElementById('recordCount').innerText = '0 Records';
+                return;
             }
+
             noData.style.display = 'none';
-            tbody.innerHTML = data.map((row) => {
-                // get the real index in rawData (works because renderData receives object refs)
+            const totalPages = Math.ceil(data.length / PAGE_SIZE);
+            const start = (currentPage - 1) * PAGE_SIZE;
+            const end   = Math.min(start + PAGE_SIZE, data.length);
+            const pageRows = data.slice(start, end);
+
+            tbody.innerHTML = pageRows.map((row) => {
                 const ri = rawData.indexOf(row);
-                const mrsBadgeClass = 'badge badge-mrs';
-                const mrsVal = (row['MRS'] !== undefined && row['MRS'] !== null && row['MRS'] !== '') ? row['MRS'] : '—';
+                const mrsVal = (row['MRS'] !== undefined && row['MRS'] !== null && row['MRS'] !== '') ? row['MRS'] : '\u2014';
                 const cells = columns.map(col => {
-                    let val = (row[col] !== undefined && row[col] !== null && row[col] !== '') ? row[col] : '—';
+                    let val = (row[col] !== undefined && row[col] !== null && row[col] !== '') ? row[col] : '\u2014';
                     if (col === 'MRS') {
-                        // Show badge — clicking the ROW opens modal (handled on <tr>)
                         return `<td><span class="badge badge-mrs" title="Click row to assign MRS">${val} <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5;vertical-align:middle;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span></td>`;
                     }
                     if (col === 'R/O No') {
                         let css = 'badge badge-ro';
-                        const v = String(val).toUpperCase();
-                        if (v === 'CANCLE' || v === 'CANCEL') css = 'badge badge-cancel';
+                        if (/^CANC/i.test(String(val))) css = 'badge badge-cancel';
                         return `<td><span class="${css}">${val}</span></td>`;
                     }
-                    // Feature #9: double-click to edit (stops event so row-click doesn't fire)
+                    if (col === 'REMARKS') {
+                        const sClass = (val === 'PAYMENT SHORT') ? 'badge-short' : (val === 'PAID') ? 'badge-paid' : '';
+                        return `<td><span class="badge ${sClass}">${val}</span></td>`;
+                    }
                     return `<td class="editable" ondblclick="startEdit(event,this,${ri},'${col}')" title="Double-click to edit">${val}</td>`;
                 }).join('');
-                // Entire row click → open MRS modal (Feature #5)
                 return `<tr class="row-clickable" onclick="openMRSModal(${ri})" title="Click to assign MRS #${mrsVal}">${cells}</tr>`;
             }).join('');
-            document.getElementById('recordCount').innerText = `${data.length} Record${data.length!==1?'s':''}`;
+
+            // Scroll table back to top on page change
+            document.querySelector('.table-wrap').scrollTop = 0;
+
+            // Record count
+            document.getElementById('recordCount').innerText = `${data.length} Record${data.length !== 1 ? 's' : ''}`;
+
+            // Pagination UI (Harmonized with main.html style)
+            if (totalPages <= 1) {
+                pagBar.style.display = 'none';
+            } else {
+                pagBar.style.display = 'flex';
+                document.getElementById('mrs-page-indicator').textContent = `Page ${currentPage} of ${totalPages}`;
+                document.getElementById('mrs-btn-prev').disabled = (currentPage === 1);
+                document.getElementById('mrs-btn-next').disabled = (currentPage === totalPages);
+            }
         }
 
-        // ── Search / Filter  (Feature #7: RO suffix search) ──
+        function goToPage(page) {
+            const totalPages = Math.ceil(currentDataset.length / PAGE_SIZE);
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderPage();
+        }
+
+        // ── Search / Filter (Feature #7: RO suffix search) ──
         function filterTable() {
+            currentPage = 1; // reset to first page on new search
             const query = document.getElementById('tableSearch').value.trim().toLowerCase();
             if (!query) { renderData(rawData); return; }
             const filtered = rawData.filter(row => {
-                const mrs   = String(row['MRS'] || '').toLowerCase();
-                const ro    = String(row['R/O No'] || '').toLowerCase();
-                const claim = String(row['Claim No'] || '').toLowerCase();
-                // Feature #7: match RO suffix — strip any prefix, match last digits
-                const roSuffix = ro.replace(/^[^0-9]*/,''); // strip leading non-digits prefix
+                const mrs    = String(row['MRS'] || '').toLowerCase();
+                const ro     = String(row['R/O No'] || '').toLowerCase();
+                const claim  = String(row['Claim No'] || '').toLowerCase();
+                const roSuffix = ro.replace(/^[^0-9]*/, '');
                 return mrs.includes(query) || claim.includes(query) || roSuffix.endsWith(query) || ro.includes(query);
             });
             renderData(filtered);
         }
 
         // ── Feature #4: Global keydown — type number → focus search & insert digit ──
+        // ── Feature #4: Keyboard Listener (Type to search & Enter to open) ──
         document.addEventListener('keydown', (e) => {
             const active = document.activeElement;
-            const inInput = active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable;
-            // If a modal is open, skip
-            const modalOpen = document.getElementById('mrsModal').classList.contains('active') ||
-                              document.getElementById('confirmDialog').classList.contains('active');
-            if (inInput || modalOpen) return;
-            if (e.key >= '0' && e.key <= '9') {
+            const inInput = (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+            const searchInput = document.getElementById('tableSearch');
+            const modalOpen = (document.getElementById('mrsModal').classList.contains('active') ||
+                             document.getElementById('confirmDialog').classList.contains('active'));
+
+            if (modalOpen) return;
+
+            // Handle typing digits 0-9 when NOT in an input (or specifically in search bar)
+            if (!inInput || active === searchInput) {
+                if (e.key >= '0' && e.key <= '9') {
+                    // Only preventDefault and focus if we are NOT already in the search input
+                    if (active !== searchInput) {
+                        e.preventDefault();
+                        searchInput.focus();
+                        searchInput.value += e.key;
+                        filterTable();
+                    }
+                    return;
+                }
+            }
+
+            // Handle Enter key while search bar is focused
+            if (active === searchInput && e.key === 'Enter') {
                 e.preventDefault();
-                const searchInput = document.getElementById('tableSearch');
-                searchInput.value += e.key;  // append typed digit
-                searchInput.focus();
-                filterTable();
+                if (currentDataset.length > 0) {
+                    const firstRealIdx = rawData.indexOf(currentDataset[0]);
+                    if (firstRealIdx !== -1) openMRSModal(firstRealIdx);
+                }
+                return;
             }
         });
 
@@ -759,9 +1649,9 @@
         function openMRSModal(rowIdx) {
             currentEditingRowIdx = rowIdx;
             const row = rawData[rowIdx];
-            document.getElementById('mrsInfoRO').textContent    = row['R/O No']   || '—';
+            document.getElementById('mrsInfoRO').textContent = row['R/O No'] || '—';
             document.getElementById('mrsInfoClaim').textContent = row['Claim No'] || '—';
-            document.getElementById('mrsInfoType').textContent  = row['Claim Type'] || '—';
+            document.getElementById('mrsInfoType').textContent = row['Claim Type'] || '—';
             const inp = document.getElementById('mrsNumberInput');
             inp.value = (row['MRS'] && row['MRS'] !== '—') ? row['MRS'] : '';
             document.getElementById('mrsModal').classList.add('active');
@@ -835,9 +1725,9 @@
             applyTheme(t);
         }
         function applyTheme(theme) {
-            if (theme === 'dark') document.documentElement.setAttribute('data-theme','dark');
+            if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
             else document.documentElement.removeAttribute('data-theme');
-            document.documentElement.style.setProperty('--surface-rgb', theme==='dark' ? '31,41,55' : '255,255,255');
+            document.documentElement.style.setProperty('--surface-rgb', theme === 'dark' ? '31,41,55' : '255,255,255');
         }
         window.addEventListener('message', (e) => {
             if (e.data && e.data.type === 'theme-change') applyTheme(e.data.theme);
@@ -847,7 +1737,7 @@
         // Navigation
         function goBack() {
             try { window.parent.showScreen('screen-menu'); }
-            catch(ex) { window.history.back(); }
+            catch (ex) { window.history.back(); }
         }
 
         // ══════════════════════════
@@ -860,8 +1750,8 @@
             const t = document.getElementById('toast');
             t.textContent = msg;
             t.style.borderColor = type === 'danger' ? 'rgba(239,68,68,0.4)' :
-                                   type === 'warn'   ? 'rgba(245,158,11,0.4)' :
-                                   type === 'success'? 'rgba(16,185,129,0.4)' : 'var(--border)';
+                type === 'warn' ? 'rgba(245,158,11,0.4)' :
+                    type === 'success' ? 'rgba(16,185,129,0.4)' : 'var(--border)';
             t.classList.add('show');
             clearTimeout(_toastTimer);
             _toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
@@ -869,17 +1759,17 @@
 
         // Confirm Dialog (replaces browser confirm())
         function showConfirm(msg, iconEmoji, onYes, onNo) {
-            const dlg     = document.getElementById('confirmDialog');
-            const iconEl  = document.getElementById('confirmIcon');
-            const msgEl   = document.getElementById('confirmMsg');
-            const yesBtn  = document.getElementById('confirmYes');
-            const noBtn   = document.getElementById('confirmNo');
+            const dlg = document.getElementById('confirmDialog');
+            const iconEl = document.getElementById('confirmIcon');
+            const msgEl = document.getElementById('confirmMsg');
+            const yesBtn = document.getElementById('confirmYes');
+            const noBtn = document.getElementById('confirmNo');
             msgEl.textContent = msg;
-            iconEl.innerHTML  = iconEmoji ? `<span style="font-size:2.5rem;line-height:1;">${iconEmoji}</span>` : '';
+            iconEl.innerHTML = iconEmoji ? `<span style="font-size:2.5rem;line-height:1;">${iconEmoji}</span>` : '';
             dlg.classList.add('active');
             function cleanup() { dlg.classList.remove('active'); yesBtn.onclick = null; noBtn.onclick = null; }
             yesBtn.onclick = () => { cleanup(); if (onYes) onYes(); };
-            noBtn.onclick  = () => { cleanup(); if (onNo) onNo(); };
+            noBtn.onclick = () => { cleanup(); if (onNo) onNo(); };
         }
         // Close confirm on backdrop click
         document.getElementById('confirmDialog').addEventListener('click', (e) => {
@@ -889,4 +1779,5 @@
         });
     </script>
 </body>
+
 </html>
