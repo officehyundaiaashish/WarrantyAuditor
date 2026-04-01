@@ -74,7 +74,7 @@
             display: flex;
             flex-direction: column;
             transition: background-color 0.4s ease, color 0.4s ease;
-            font-size: 14px;
+            font-size: 15px; /* Slightly larger for high DPI */
         }
 
         ::-webkit-scrollbar {
@@ -335,58 +335,55 @@
             position: relative;
             background: var(--bg-base);
             border: 2px dashed var(--border);
-            border-radius: 14px;
-            padding: 20px 16px;
+            border-radius: 12px;
+            padding: 10px 16px;
             display: flex;
-            flex-direction: column;
+            flex-direction: row; /* Horizontal for compactness */
             align-items: center;
-            gap: 10px;
-            text-align: center;
+            gap: 12px;
+            text-align: left;
             cursor: pointer;
             transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
             overflow: hidden;
         }
 
         .upload-tile .tile-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
             border: 1px solid rgba(42, 181, 165, 0.18);
             transition: all 0.25s ease;
+            font-size: 0.8rem;
+        }
+
+        .upload-tile .tile-icon svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .upload-tile div {
+            display: flex;
+            flex-direction: column;
         }
 
         .upload-tile:hover {
             border-color: var(--primary);
             background: rgba(42, 181, 165, 0.04);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px -4px rgba(42, 181, 165, 0.15);
-        }
-
-        .upload-tile:hover .tile-icon,
-        .upload-tile.active .tile-icon {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            color: #fff;
-            border-color: transparent;
-            box-shadow: 0 4px 12px rgba(42, 181, 165, 0.25);
-        }
-
-        .upload-tile.active {
-            border-color: var(--primary);
-            border-style: solid;
-            background: rgba(42, 181, 165, 0.06);
+            transform: translateY(-1px);
         }
 
         .upload-tile span {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 700;
             color: var(--text-main);
+            line-height: 1.2;
         }
 
         .upload-tile p {
-            font-size: 0.72rem;
+            font-size: 0.65rem;
             color: var(--text-muted);
             margin: 0;
-            line-height: 1.4;
+            line-height: 1.2;
         }
 
         .upload-tile input[type="file"] {
@@ -569,7 +566,8 @@
             background: var(--surface);
             width: 100%;
             box-shadow: var(--shadow);
-            max-height: 800px; /* Force a taller height if screen allows */
+            max-height: 800px;
+            /* Force a taller height if screen allows */
             min-height: 400px;
             position: relative;
         }
@@ -577,8 +575,8 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.65rem; 
-            min-width: 900px; 
+            font-size: 0.72rem; /* Scaled up for readability */
+            min-width: 950px;
             table-layout: auto;
         }
 
@@ -591,18 +589,19 @@
 
         th {
             text-align: left;
-            padding: 6px 8px; 
+            padding: 8px 10px;
             font-weight: 800;
             color: var(--text-muted);
             border-bottom: 2px solid var(--border);
             text-transform: uppercase;
-            font-size: 0.6rem; 
+            font-size: 0.68rem;
             letter-spacing: 0.5px;
             white-space: nowrap;
         }
 
         td {
-            padding: 6px 8px; /* Tighter padding */
+            padding: 8px 10px;
+            /* Tighter padding */
             border-bottom: 1px solid var(--border);
             color: var(--text-main);
             transition: background-color 0.1s;
@@ -610,14 +609,21 @@
         }
 
         /* Essential columns should not cut off; Part Desc can have ellipsis */
-        td:nth-child(2), td:nth-child(8) { 
-            max-width: 100px; 
-            overflow: hidden; 
-            text-overflow: ellipsis; 
+        td:nth-child(2),
+        td:nth-child(8) {
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         /* Tighter widths for amount columns */
-        td:nth-child(9), td:nth-child(10), td:nth-child(11), td:nth-child(12), td:nth-child(13), td:nth-child(14), td:nth-child(15) {
+        td:nth-child(9),
+        td:nth-child(10),
+        td:nth-child(11),
+        td:nth-child(12),
+        td:nth-child(13),
+        td:nth-child(14),
+        td:nth-child(15) {
             max-width: 70px;
             text-align: right;
         }
@@ -625,7 +631,8 @@
         /* Prevent shift on hover by reserving space for the indicator border */
         td:first-child {
             border-left: 3px solid transparent;
-            padding-left: 7px; /* Tight padding */
+            padding-left: 7px;
+            /* Tight padding */
         }
 
         tr:last-child td {
@@ -724,6 +731,55 @@
         /* ══════════════════════════════════════════
            §12 — BADGES
            ══════════════════════════════════════════ */
+        .header-stats-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        .stat-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 0.74rem;
+            font-weight: 800;
+            border: 1px solid var(--border);
+            letter-spacing: 0.1px;
+            white-space: nowrap;
+        }
+
+        .total-badge {
+            background: rgba(107, 114, 128, 0.08);
+            color: var(--text-muted);
+        }
+
+        .received-badge {
+            background: #f0fdf4;
+            color: #15803d;
+            border-color: #bbf7d0;
+        }
+
+        .diff-badge {
+            background: #fffbeb;
+            color: #92400e;
+            border-color: #fde68a;
+        }
+
+        [data-theme="dark"] .received-badge {
+            background: #064e3b;
+            color: #6ee7b7;
+            border-color: #065f46;
+        }
+
+        [data-theme="dark"] .diff-badge {
+            background: #451a03;
+            color: #fcd34d;
+            border-color: #78350f;
+        }
+
         .badge {
             display: inline-flex;
             align-items: center;
@@ -776,12 +832,11 @@
             align-items: center;
             background: #fef2f2;
             color: #b91c1c;
-            font-size: 0.65rem;
+            font-size: 0.74rem;
             font-weight: 800;
-            padding: 2px 8px;
+            padding: 3px 10px;
             border-radius: 20px;
             border: 1px solid #fecaca;
-            margin-left: 10px;
             vertical-align: middle;
             animation: pulse-danger 2s infinite;
             cursor: pointer;
@@ -801,9 +856,17 @@
         }
 
         @keyframes pulse-danger {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.03); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.03);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
 
         .badge-ro {
@@ -1168,7 +1231,7 @@
                 </svg>
             </div>
             <div>
-                <div class="header-title-text">MRS Assigner</div>
+                <div class="header-title-text">MRS Assigner <span id="header-claims-badge" class="stat-badge" style="font-size:0.6rem;padding:2px 6px;margin-left:6px;vertical-align:middle;">0 Claims</span></div>
                 <div class="header-subtitle">Record Ledger · Audit-it</div>
             </div>
         </div>
@@ -1187,11 +1250,10 @@
     <div class="content-wrap" id="app-root">
 
         <!-- Import Controls -->
-        <div class="premium-card">
-            <div class="section-header">
-                <div class="tile-icon">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-                        stroke-linecap="round" stroke-linejoin="round">
+        <div class="premium-card" style="padding: 16px 20px 14px;">
+            <div class="section-header" style="margin-bottom: 12px; padding-bottom: 10px;">
+                <div class="tile-icon" style="width: 32px; height: 32px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                         <polyline points="17 8 12 3 7 8" />
                         <line x1="12" y1="3" x2="12" y2="15" />
@@ -1257,7 +1319,13 @@
                 <div>
                     <div class="section-title">
                         Database Ledger
-                        <span id="mrs-header-pending" class="pending-badge-header" style="display:none;" onclick="triggerPendingFilter()" title="Click to filter pending payments">0 Payments Pending</span>
+                        <div class="header-stats-wrap">
+                            <span id="mrs-header-count" class="stat-badge total-badge">Claims: —</span>
+                            <span id="mrs-header-pending" class="pending-badge-header" style="display:none;" onclick="triggerPendingFilter()" title="Click to filter pending payments">0 Pending</span>
+                            <span id="mrs-header-total" class="stat-badge total-badge">Tot: —</span>
+                            <span id="mrs-header-received" class="stat-badge received-badge">Rec: —</span>
+                            <span id="mrs-header-diff" class="stat-badge diff-badge">Dif: —</span>
+                        </div>
                     </div>
                     <p style="font-size:0.75rem;color:var(--text-muted);margin:2px 0 0 0;">Click any row to assign its
                         MRS number · Double-click a cell to edit its value</p>
@@ -1311,11 +1379,17 @@
             <!-- HARMONIZED: pagination matching main.html Prev / Indicator / Next -->
             <div class="pagination" id="paginationBar" style="display:none;">
                 <button class="btn" id="mrs-btn-prev" onclick="goToPage(currentPage - 1)">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6" /></svg> Previous
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg> Previous
                 </button>
                 <span class="page-indicator" id="mrs-page-indicator">Page 1</span>
                 <button class="btn" id="mrs-btn-next" onclick="goToPage(currentPage + 1)">
-                    Next <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+                    Next <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6" />
+                    </svg>
                 </button>
             </div>
         </div>
@@ -1344,7 +1418,7 @@
                 <label class="mrs-input-label">MRS Number</label>
                 <div class="mrs-input-wrap">
                     <!-- Feature #6: auto-focus on open, Enter to save -->
-                    <input type="number" id="mrsNumberInput" class="mrs-number-input" placeholder="e.g. 1001" min="1"
+                    <input type="number" id="mrsNumberInput" class="mrs-number-input" placeholder="Enter MRS" min="1"
                         step="1"
                         onkeydown="if(event.key==='Enter') saveMRS(); if(event.key==='Escape') closeMRSModal();">
                 </div>
@@ -1390,7 +1464,7 @@
             } catch (e) { console.error('Load ledger:', e); }
         }
         async function saveLedger() {
-            try { 
+            try {
                 await localforage.setItem(LEDGER_KEY, rawData);
                 // Notify parent for real-time dashboard updates
                 window.parent.postMessage({ type: 'mrs-data-changed' }, '*');
@@ -1459,22 +1533,22 @@
                     const normType = String(r['Claim Type'] || "").toUpperCase().replace(/[\s_\-\.]/g, '');
                     const normAmt = parseFloat(String(r['Total Amt'] || "0").replace(/[^\d.-]/g, '')) || 0;
                     const normDesc = String(r['Part Desc'] || "").toUpperCase().replace(/[\s_\-\.]/g, '');
-                    
+
                     if (normType.includes("FREESERVICE") || normType.includes("FSC")) return false;
                     if (normType.includes("CAMPAIGN") && normAmt < 300 && !normDesc.includes("POWERWINDOW") && !normDesc.includes("FUELPUMP")) return false;
                     return true;
                 });
-                
+
                 // Clear index and rebuild for merging
                 const ledgerMap = {};
                 rawData.forEach(r => { if (r['Claim No']) ledgerMap[String(r['Claim No']).trim()] = r; });
-                
+
                 let newlyAdded = 0;
 
                 source1Data.forEach(match1 => {
                     const claimKey = String(findVal(match1, ["Claim No", "Clm No", "Claim Number", "Claim#"]) || "").trim();
                     const roKey = String(findVal(match1, ["R/O No", "RO No", "RO Number", "Repair Order", "RO Suffix"]) || "").trim();
-                    
+
                     if (!claimKey || !roKey || /^CANC(LE|EL)$/i.test(roKey)) return;
 
                     // Standard Audit Filtering Logic (Robust Detection)
@@ -1483,12 +1557,12 @@
                     const amtRaw = String(findVal(match1, ["Total Amt", "Total Amount", "Claim Amount", "Approve Amount by HMI", "Amt"]) || "0");
                     const amtVal = parseFloat(amtRaw.replace(/[^\d.-]/g, '')) || 0;
                     const descStr = String(findVal(match1, ["Part Desc", "Part Description", "Part Name", "Item Description"]) || "").toUpperCase().replace(/[\s_\-\.]/g, '');
-                    
+
                     if (typeStr.includes("FREESERVICE") || typeStr.includes("FSC")) return;
                     if (typeStr.includes("CAMPAIGN") && amtVal < 300 && !descStr.includes("POWERWINDOW") && !descStr.includes("FUELPUMP")) return;
-                    
+
                     let target = ledgerMap[claimKey];
-                    
+
                     if (!target) {
                         // Disable auto-filling MRS; leave it blank initially
                         target = { "MRS": "", "Claim No": claimKey, "R/O No": roKey };
@@ -1579,21 +1653,39 @@
             renderPage();
 
             // Real-time counter update for header
-            const pendingCount = rawData.filter(r => 
-                (!r['AMT RECEIVED'] || r['AMT RECEIVED'] === 0) && 
-                (!r['PAYMENT DATE'] || r['PAYMENT DATE'] === '' || r['PAYMENT DATE'] === '—')
-            ).length;
+            const stats = rawData.reduce((acc, r) => {
+                const total = parseFloat(String(r['Total Amt'] || "0").replace(/[^\d.-]/g, '')) || 0;
+                const recvd = parseFloat(String(r['AMT RECEIVED'] || "0").replace(/[^\d.-]/g, '')) || 0;
+                acc.total += total;
+                acc.recvd += recvd;
+                
+                const isPending = (!r['AMT RECEIVED'] || r['AMT RECEIVED'] === 0) && 
+                                  (!r['PAYMENT DATE'] || r['PAYMENT DATE'] === '' || r['PAYMENT DATE'] === '—');
+                if (isPending) acc.pending++;
+                return acc;
+            }, { total: 0, recvd: 0, pending: 0 });
+
             const hBadge = document.getElementById('mrs-header-pending');
             if (hBadge) {
-                hBadge.textContent = `${pendingCount} Payments Pending`;
-                hBadge.style.display = pendingCount > 0 ? 'inline-flex' : 'none';
+                hBadge.textContent = `${stats.pending} Pending`;
+                hBadge.style.display = stats.pending > 0 ? 'inline-flex' : 'none';
             }
+            
+            document.getElementById('mrs-header-count').textContent = `Claims: ${rawData.length}`;
+            document.getElementById('mrs-header-total').textContent = `Tot: ₹${Math.round(stats.total).toLocaleString()}`;
+            document.getElementById('mrs-header-received').textContent = `Rec: ₹${Math.round(stats.recvd).toLocaleString()}`;
+            const diff = stats.total - stats.recvd;
+            const diffEl = document.getElementById('mrs-header-diff');
+            diffEl.textContent = `Dif: ₹${Math.round(diff).toLocaleString()}`;
+            if(diff > 0) diffEl.style.color = '#b91c1c';
+            else if(diff < 0) diffEl.style.color = 'var(--success)';
+            else diffEl.style.color = '';
         }
 
         // ── Render Page (paginated 50 per page) ──
         function renderPage() {
-            const data   = currentDataset;
-            const tbody  = document.getElementById('tableBody');
+            const data = currentDataset;
+            const tbody = document.getElementById('tableBody');
             const noData = document.getElementById('noData');
             const pagBar = document.getElementById('paginationBar');
 
@@ -1608,7 +1700,7 @@
             noData.style.display = 'none';
             const totalPages = Math.ceil(data.length / PAGE_SIZE);
             const start = (currentPage - 1) * PAGE_SIZE;
-            const end   = Math.min(start + PAGE_SIZE, data.length);
+            const end = Math.min(start + PAGE_SIZE, data.length);
             const pageRows = data.slice(start, end);
 
             tbody.innerHTML = pageRows.map((row) => {
@@ -1663,9 +1755,9 @@
             const query = document.getElementById('tableSearch').value.trim().toLowerCase();
             if (!query) { renderData(rawData); return; }
             const filtered = rawData.filter(row => {
-                const mrs    = String(row['MRS'] || '').toLowerCase();
-                const ro     = String(row['R/O No'] || '').toLowerCase();
-                const claim  = String(row['Claim No'] || '').toLowerCase();
+                const mrs = String(row['MRS'] || '').toLowerCase();
+                const ro = String(row['R/O No'] || '').toLowerCase();
+                const claim = String(row['Claim No'] || '').toLowerCase();
                 const roSuffix = ro.replace(/^[^0-9]*/, '');
                 return mrs.includes(query) || claim.includes(query) || roSuffix.endsWith(query) || ro.includes(query);
             });
@@ -1679,7 +1771,7 @@
             const inInput = (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
             const searchInput = document.getElementById('tableSearch');
             const modalOpen = (document.getElementById('mrsModal').classList.contains('active') ||
-                             document.getElementById('confirmDialog').classList.contains('active'));
+                document.getElementById('confirmDialog').classList.contains('active'));
 
             if (modalOpen) return;
 
@@ -1734,9 +1826,9 @@
             const status = row['REMARKS'] || '—';
             const sEl = document.getElementById('mrsInfoStatus');
             sEl.textContent = status;
-            sEl.style.color = (status === 'PAID') ? 'var(--success)' : 
-                              (status === 'PAYMENT SHORT') ? 'var(--danger)' : 'var(--text-main)';
-            
+            sEl.style.color = (status === 'PAID') ? 'var(--success)' :
+                (status === 'PAYMENT SHORT') ? 'var(--danger)' : 'var(--text-main)';
+
             const inp = document.getElementById('mrsNumberInput');
             inp.value = (row['MRS'] && row['MRS'] !== '—') ? row['MRS'] : '';
             document.getElementById('mrsModal').classList.add('active');
@@ -1798,9 +1890,9 @@
                 const sInput = document.getElementById('tableSearch');
                 if (sInput) sInput.focus();
             }
-            function cancelEdit() { 
-                td.classList.remove('editing'); 
-                filterTable(); 
+            function cancelEdit() {
+                td.classList.remove('editing');
+                filterTable();
                 const sInput = document.getElementById('tableSearch');
                 if (sInput) sInput.focus();
             }
@@ -1833,15 +1925,15 @@
             document.documentElement.style.setProperty('--surface-rgb', theme === 'dark' ? '31,41,55' : '255,255,255');
         }
         function triggerPendingFilter() {
-            const pending = rawData.filter(r => 
-                (!r['AMT RECEIVED'] || r['AMT RECEIVED'] === 0) && 
+            const pending = rawData.filter(r =>
+                (!r['AMT RECEIVED'] || r['AMT RECEIVED'] === 0) &&
                 (!r['PAYMENT DATE'] || r['PAYMENT DATE'] === '' || r['PAYMENT DATE'] === '—')
             );
-            
+
             // Toggle Logic: If we are already exactly showing the pending list, show all
-            const isCurrentlyShowingOnlyPending = (currentDataset.length === pending.length && 
-                                                    currentDataset.every((v, i) => v === pending[i]));
-            
+            const isCurrentlyShowingOnlyPending = (currentDataset.length === pending.length &&
+                currentDataset.every((v, i) => v === pending[i]));
+
             if (isCurrentlyShowingOnlyPending) {
                 renderData(rawData);
                 showToast("Showing All Records", "info");
@@ -1896,9 +1988,9 @@
             msgEl.textContent = msg;
             iconEl.innerHTML = iconEmoji ? `<span style="font-size:2.5rem;line-height:1;">${iconEmoji}</span>` : '';
             dlg.classList.add('active');
-            function cleanup() { 
-                dlg.classList.remove('active'); yesBtn.onclick = null; noBtn.onclick = null; 
-                setTimeout(() => { const s = document.getElementById('tableSearch'); if(s) s.focus(); }, 150);
+            function cleanup() {
+                dlg.classList.remove('active'); yesBtn.onclick = null; noBtn.onclick = null;
+                setTimeout(() => { const s = document.getElementById('tableSearch'); if (s) s.focus(); }, 150);
             }
             yesBtn.onclick = () => { cleanup(); if (onYes) onYes(); };
             noBtn.onclick = () => { cleanup(); if (onNo) onNo(); };
