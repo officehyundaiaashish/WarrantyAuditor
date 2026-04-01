@@ -1413,7 +1413,19 @@
                     const k = String(row['Claim No.'] || row['Claim No'] || '').trim();
                     if (k) payMap[k] = row;
                 });
-                // Process rows from Source 1 (Optimized for Claim-No deduplication and data protection)
+                // Filter existing rawData to remove any old invalid claims (Cleanup pass)
+                const originalCount = rawData.length;
+                rawData = rawData.filter(r => {
+                    const normType = String(r['Claim Type'] || "").toUpperCase().replace(/[\s_\-\.]/g, '');
+                    const normAmt = parseFloat(String(r['Total Amt'] || "0").replace(/[^\d.-]/g, '')) || 0;
+                    const normDesc = String(r['Part Desc'] || "").toUpperCase().replace(/[\s_\-\.]/g, '');
+                    
+                    if (normType.includes("FREESERVICE") || normType.includes("FSC")) return false;
+                    if (normType.includes("CAMPAIGN") && normAmt < 300 && !normDesc.includes("POWERWINDOW") && !normDesc.includes("FUELPUMP")) return false;
+                    return true;
+                });
+                
+                // Clear index and rebuild for merging
                 const ledgerMap = {};
                 rawData.forEach(r => { if (r['Claim No']) ledgerMap[String(r['Claim No']).trim()] = r; });
                 
@@ -1425,13 +1437,20 @@
                     
                     if (!claimKey || !roKey || /^CANC(LE|EL)$/i.test(roKey)) return;
 
-                    // Standard Audit Filtering Logic
-                    const typeStr = String(match1['Claim Type'] || "").toUpperCase();
-                    const amtVal = parseFloat(match1['Total Amt'] || match1['Approve Amount by HMI']) || 0;
-                    const descStr = String(match1['Part Desc'] || match1['Part Description'] || "").toUpperCase();
+                    // Standard Audit Filtering Logic (Robust Detection)
+                    const findVal = (m, terms) => {
+                        const lowTerms = terms.map(t => t.toLowerCase().replace(/[\s_\-\.]/g, ''));
+                        const key = Object.keys(m).find(k => lowTerms.includes(k.toLowerCase().replace(/[\s_\-\.]/g, '')));
+                        return key ? m[key] : null;
+                    };
+
+                    const typeStr = String(findVal(match1, ["Claim Type", "Clm Type", "TypeOfClaim"]) || "").toUpperCase().replace(/[\s_\-\.]/g, '');
+                    const amtRaw = String(findVal(match1, ["Total Amt", "Total Amount", "Claim Amount", "Approve Amount by HMI", "Amt"]) || "0");
+                    const amtVal = parseFloat(amtRaw.replace(/[^\d.-]/g, '')) || 0;
+                    const descStr = String(findVal(match1, ["Part Desc", "Part Description", "Part Name", "Item Description"]) || "").toUpperCase().replace(/[\s_\-\.]/g, '');
                     
-                    if (typeStr.includes("FREE SERVICE") || typeStr.includes("FSC")) return;
-                    if (typeStr.includes("CAMPAIGN") && amtVal < 300 && !descStr.includes("POWER WINDOW") && !descStr.includes("FUEL PUMP")) return;
+                    if (typeStr.includes("FREESERVICE") || typeStr.includes("FSC")) return;
+                    if (typeStr.includes("CAMPAIGN") && amtVal < 300 && !descStr.includes("POWERWINDOW") && !descStr.includes("FUELPUMP")) return;
                     
                     let target = ledgerMap[claimKey];
                     
@@ -1478,8 +1497,9 @@
                     }
                     recalcRow(target);
                 });
+                const filteredCount = (originalCount - rawData.length);
                 saveLedger(); renderData(rawData);
-                showToast(`✓ Feed processed! New: ${newlyAdded} | Total: ${rawData.length}`);
+                showToast(`✓ Feed processed! New: ${newlyAdded} | Purged/Skipped: ${filteredCount} | Total: ${rawData.length}`);
             } catch (err) {
                 console.error(err); showToast('Error during mapping: ' + err.message, 'danger');
             } finally { btn.innerHTML = orig; btn.classList.remove('loading'); }
