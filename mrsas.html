@@ -5,14 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MRS Assigner — Audit-it</title>
-    <!-- Google Fonts: Poppins (matches main.html) -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
     <style>
-        /* ════════════════════════════════════════════════════════
-           § 1 — CSS VARIABLES (mirrors main.html exactly)
-           ════════════════════════════════════════════════════════ */
+        /* ══════════════════════════════════════════
+           §1 — VARIABLES (mirrors main.html exactly)
+           ══════════════════════════════════════════ */
         :root {
             --bg-base: #f4f7f6;
             --surface: #ffffff;
@@ -32,9 +31,7 @@
             color-scheme: light;
             --surface-rgb: 255, 255, 255;
             --notif-shimmer-bg: linear-gradient(90deg, transparent 20%, rgba(255,255,255,0.35) 50%, transparent 80%);
-            --notif-shimmer-crit-bg: linear-gradient(90deg, transparent 20%, rgba(255,255,255,0.5) 50%, transparent 80%);
         }
-
         [data-theme="dark"] {
             --bg-base: #111827;
             --surface: #1f2937;
@@ -53,21 +50,16 @@
             color-scheme: dark;
             --surface-rgb: 31, 41, 55;
             --notif-shimmer-bg: linear-gradient(90deg, transparent 20%, rgba(255,255,255,0.04) 50%, transparent 80%);
-            --notif-shimmer-crit-bg: linear-gradient(90deg, transparent 20%, rgba(255,255,255,0.055) 50%, transparent 80%);
         }
 
-        /* ════════════════════════════════════════════════════════
-           § 2 — RESET & BASE (matches main.html)
-           ════════════════════════════════════════════════════════ */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+        /* ══════════════════════════════════════════
+           §2 — RESET & BASE
+           ══════════════════════════════════════════ */
+        *, *::before, *::after {
+            box-sizing: border-box; margin: 0; padding: 0;
             font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
-
         body {
             background-color: var(--bg-base);
             color: var(--text-main);
@@ -77,24 +69,20 @@
             transition: background-color 0.4s ease, color 0.4s ease;
             font-size: 14px;
         }
-
-        /* --- MODERN PREMIUM SCROLLBAR --- */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 20px; border: 2.5px solid var(--bg-base); }
         ::-webkit-scrollbar-thumb:hover { background: var(--primary-hover); }
-        @supports (scrollbar-width: thin) {
-            * { scrollbar-width: thin; scrollbar-color: var(--primary) transparent; }
-        }
+        @supports (scrollbar-width: thin) { * { scrollbar-width: thin; scrollbar-color: var(--primary) transparent; } }
 
-        /* ════════════════════════════════════════════════════════
-           § 3 — PAGE HEADER (matches main.html app-header style)
-           ════════════════════════════════════════════════════════ */
+        /* ══════════════════════════════════════════
+           §3 — HEADER (matches main.html app-header)
+           ══════════════════════════════════════════ */
         .page-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 14px 20px;
+            padding: 16px 20px;
             border-bottom: 1px solid var(--border);
             background-color: var(--bg-base);
             flex-shrink: 0;
@@ -103,471 +91,297 @@
             top: 0;
             z-index: 100;
         }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
+        .header-left { display: flex; align-items: center; gap: 12px; }
         .header-logo-icon {
-            width: 36px;
-            height: 36px;
+            width: 38px; height: 38px;
             background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            box-shadow: 0 4px 12px rgba(42,181,165,0.25);
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; box-shadow: 0 4px 12px rgba(42,181,165,0.3);
         }
-
-        .header-logo-icon svg {
-            stroke: #fff;
-        }
-
+        .header-logo-icon svg { stroke: #fff; }
         .header-title-text {
-            font-size: 1.25rem;
-            font-weight: 800;
-            letter-spacing: -0.5px;
+            font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px;
             background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
             line-height: 1;
         }
-
         .header-subtitle {
-            font-size: 0.72rem;
-            color: var(--text-muted);
-            font-weight: 500;
-            letter-spacing: 0.2px;
-            margin-top: 2px;
+            font-size: 0.7rem; color: var(--text-muted);
+            font-weight: 500; letter-spacing: 0.3px; margin-top: 2px;
         }
-
-        /* ════════════════════════════════════════════════════════
-           § 4 — ANIMATIONS
-           ════════════════════════════════════════════════════════ */
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(16px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* Main Menu back button — matches main.html header-action-btn */
+        .btn-main-menu {
+            display: inline-flex; align-items: center; gap: 6px;
+            height: 36px; padding: 0 14px; border-radius: 10px;
+            border: 1px solid var(--border); background: var(--surface);
+            cursor: pointer; color: var(--text-muted); font-size: 0.75rem;
+            font-weight: 600; letter-spacing: 0.3px; white-space: nowrap;
+            transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
         }
+        .btn-main-menu svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+        .btn-main-menu:hover { color: var(--primary); border-color: var(--primary); background: rgba(42,181,165,0.05); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(42,181,165,0.15); }
 
-        @keyframes shimmerLeft {
-            0%   { background-position: -600px 0; }
-            100% { background-position:  600px 0; }
-        }
+        /* ══════════════════════════════════════════
+           §4 — ANIMATIONS
+           ══════════════════════════════════════════ */
+        @keyframes fadeInUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes shimmerLeft { 0%{ background-position:-600px 0; } 100%{ background-position:600px 0; } }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        @keyframes modalIn { from { opacity:0; transform:scale(0.94) translateY(10px); } to { opacity:1; transform:scale(1) translateY(0); } }
 
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* ════════════════════════════════════════════════════════
-           § 5 — CONTENT WRAP
-           ════════════════════════════════════════════════════════ */
+        /* ══════════════════════════════════════════
+           §5 — CONTENT WRAP
+           ══════════════════════════════════════════ */
         .content-wrap {
-            flex: 1;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            max-width: 1700px;
-            margin: 0 auto;
-            width: 100%;
+            flex: 1; padding: 20px;
+            display: flex; flex-direction: column; gap: 20px;
+            max-width: 1700px; margin: 0 auto; width: 100%;
             animation: fadeInUp 0.45s ease-out backwards;
             animation-delay: 0.05s;
         }
 
-        /* ════════════════════════════════════════════════════════
-           § 6 — PREMIUM CARD  (the main white surface container)
-           ════════════════════════════════════════════════════════ */
+        /* ══════════════════════════════════════════
+           §6 — PREMIUM CARD
+           ══════════════════════════════════════════ */
         .premium-card {
-            background: var(--surface);
-            border-radius: 20px;
-            border: 1px solid var(--border);
-            box-shadow: var(--shadow);
-            padding: 24px;
-            transition: box-shadow 0.3s ease, transform 0.3s ease;
-            position: relative;
-            overflow: hidden;
+            background: var(--surface); border-radius: 20px;
+            border: 1px solid var(--border); box-shadow: var(--shadow);
+            padding: 24px; transition: box-shadow 0.3s ease;
+            position: relative; overflow: hidden;
         }
-
         .premium-card::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: var(--notif-shimmer-bg);
-            background-size: 600px 100%;
+            content:''; position:absolute; inset:0;
+            background: var(--notif-shimmer-bg); background-size:600px 100%;
             animation: shimmerLeft 7s ease-in-out infinite;
-            pointer-events: none;
-            z-index: 0;
+            pointer-events:none; z-index:0;
         }
+        .premium-card > * { position:relative; z-index:1; }
 
-        .premium-card > * { position: relative; z-index: 1; }
-
-        [data-theme="dark"] .premium-card {
-            border-color: var(--border);
-            box-shadow: var(--shadow);
-        }
-
-        /* ════════════════════════════════════════════════════════
-           § 7 — SECTION HEADER (icon + title + subtitle row)
-           ════════════════════════════════════════════════════════ */
+        /* ══════════════════════════════════════════
+           §7 — SECTION HEADER
+           ══════════════════════════════════════════ */
         .section-header {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            margin-bottom: 20px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 14px;
+            margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
         }
-
-        .section-header .tile-icon {
-            width: 44px;
-            height: 44px;
+        .section-header .tile-icon, .upload-tile .tile-icon {
+            width: 44px; height: 44px;
             background: linear-gradient(135deg, rgba(42,181,165,0.12) 0%, rgba(77,207,195,0.08) 100%);
-            border: 1px solid rgba(42,181,165,0.2);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            color: var(--primary);
+            border: 1px solid rgba(42,181,165,0.2); border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; color: var(--primary);
         }
+        .section-title { font-size: 1rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.3px; }
 
-        .section-title {
-            font-size: 1rem;
-            font-weight: 800;
-            color: var(--text-main);
-            letter-spacing: -0.3px;
-        }
-
-        /* ════════════════════════════════════════════════════════
-           § 8 — UPLOAD TILE GRID
-           ════════════════════════════════════════════════════════ */
-        .tile-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 14px;
-            margin-bottom: 20px;
-        }
-
+        /* ══════════════════════════════════════════
+           §8 — UPLOAD TILE GRID
+           ══════════════════════════════════════════ */
+        .tile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
         .upload-tile {
-            position: relative;
-            background: var(--bg-base);
-            border: 2px dashed var(--border);
-            border-radius: 14px;
-            padding: 20px 16px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
-            overflow: hidden;
+            position: relative; background: var(--bg-base);
+            border: 2px dashed var(--border); border-radius: 14px;
+            padding: 20px 16px; display: flex; flex-direction: column;
+            align-items: center; gap: 10px; text-align: center;
+            cursor: pointer; transition: all 0.25s cubic-bezier(0.25,0.8,0.25,1); overflow: hidden;
+        }
+        .upload-tile .tile-icon { width: 48px; height: 48px; border-radius: 12px; border: 1px solid rgba(42,181,165,0.18); transition: all 0.25s ease; }
+        .upload-tile:hover { border-color: var(--primary); background: rgba(42,181,165,0.04); transform: translateY(-2px); box-shadow: 0 6px 20px -4px rgba(42,181,165,0.15); }
+        .upload-tile:hover .tile-icon, .upload-tile.active .tile-icon { background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); color: #fff; border-color: transparent; box-shadow: 0 4px 12px rgba(42,181,165,0.25); }
+        .upload-tile.active { border-color: var(--primary); border-style: solid; background: rgba(42,181,165,0.06); }
+        .upload-tile span { font-size: 0.85rem; font-weight: 700; color: var(--text-main); }
+        .upload-tile p { font-size: 0.72rem; color: var(--text-muted); margin: 0; line-height: 1.4; }
+        .upload-tile input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+
+        /* ══════════════════════════════════════════
+           §9 — BUTTONS
+           ══════════════════════════════════════════ */
+        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .btn-premium {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 11px 20px; border-radius: 12px; font-size: 0.875rem; font-weight: 700;
+            cursor: pointer; transition: all 0.25s cubic-bezier(0.25,0.8,0.25,1);
+            border: 1.5px solid transparent; white-space: nowrap; letter-spacing: 0.1px;
+        }
+        .btn-premium svg { flex-shrink: 0; }
+        .btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); color: #fff; border-color: transparent; box-shadow: 0 4px 14px rgba(42,181,165,0.25); }
+        .btn-primary:hover { filter: brightness(1.07); transform: translateY(-2px); box-shadow: 0 7px 20px rgba(42,181,165,0.35); }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-primary.loading { opacity: 0.8; pointer-events: none; }
+        .btn-outline { background: var(--surface); color: var(--text-muted); border-color: var(--border); }
+        .btn-outline:hover { border-color: var(--primary); color: var(--primary); background: rgba(42,181,165,0.05); transform: translateY(-2px); }
+        .btn-danger { background: transparent; color: var(--danger); border-color: rgba(239,68,68,0.3); }
+        .btn-danger:hover { background: var(--danger); color: #fff; border-color: var(--danger); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(239,68,68,0.2); }
+
+        /* ══════════════════════════════════════════
+           §10 — SEARCH ROW
+           ══════════════════════════════════════════ */
+        .search-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+        .search-bar {
+            display: flex; align-items: center; gap: 10px;
+            background: var(--bg-base); border: 1.5px solid var(--border);
+            border-radius: 12px; padding: 9px 14px; flex: 1; max-width: 400px;
+            transition: all 0.25s cubic-bezier(0.25,0.8,0.25,1); color: var(--text-muted);
+        }
+        .search-bar:focus-within { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(42,181,165,0.12); background: var(--surface); color: var(--primary); }
+        .search-bar input { background: transparent; border: none; outline: none; color: var(--text-main); width: 100%; font-size: 0.875rem; font-weight: 500; font-family: inherit; }
+        .search-bar input::placeholder { color: var(--text-muted); }
+        .record-count { font-size: 0.82rem; font-weight: 800; color: var(--primary); white-space: nowrap; padding: 6px 14px; background: rgba(42,181,165,0.08); border-radius: 20px; border: 1px solid rgba(42,181,165,0.15); }
+        /* Clear All button right before record pill */
+        .btn-clear-all {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(239,68,68,0.3);
+            background: rgba(239,68,68,0.06); color: var(--danger);
+            font-size: 0.78rem; font-weight: 700; cursor: pointer;
+            transition: all 0.2s ease; white-space: nowrap;
+        }
+        .btn-clear-all:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+
+        /* ══════════════════════════════════════════
+           §11 — TABLE
+           ══════════════════════════════════════════ */
+        .table-wrap { border-radius: 14px; border: 1px solid var(--border); overflow: auto; max-height: calc(100vh - 360px); min-height: 200px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 1800px; }
+        thead { position: sticky; top: 0; z-index: 10; background: var(--surface); }
+        th {
+            text-align: left; padding: 13px 16px; font-weight: 700; color: var(--text-muted);
+            border-bottom: 2px solid var(--border); text-transform: uppercase;
+            font-size: 0.7rem; letter-spacing: 0.8px; white-space: nowrap;
+            background: linear-gradient(to bottom, var(--surface), rgba(var(--surface-rgb),0.95));
+        }
+        td { padding: 10px 16px; border-bottom: 1px solid var(--border); color: var(--text-main); transition: background 0.15s ease; white-space: nowrap; }
+        tr:last-child td { border-bottom: none; }
+        tbody tr:hover td { background: rgba(42,181,165,0.04); }
+
+        /* Editable cell styling */
+        td.editable { cursor: pointer; }
+        td.editable:hover { background: rgba(42,181,165,0.08) !important; }
+        td.editing { padding: 0 !important; }
+        td.editing input {
+            width: 100%; height: 100%; padding: 10px 16px;
+            border: none; outline: 2px solid var(--primary) inset;
+            background: rgba(42,181,165,0.08); color: var(--text-main);
+            font-family: inherit; font-size: 0.82rem; font-weight: 500;
         }
 
-        .upload-tile:hover {
-            border-color: var(--primary);
-            background: rgba(42,181,165,0.04);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px -4px rgba(42,181,165,0.15);
-        }
+        /* ══════════════════════════════════════════
+           §12 — BADGES
+           ══════════════════════════════════════════ */
+        .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; background: var(--bg-base); border: 1px solid var(--border); cursor: pointer; transition: all 0.15s ease; }
+        .badge:hover { transform: scale(1.04); }
+        .badge-mrs { background: rgba(42,181,165,0.1); color: var(--primary); border-color: rgba(42,181,165,0.2); }
+        .badge-ro { background: rgba(107,114,128,0.08); color: var(--text-muted); border-color: transparent; }
+        .badge-cancel { background: rgba(239,68,68,0.08); color: var(--danger); border-color: rgba(239,68,68,0.2); }
 
-        .upload-tile.active {
-            border-color: var(--primary);
-            border-style: solid;
-            background: rgba(42,181,165,0.06);
-        }
+        /* ══════════════════════════════════════════
+           §13 — EMPTY STATE
+           ══════════════════════════════════════════ */
+        .empty-view { display: none; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; text-align: center; color: var(--text-muted); gap: 12px; }
+        .empty-view svg { opacity: 0.18; }
+        .empty-view p { font-size: 0.875rem; font-weight: 500; max-width: 280px; line-height: 1.6; color: var(--text-muted); margin: 0; }
 
-        .upload-tile .tile-icon {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, rgba(42,181,165,0.1) 0%, rgba(77,207,195,0.07) 100%);
-            border: 1px solid rgba(42,181,165,0.18);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--primary);
+        /* ══════════════════════════════════════════
+           §14 — LOADING SPINNER
+           ══════════════════════════════════════════ */
+        .loading-spinner { width: 16px; height: 16px; border: 2.5px solid rgba(255,255,255,0.35); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+
+        /* ══════════════════════════════════════════
+           §15 — CUSTOM MODAL (mirrors main.html modal-backdrop + modal-dialog)
+           ══════════════════════════════════════════ */
+        .modal-backdrop {
+            position: fixed; inset: 0;
+            background-color: var(--modal-overlay);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000; opacity: 0; pointer-events: none;
+            transition: opacity 0.25s ease;
+            backdrop-filter: blur(5px);
+        }
+        .modal-backdrop.active { opacity: 1; pointer-events: auto; }
+        .modal-dialog {
+            width: 100%; max-width: 400px; max-height: 90vh;
+            display: flex; flex-direction: column; margin: 16px;
+            background: var(--surface); border-radius: 20px; overflow: hidden;
+            box-shadow: 0 25px 60px -12px rgba(0,0,0,0.35);
+            transform: scale(0.94) translateY(10px);
+            transition: transform 0.28s cubic-bezier(0.16,1,0.3,1);
+        }
+        .modal-backdrop.active .modal-dialog { transform: scale(1) translateY(0); }
+        .modal-header {
+            padding: 20px 24px 16px; border-bottom: 1px solid var(--border);
+            background: linear-gradient(to right, rgba(42,181,165,0.06), transparent);
+        }
+        .modal-header h3 { font-size: 1rem; font-weight: 800; color: var(--text-main); margin-bottom: 3px; }
+        .modal-header p { font-size: 0.75rem; color: var(--text-muted); margin: 0; font-weight: 500; }
+        .modal-body { padding: 20px 24px; overflow-y: auto; flex: 1; }
+
+        /* MRS input area */
+        .mrs-input-wrap { position: relative; margin-bottom: 20px; }
+        .mrs-input-label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .mrs-number-input {
+            width: 100%; background: var(--bg-base); border: 1.5px solid var(--border);
+            border-radius: 12px; padding: 14px 16px; font-size: 1.3rem;
+            font-weight: 800; color: var(--primary); outline: none;
+            text-align: center; letter-spacing: 4px; font-family: inherit;
             transition: all 0.25s ease;
         }
-
-        .upload-tile:hover .tile-icon,
-        .upload-tile.active .tile-icon {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            color: #fff;
-            border-color: transparent;
-            box-shadow: 0 4px 12px rgba(42,181,165,0.25);
+        .mrs-number-input:focus { border-color: var(--primary); background: var(--surface); box-shadow: 0 0 0 4px rgba(42,181,165,0.15); }
+        .claim-info-box {
+            background: var(--bg-base); border: 1px solid var(--border);
+            border-radius: 12px; padding: 14px 16px; margin-bottom: 18px;
+            font-size: 0.82rem; line-height: 1.7;
         }
+        .claim-info-box span { color: var(--text-muted); font-weight: 500; }
+        .claim-info-box strong { color: var(--text-main); font-weight: 700; }
+        .modal-btn-row { display: flex; gap: 10px; }
+        .modal-btn-row button { flex: 1; padding: 12px 16px; border-radius: 12px; font-size: 0.875rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease; border: 1.5px solid transparent; font-family: inherit; }
+        .modal-btn-confirm { background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); color: #fff; }
+        .modal-btn-confirm:hover { filter: brightness(1.08); transform: translateY(-1px); }
+        .modal-btn-cancel { background: var(--surface); color: var(--text-muted); border-color: var(--border); }
+        .modal-btn-cancel:hover { border-color: var(--danger); color: var(--danger); }
 
-        .upload-tile span {
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: var(--text-main);
+        /* ══════════════════════════════════════════
+           §16 — CUSTOM CONFIRM DIALOG (mirrors main.html app-dialog)
+           ══════════════════════════════════════════ */
+        .confirm-dialog {
+            position: fixed; inset: 0;
+            background-color: var(--modal-overlay);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 2000; opacity: 0; pointer-events: none;
+            transition: opacity 0.25s ease; backdrop-filter: blur(5px);
         }
-
-        .upload-tile p {
-            font-size: 0.72rem;
-            color: var(--text-muted);
-            margin: 0;
-            line-height: 1.4;
+        .confirm-dialog.active { opacity: 1; pointer-events: auto; }
+        .confirm-box {
+            width: 100%; max-width: 340px; margin: 16px;
+            background: var(--surface); border-radius: 20px; overflow: hidden;
+            box-shadow: 0 25px 60px -12px rgba(0,0,0,0.35);
+            padding: 32px 24px; text-align: center;
+            transform: scale(0.94) translateY(10px);
+            transition: transform 0.28s cubic-bezier(0.16,1,0.3,1);
         }
+        .confirm-dialog.active .confirm-box { transform: scale(1) translateY(0); }
+        .confirm-icon { display: flex; justify-content: center; margin-bottom: 14px; }
+        .confirm-msg { font-size: 1rem; font-weight: 700; color: var(--text-main); margin-bottom: 20px; line-height: 1.5; white-space: pre-line; }
+        .confirm-btn-row { display: flex; gap: 12px; justify-content: center; }
+        .confirm-btn-row button { padding: 11px 24px; border-radius: 12px; font-size: 0.875rem; font-weight: 700; cursor: pointer; border: 1.5px solid transparent; font-family: inherit; transition: all 0.2s ease; }
+        .confirm-yes { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; }
+        .confirm-yes:hover { filter: brightness(1.08); transform: translateY(-1px); }
+        .confirm-no { background: var(--surface); color: var(--text-muted); border-color: var(--border); }
+        .confirm-no:hover { border-color: var(--danger); color: var(--danger); }
 
-        /* Hidden file input over tile */
-        .upload-tile input[type="file"] {
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            cursor: pointer;
-            width: 100%;
-            height: 100%;
+        /* — Toast notification — */
+        #toast {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 14px; padding: 12px 20px; font-size: 0.85rem; font-weight: 600;
+            color: var(--text-main); box-shadow: 0 10px 30px -5px rgba(0,0,0,0.15);
+            transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), opacity 0.3s ease;
+            opacity: 0; z-index: 3000; white-space: nowrap; pointer-events: none;
         }
-
-        /* ════════════════════════════════════════════════════════
-           § 9 — PREMIUM BUTTONS
-           ════════════════════════════════════════════════════════ */
-        .btn-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .btn-premium {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 12px 22px;
-            border-radius: 12px;
-            font-size: 0.875rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
-            border: 1.5px solid transparent;
-            white-space: nowrap;
-            letter-spacing: 0.1px;
-        }
-
-        .btn-premium svg { flex-shrink: 0; }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            color: #fff;
-            border-color: transparent;
-            box-shadow: 0 4px 14px rgba(42,181,165,0.25);
-        }
-
-        .btn-primary:hover {
-            filter: brightness(1.08);
-            transform: translateY(-2px);
-            box-shadow: 0 7px 20px rgba(42,181,165,0.35);
-        }
-
-        .btn-primary:active { transform: scale(0.98); }
-
-        .btn-primary.loading {
-            opacity: 0.8;
-            pointer-events: none;
-        }
-
-        .btn-outline {
-            background: var(--surface);
-            color: var(--text-muted);
-            border-color: var(--border);
-        }
-
-        .btn-outline:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-            background: rgba(42,181,165,0.05);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(42,181,165,0.1);
-        }
-
-        /* ════════════════════════════════════════════════════════
-           § 10 — SEARCH BAR
-           ════════════════════════════════════════════════════════ */
-        .search-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            margin-bottom: 16px;
-            flex-wrap: wrap;
-        }
-
-        .search-bar {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: var(--bg-base);
-            border: 1.5px solid var(--border);
-            border-radius: 12px;
-            padding: 10px 14px;
-            flex: 1;
-            max-width: 380px;
-            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
-            color: var(--text-muted);
-        }
-
-        .search-bar:focus-within {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(42,181,165,0.12);
-            background: var(--surface);
-            color: var(--primary);
-        }
-
-        .search-bar input {
-            background: transparent;
-            border: none;
-            outline: none;
-            color: var(--text-main);
-            width: 100%;
-            font-size: 0.875rem;
-            font-weight: 500;
-            font-family: inherit;
-        }
-
-        .search-bar input::placeholder { color: var(--text-muted); }
-
-        .record-count {
-            font-size: 0.82rem;
-            font-weight: 800;
-            color: var(--primary);
-            white-space: nowrap;
-            padding: 6px 14px;
-            background: rgba(42,181,165,0.08);
-            border-radius: 20px;
-            border: 1px solid rgba(42,181,165,0.15);
-        }
-
-        /* ════════════════════════════════════════════════════════
-           § 11 — TABLE WRAP & TABLE
-           ════════════════════════════════════════════════════════ */
-        .table-wrap {
-            border-radius: 14px;
-            border: 1px solid var(--border);
-            overflow: auto;
-            max-height: calc(100vh - 360px);
-            min-height: 200px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.82rem;
-            min-width: 1800px;
-        }
-
-        thead {
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            background: var(--surface);
-        }
-
-        th {
-            text-align: left;
-            padding: 13px 16px;
-            font-weight: 700;
-            color: var(--text-muted);
-            border-bottom: 2px solid var(--border);
-            text-transform: uppercase;
-            font-size: 0.7rem;
-            letter-spacing: 0.8px;
-            white-space: nowrap;
-            background: linear-gradient(to bottom, var(--surface), rgba(var(--surface-rgb), 0.95));
-        }
-
-        td {
-            padding: 11px 16px;
-            border-bottom: 1px solid var(--border);
-            color: var(--text-main);
-            transition: background 0.15s ease;
-            white-space: nowrap;
-        }
-
-        tr:last-child td { border-bottom: none; }
-
-        tbody tr:hover td {
-            background: rgba(42,181,165,0.04);
-        }
-
-        /* ════════════════════════════════════════════════════════
-           § 12 — BADGES
-           ════════════════════════════════════════════════════════ */
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 3px 10px;
-            border-radius: 6px;
-            font-size: 0.72rem;
-            font-weight: 700;
-            background: var(--bg-base);
-            border: 1px solid var(--border);
-        }
-
-        .badge-mrs {
-            background: rgba(42,181,165,0.1);
-            color: var(--primary);
-            border-color: rgba(42,181,165,0.2);
-        }
-
-        .badge-ro {
-            background: rgba(107,114,128,0.08);
-            color: var(--text-muted);
-            border-color: transparent;
-        }
-
-        .badge-cancel {
-            background: rgba(239,68,68,0.08);
-            color: var(--danger);
-            border-color: rgba(239,68,68,0.2);
-        }
-
-        /* ════════════════════════════════════════════════════════
-           § 13 — EMPTY STATE
-           ════════════════════════════════════════════════════════ */
-        .empty-view {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 60px 20px;
-            text-align: center;
-            color: var(--text-muted);
-            gap: 12px;
-        }
-
-        .empty-view svg { opacity: 0.18; }
-
-        .empty-view p {
-            font-size: 0.875rem;
-            font-weight: 500;
-            max-width: 280px;
-            line-height: 1.6;
-            color: var(--text-muted);
-            margin: 0;
-        }
-
-        /* ════════════════════════════════════════════════════════
-           § 14 — LOADING SPINNER
-           ════════════════════════════════════════════════════════ */
-        .loading-spinner {
-            width: 16px;
-            height: 16px;
-            border: 2.5px solid rgba(255,255,255,0.35);
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: spin 0.7s linear infinite;
-            flex-shrink: 0;
-        }
+        #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
     </style>
 </head>
 
 <body>
-    <!-- ── PAGE HEADER (matches main.html app-header aesthetic) ── -->
+    <!-- PAGE HEADER — matches main.html -->
     <header class="page-header">
         <div class="header-left">
             <div class="header-logo-icon">
@@ -580,63 +394,52 @@
                 <div class="header-subtitle">Record Ledger · Audit-it</div>
             </div>
         </div>
+        <!-- Feature #1: Main Menu button -->
+        <button class="btn-main-menu" id="btn-back-menu" onclick="goBack()">
+            <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            Main Menu
+        </button>
     </header>
 
-    <!-- ── MAIN CONTENT ── -->
+    <!-- MAIN CONTENT -->
     <div class="content-wrap" id="app-root">
 
-        <!-- ── Import Controls Card ── -->
+        <!-- Import Controls -->
         <div class="premium-card">
             <div class="section-header">
                 <div class="tile-icon">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="17 8 12 3 7 8"/>
-                        <line x1="12" y1="3" x2="12" y2="15"/>
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                     </svg>
                 </div>
                 <div>
                     <div class="section-title">Source Data Import</div>
-                    <p style="font-size: 0.75rem; color: var(--text-muted); margin: 2px 0 0 0;">Sync repair orders and payment records</p>
+                    <p style="font-size:0.75rem;color:var(--text-muted);margin:2px 0 0 0;">Sync repair orders and payment records</p>
                 </div>
             </div>
-
             <div class="tile-grid">
                 <div class="upload-tile" id="tile-source1">
-                    <div class="tile-icon">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/>
-                        </svg>
-                    </div>
+                    <div class="tile-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
                     <span>Source 1.xlsx</span>
                     <p id="status-source1">Claim Records</p>
                     <input type="file" id="file-source1" accept=".xlsx,.xls,.csv" onchange="handleFileSelect('source1')">
                 </div>
-
                 <div class="upload-tile" id="tile-source2">
-                    <div class="tile-icon">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                            <line x1="1" y1="10" x2="23" y2="10"/>
-                        </svg>
-                    </div>
+                    <div class="tile-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
                     <span>Source 2.xlsx</span>
                     <p id="status-source2">Payment Data</p>
                     <input type="file" id="file-source2" accept=".xlsx,.xls,.csv" onchange="handleFileSelect('source2')">
                 </div>
             </div>
-
             <div class="btn-group">
                 <button class="btn-premium btn-primary btn-feed" onclick="feedToTable()">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="23 4 23 10 17 10"/>
-                        <polyline points="1 20 1 14 7 14"/>
+                        <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
                         <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
                     </svg>
                     Feed To Database Table
                 </button>
-                <button class="btn-premium btn-outline" style="color: var(--danger); border-color: rgba(239,68,68,0.25);" onclick="clearLedger()">
+                <button class="btn-premium btn-outline" style="color:var(--danger);border-color:rgba(239,68,68,0.25);" onclick="clearLedger()">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/>
                     </svg>
@@ -645,141 +448,166 @@
             </div>
         </div>
 
-        <!-- ── Ledger Table Card ── -->
+        <!-- Ledger Table -->
         <div class="premium-card">
             <div class="section-header">
                 <div class="tile-icon">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="8" y1="6" x2="21" y2="6"/>
-                        <line x1="8" y1="12" x2="21" y2="12"/>
-                        <line x1="8" y1="18" x2="21" y2="18"/>
-                        <line x1="3" y1="6" x2="3.01" y2="6"/>
-                        <line x1="3" y1="12" x2="3.01" y2="12"/>
-                        <line x1="3" y1="18" x2="3.01" y2="18"/>
+                        <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+                        <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
+                        <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
                     </svg>
                 </div>
                 <div>
                     <div class="section-title">Database Ledger</div>
-                    <p style="font-size: 0.75rem; color: var(--text-muted); margin: 2px 0 0 0;">Historical payment tracking records</p>
+                    <p style="font-size:0.75rem;color:var(--text-muted);margin:2px 0 0 0;">Historical payment tracking records — click MRS badge to assign number, double-click cell to edit</p>
                 </div>
             </div>
 
             <div class="search-row">
+                <!-- Feature #4: typing a number auto-focuses search & filters by MRS -->
                 <div class="search-bar">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"/>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                    </svg>
-                    <input type="text" id="tableSearch" placeholder="Search by MRS, R/O, Claim No..." oninput="filterTable()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <!-- Feature #7: search by RO suffix (last digits, any prefix) -->
+                    <input type="text" id="tableSearch" placeholder="Search by MRS or R/O suffix (e.g. 12345)..." oninput="filterTable()">
                 </div>
+                <!-- Feature #8: Clear All button before record pill -->
+                <button class="btn-clear-all" onclick="clearLedger()">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    Clear All
+                </button>
                 <div class="record-count" id="recordCount">0 Records</div>
             </div>
 
             <div class="table-wrap">
                 <table>
-                    <thead>
-                        <tr id="tableHeader"></tr>
-                    </thead>
+                    <thead><tr id="tableHeader"></tr></thead>
                     <tbody id="tableBody"></tbody>
                 </table>
-                <div id="noData" class="empty-view" style="display: flex;">
+                <div id="noData" class="empty-view" style="display:flex;">
                     <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <line x1="16" y1="13" x2="8" y2="13"/>
-                        <line x1="16" y1="17" x2="8" y2="17"/>
-                        <line x1="10" y1="9" x2="8" y2="9"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>
                     </svg>
                     <p>No active ledger found.<br>Import source files to begin.</p>
                 </div>
             </div>
         </div>
-
     </div>
 
+    <!-- ══════════════════════════
+         Feature #5: MRS Entry Modal (matches main.html modal-backdrop style)
+         ══════════════════════════ -->
+    <div class="modal-backdrop" id="mrsModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3>Assign MRS Number</h3>
+                <p id="mrsModalSubtitle">Enter the MRS number for this claim</p>
+            </div>
+            <div class="modal-body">
+                <div class="claim-info-box" id="mrsClaimInfo">
+                    <span>R/O No: </span><strong id="mrsInfoRO">—</strong><br>
+                    <span>Claim No: </span><strong id="mrsInfoClaim">—</strong><br>
+                    <span>Claim Type: </span><strong id="mrsInfoType">—</strong>
+                </div>
+                <label class="mrs-input-label">MRS Number</label>
+                <div class="mrs-input-wrap">
+                    <!-- Feature #6: auto-focus on open, Enter to save -->
+                    <input type="number" id="mrsNumberInput" class="mrs-number-input" placeholder="e.g. 1001" min="1" step="1"
+                           onkeydown="if(event.key==='Enter') saveMRS(); if(event.key==='Escape') closeMRSModal();">
+                </div>
+                <div class="modal-btn-row">
+                    <button class="modal-btn-confirm" onclick="saveMRS()">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:6px;"><polyline points="20 6 9 17 4 12"/></svg>
+                        Save MRS
+                    </button>
+                    <button class="modal-btn-cancel" onclick="closeMRSModal()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirm Dialog (matches main.html app-dialog style) -->
+    <div class="confirm-dialog" id="confirmDialog">
+        <div class="confirm-box">
+            <div class="confirm-icon" id="confirmIcon"></div>
+            <div class="confirm-msg" id="confirmMsg"></div>
+            <div class="confirm-btn-row">
+                <button class="confirm-yes" id="confirmYes">Confirm</button>
+                <button class="confirm-no" id="confirmNo">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast"></div>
+
     <script>
-        // ── MRS Ledger Persistence ──
+        // ── Persistence ──
         const LEDGER_KEY = 'mrs_ledger';
         let rawData = [];
 
         async function loadLedger() {
             try {
                 const saved = await localforage.getItem(LEDGER_KEY);
-                if (saved) {
-                    rawData = saved;
-                    renderData(rawData);
-                }
-            } catch (e) {
-                console.error("Failed to load ledger:", e);
-            }
+                if (saved) { rawData = saved; renderData(rawData); }
+            } catch(e) { console.error('Load ledger:', e); }
         }
-
         async function saveLedger() {
-            try {
-                await localforage.setItem(LEDGER_KEY, rawData);
-            } catch (e) {
-                console.error("Failed to save ledger:", e);
-            }
+            try { await localforage.setItem(LEDGER_KEY, rawData); }
+            catch(e) { console.error('Save ledger:', e); }
         }
 
-        // ── Column Config ──
+        // ── Columns ──
         const columns = [
-            "MRS", "VIN", "Claim No", "Claim Date", "Claim Type",
-            "R/O No", "R/O Date", "Part Desc", "Total Amt", "Labour",
-            "part", "Sublet", "IGST", "AMT RECEIVED", "DIFF AMT",
-            "Invoice No", "PAYMENT DATE", "AUTH. SIGN", "REMARKS"
+            "MRS","VIN","Claim No","Claim Date","Claim Type",
+            "R/O No","R/O Date","Part Desc","Total Amt","Labour",
+            "part","Sublet","IGST","AMT RECEIVED","DIFF AMT",
+            "Invoice No","PAYMENT DATE","AUTH. SIGN","REMARKS"
         ];
+        // numeric columns that trigger recalculation
+        const numericCols = new Set(["Total Amt","Labour","part","Sublet","IGST","AMT RECEIVED"]);
 
-        let source1Data = null;
-        let source2Data = null;
+        let source1Data = null, source2Data = null;
+        let currentEditingRowIdx = null; // for MRS modal
 
+        // ── File Select ──
         function handleFileSelect(type) {
             const input  = document.getElementById(`file-${type}`);
             const status = document.getElementById(`status-${type}`);
             const tile   = document.getElementById(`tile-${type}`);
-
-            if (input.files.length > 0) {
-                const file = input.files[0];
-                status.innerText = "Loading...";
-                status.style.color = 'var(--accent)';
-
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const data     = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-
-                    if (type === 'source1') source1Data = jsonData;
-                    else                   source2Data = jsonData;
-
-                    status.innerText = "✓ " + file.name;
-                    status.style.color = 'var(--primary)';
-                    tile.classList.add('active');
-                };
-                reader.readAsArrayBuffer(file);
-            }
+            if (!input.files.length) return;
+            const file = input.files[0];
+            status.innerText = 'Loading...'; status.style.color = 'var(--accent)';
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const wb = XLSX.read(new Uint8Array(e.target.result), { type:'array' });
+                const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                if (type === 'source1') source1Data = data;
+                else source2Data = data;
+                status.innerText = '✓ ' + file.name; status.style.color = 'var(--primary)';
+                tile.classList.add('active');
+            };
+            reader.readAsArrayBuffer(file);
         }
 
+        // ── Feed ──
         async function feedToTable() {
             if (!source1Data || !source2Data) {
-                alert("Please upload both Source 1 and Source 2 files first.");
-                return;
+                showToast('Please upload both Source 1 and Source 2 files first.', 'warn'); return;
             }
-
             const btn = document.querySelector('.btn-feed');
             const orig = btn.innerHTML;
-            btn.innerHTML = `<span class="loading-spinner"></span> Processing...`;
+            btn.innerHTML = '<span class="loading-spinner"></span> Processing...';
             btn.classList.add('loading');
-
             await new Promise(r => setTimeout(r, 100));
-
             try {
                 const payMap = {};
                 source2Data.forEach(row => {
-                    const claimNo = String(row['Claim No.'] || row['Claim No'] || '').trim();
-                    if (claimNo) payMap[claimNo] = row;
+                    const k = String(row['Claim No.'] || row['Claim No'] || '').trim();
+                    if (k) payMap[k] = row;
                 });
-
-                const filteredSource1 = source1Data.filter(row => {
+                const filtered = source1Data.filter(row => {
                     const type = String(row['Claim Type'] || '').toUpperCase();
                     const amt  = parseFloat(row['Total Amt'] || row['Approve Amount by HMI']) || 0;
                     const desc = String(row['Part Desc'] || row['Part Description'] || '').toUpperCase();
@@ -787,153 +615,266 @@
                     if (type.includes('CAMPAIGN') && amt < 300 && !desc.includes('POWER WINDOW') && !desc.includes('FUEL PUMP')) return false;
                     return true;
                 });
-
                 const existingROs = new Set(rawData.map(r => String(r['R/O No'] || '').trim()));
                 let newlyAdded = 0;
-                let lastMRS = rawData.length > 0 ? Math.max(...rawData.map(r => parseInt(r['MRS']) || 0)) : 1000;
-
-                filteredSource1.forEach((match1) => {
+                let lastMRS = rawData.length ? Math.max(...rawData.map(r => parseInt(r['MRS']) || 0)) : 1000;
+                filtered.forEach(match1 => {
                     const roKey = String(match1['R/O No'] || match1['R/O No.'] || '').trim();
-                    if (!roKey || roKey.toUpperCase() === 'CANCLE' || roKey.toUpperCase() === 'CANCEL') return;
-
-                    let targetRow;
-                    let isNew = false;
-
+                    if (!roKey || /^CANC(LE|EL)$/i.test(roKey)) return;
+                    let target, isNew = false;
                     if (existingROs.has(roKey)) {
-                        targetRow = rawData.find(r => String(r['R/O No']).trim() === roKey);
+                        target = rawData.find(r => String(r['R/O No']).trim() === roKey);
                     } else {
-                        isNew = true;
-                        lastMRS++;
-                        targetRow = { "MRS": lastMRS, "R/O No": roKey };
-                        newlyAdded++;
+                        isNew = true; lastMRS++;
+                        target = { "MRS": lastMRS, "R/O No": roKey }; newlyAdded++;
                     }
-
-                    targetRow['VIN']        = match1['VIN']        || targetRow['VIN']        || '';
-                    targetRow['Claim No']   = match1['Claim No']   || targetRow['Claim No']   || '';
-                    targetRow['Claim Date'] = match1['Claim Date'] || targetRow['Claim Date'] || '';
-                    targetRow['Claim Type'] = match1['Claim Type'] || targetRow['Claim Type'] || '';
-                    targetRow['R/O Date']   = match1['R/O Date']   || targetRow['R/O Date']   || '';
-                    targetRow['Part Desc']  = match1['Part Desc']  || match1['Part Description']  || targetRow['Part Desc']  || '';
-                    targetRow['Total Amt']  = match1['Total Amt']  || match1['Approve Amount by HMI'] || targetRow['Total Amt']  || 0;
-                    targetRow['Labour']     = match1['Labour']     || targetRow['Labour']     || 0;
-                    targetRow['part']       = match1['part']       || targetRow['part']       || 0;
-                    targetRow['Sublet']     = match1['Sublet']     || targetRow['Sublet']     || 0;
-                    targetRow['IGST']       = match1['IGST']       || match1['Total Approved Tax Amt'] || targetRow['IGST'] || 0;
-                    targetRow['Invoice No'] = match1['Invoice No'] || targetRow['Invoice No'] || '';
-
-                    if (isNew) rawData.push(targetRow);
-
-                    const claimKey = String(targetRow['Claim No'] || '').trim();
-                    const match2   = payMap[claimKey];
+                    target['VIN']        = match1['VIN'] || target['VIN'] || '';
+                    target['Claim No']   = match1['Claim No'] || target['Claim No'] || '';
+                    target['Claim Date'] = match1['Claim Date'] || target['Claim Date'] || '';
+                    target['Claim Type'] = match1['Claim Type'] || target['Claim Type'] || '';
+                    target['R/O Date']   = match1['R/O Date'] || target['R/O Date'] || '';
+                    target['Part Desc']  = match1['Part Desc'] || match1['Part Description'] || target['Part Desc'] || '';
+                    target['Total Amt']  = match1['Total Amt'] || match1['Approve Amount by HMI'] || target['Total Amt'] || 0;
+                    target['Labour']     = match1['Labour'] || target['Labour'] || 0;
+                    target['part']       = match1['part'] || target['part'] || 0;
+                    target['Sublet']     = match1['Sublet'] || target['Sublet'] || 0;
+                    target['IGST']       = match1['IGST'] || match1['Total Approved Tax Amt'] || target['IGST'] || 0;
+                    target['Invoice No'] = match1['Invoice No'] || target['Invoice No'] || '';
+                    if (isNew) rawData.push(target);
+                    const claimKey = String(target['Claim No'] || '').trim();
+                    const match2 = payMap[claimKey];
                     if (match2) {
-                        targetRow['AMT RECEIVED'] = match2['Gross Amount'] || match2['Ramittance Amt.'] || targetRow['AMT RECEIVED'] || 0;
-                        targetRow['PAYMENT DATE'] = match2['Payment Cheque Date'] || targetRow['PAYMENT DATE'] || '';
+                        target['AMT RECEIVED'] = match2['Gross Amount'] || match2['Ramittance Amt.'] || target['AMT RECEIVED'] || 0;
+                        target['PAYMENT DATE'] = match2['Payment Cheque Date'] || target['PAYMENT DATE'] || '';
                     }
-
-                    const total    = parseFloat(targetRow['Total Amt'])    || 0;
-                    const received = parseFloat(targetRow['AMT RECEIVED']) || 0;
-                    if (total > 0 || received > 0) {
-                        const diff = total - received;
-                        targetRow['DIFF AMT'] = Math.round(diff);
-                        if      (diff >  50) targetRow['REMARKS'] = "PAYMENT SHORT";
-                        else if (diff < -50) targetRow['REMARKS'] = "EXCESS PAYMENT";
-                        else                 targetRow['REMARKS'] = "PAID";
-                    }
+                    recalcRow(target);
                 });
+                saveLedger(); renderData(rawData);
+                showToast(`✓ Ledger processed! New: ${newlyAdded} | Total: ${rawData.length}`);
+            } catch(err) {
+                console.error(err); showToast('Error during mapping: ' + err.message, 'danger');
+            } finally { btn.innerHTML = orig; btn.classList.remove('loading'); }
+        }
 
-                saveLedger();
-                renderData(rawData);
-                alert(`Ledger processed!\nNew Records: ${newlyAdded}\nTotal Records: ${rawData.length}`);
-            } catch (err) {
-                console.error(err);
-                alert("An error occurred during mapping: " + err.message);
-            } finally {
-                btn.innerHTML = orig;
-                btn.classList.remove('loading');
+        // ── Recalculate DIFF AMT & REMARKS ──
+        function recalcRow(row) {
+            const total    = parseFloat(row['Total Amt']) || 0;
+            const received = parseFloat(row['AMT RECEIVED']) || 0;
+            if (total > 0 || received > 0) {
+                const diff = total - received;
+                row['DIFF AMT'] = Math.round(diff);
+                if      (diff >  50) row['REMARKS'] = 'PAYMENT SHORT';
+                else if (diff < -50) row['REMARKS'] = 'EXCESS PAYMENT';
+                else                 row['REMARKS'] = 'PAID';
             }
         }
 
+        // ── Clear Database ──
         function clearLedger() {
-            if (confirm("Are you sure you want to clear the entire database ledger? This cannot be undone.")) {
-                if (confirm("Final Confirmation: All recorded data will be permanently deleted from this browser.")) {
-                    rawData.length = 0;
-                    saveLedger();
-                    renderData(rawData);
+            if (!rawData.length) { showToast('Ledger is already empty.', 'warn'); return; }
+            showConfirm(
+                'Clear entire database?\nThis cannot be undone.',
+                '⚠️',
+                () => {
+                    rawData.length = 0; saveLedger(); renderData(rawData);
+                    showToast('✓ Ledger cleared.', 'success');
                 }
-            }
+            );
         }
 
+        // ── Render Table ──
+        function renderData(data) {
+            const tbody  = document.getElementById('tableBody');
+            const noData = document.getElementById('noData');
+            if (!data.length) {
+                tbody.innerHTML = ''; noData.style.display = 'flex';
+                document.getElementById('recordCount').innerText = '0 Records'; return;
+            }
+            noData.style.display = 'none';
+            tbody.innerHTML = data.map((row, dataIdx) => {
+                // find the actual index in rawData for editing
+                const ri = rawData.indexOf(row);
+                return `<tr>${columns.map(col => {
+                    let val = (row[col] !== undefined && row[col] !== null && row[col] !== '') ? row[col] : '—';
+                    let css = '';
+                    let inner = '';
+                    if (col === 'MRS') {
+                        // Feature #5: click badge opens MRS modal
+                        css = 'badge badge-mrs';
+                        inner = `<td><span class="${css}" title="Click to assign MRS" onclick="openMRSModal(${ri})">${val}</span></td>`;
+                        return inner;
+                    }
+                    if (col === 'R/O No') {
+                        css = 'badge badge-ro';
+                        const v = String(val).toUpperCase();
+                        if (v === 'CANCLE' || v === 'CANCEL') css = 'badge badge-cancel';
+                        return `<td><span class="${css}">${val}</span></td>`;
+                    }
+                    // Feature #9: double-click to edit cell (except MRS, R/O No)
+                    const isEditable = col !== 'DIFF AMT' && col !== 'REMARKS';
+                    return `<td class="editable" ondblclick="startEdit(this,${ri},'${col}')" title="${isEditable?'Double-click to edit':''}">${val}</td>`;
+                }).join('')}</tr>`;
+            }).join('');
+            document.getElementById('recordCount').innerText = `${data.length} Record${data.length!==1?'s':''}`;
+        }
+
+        // ── Search / Filter  (Feature #7: RO suffix search) ──
+        function filterTable() {
+            const query = document.getElementById('tableSearch').value.trim().toLowerCase();
+            if (!query) { renderData(rawData); return; }
+            const filtered = rawData.filter(row => {
+                const mrs   = String(row['MRS'] || '').toLowerCase();
+                const ro    = String(row['R/O No'] || '').toLowerCase();
+                const claim = String(row['Claim No'] || '').toLowerCase();
+                // Feature #7: match RO suffix — strip any prefix, match last digits
+                const roSuffix = ro.replace(/^[^0-9]*/,''); // strip leading non-digits prefix
+                return mrs.includes(query) || claim.includes(query) || roSuffix.endsWith(query) || ro.includes(query);
+            });
+            renderData(filtered);
+        }
+
+        // ── Feature #4: Global keydown — type number → focus search ──
+        document.addEventListener('keydown', (e) => {
+            // Only when no modal is open and no input focused
+            const active = document.activeElement;
+            const inInput = active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable;
+            if (inInput) return;
+            if (e.key >= '0' && e.key <= '9') {
+                const searchInput = document.getElementById('tableSearch');
+                searchInput.focus();
+                // prepend typed digit (browser will add it naturally on focus + keypress)
+            }
+        });
+
+        // ── Feature #5+6: MRS Modal ──
+        function openMRSModal(rowIdx) {
+            currentEditingRowIdx = rowIdx;
+            const row = rawData[rowIdx];
+            document.getElementById('mrsInfoRO').textContent    = row['R/O No']   || '—';
+            document.getElementById('mrsInfoClaim').textContent = row['Claim No'] || '—';
+            document.getElementById('mrsInfoType').textContent  = row['Claim Type'] || '—';
+            const inp = document.getElementById('mrsNumberInput');
+            inp.value = (row['MRS'] && row['MRS'] !== '—') ? row['MRS'] : '';
+            document.getElementById('mrsModal').classList.add('active');
+            setTimeout(() => inp.focus(), 280); // wait for transition
+        }
+        function closeMRSModal() {
+            document.getElementById('mrsModal').classList.remove('active');
+            currentEditingRowIdx = null;
+        }
+        function saveMRS() {
+            if (currentEditingRowIdx === null) return;
+            const val = parseInt(document.getElementById('mrsNumberInput').value);
+            if (!val || val < 1) { showToast('Please enter a valid MRS number.', 'warn'); return; }
+            rawData[currentEditingRowIdx]['MRS'] = val;
+            saveLedger(); filterTable(); closeMRSModal();
+            showToast(`✓ MRS ${val} saved.`, 'success');
+        }
+        // Close modal on backdrop click
+        document.getElementById('mrsModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeMRSModal();
+        });
+
+        // ── Feature #9: Inline Cell Edit ──
+        function startEdit(td, rowIdx, col) {
+            if (td.classList.contains('editing')) return;
+            const row = rawData[rowIdx];
+            const currentVal = row[col] || '';
+            td.classList.add('editing');
+            const origContent = td.innerHTML;
+            const input = document.createElement('input');
+            input.type = numericCols.has(col) ? 'number' : 'text';
+            input.value = currentVal;
+            input.style.cssText = 'width:100%;height:100%;padding:10px 16px;border:none;outline:none;background:rgba(42,181,165,0.1);color:var(--text-main);font-family:inherit;font-size:0.82rem;';
+            td.innerHTML = '';
+            td.appendChild(input);
+            input.focus(); input.select();
+
+            function commitEdit() {
+                const newVal = input.value.trim();
+                td.classList.remove('editing');
+                if (newVal !== '') {
+                    row[col] = numericCols.has(col) ? (parseFloat(newVal) || 0) : newVal;
+                    // Recalc if amount changed
+                    if (numericCols.has(col) && (col === 'Total Amt' || col === 'AMT RECEIVED')) {
+                        recalcRow(row);
+                    }
+                    saveLedger();
+                }
+                filterTable();
+            }
+            function cancelEdit() { td.classList.remove('editing'); filterTable(); }
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); commitEdit(); }
+                if (e.key === 'Escape') { e.preventDefault(); cancelEdit(); }
+            });
+            input.addEventListener('blur', commitEdit);
+        }
+
+        // ── Init ──
         function initTable() {
             updateTheme();
             document.getElementById('tableHeader').innerHTML = columns.map(c => `<th>${c}</th>`).join('');
             loadLedger();
         }
-
         function updateTheme() {
-            const savedTheme = localStorage.getItem('auditor_theme') || 'light';
-            applyTheme(savedTheme);
+            const t = localStorage.getItem('auditor_theme') || 'light';
+            applyTheme(t);
         }
-
         function applyTheme(theme) {
-            if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-            else                  document.documentElement.removeAttribute('data-theme');
-            const surfaceStr = theme === 'dark' ? '31, 41, 55' : '255, 255, 255';
-            document.documentElement.style.setProperty('--surface-rgb', surfaceStr);
+            if (theme === 'dark') document.documentElement.setAttribute('data-theme','dark');
+            else document.documentElement.removeAttribute('data-theme');
+            document.documentElement.style.setProperty('--surface-rgb', theme==='dark' ? '31,41,55' : '255,255,255');
         }
-
-        // Handle theme changes broadcast from parent (main.html)
-        window.addEventListener('message', (event) => {
-            if (event.data && event.data.type === 'theme-change') {
-                applyTheme(event.data.theme);
-            }
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'theme-change') applyTheme(e.data.theme);
         });
+        window.addEventListener('load', () => setTimeout(initTable, 50));
 
-        function renderData(data) {
-            const tbody  = document.getElementById('tableBody');
-            const noData = document.getElementById('noData');
-
-            if (data.length === 0) {
-                tbody.innerHTML = '';
-                noData.style.display = 'flex';
-                document.getElementById('recordCount').innerText = '0 Records';
-                return;
-            }
-
-            noData.style.display = 'none';
-            tbody.innerHTML = data.map(row => {
-                return `<tr>${columns.map(col => {
-                    let val = (row[col] !== undefined && row[col] !== null && row[col] !== '') ? row[col] : '—';
-                    let css = '';
-                    if (col === 'MRS') css = 'badge badge-mrs';
-                    if (col === 'R/O No') {
-                        css = 'badge badge-ro';
-                        const v = String(val).toUpperCase();
-                        if (v === 'CANCLE' || v === 'CANCEL') css = 'badge badge-cancel';
-                    }
-                    return `<td>${css ? `<span class="${css}">${val}</span>` : val}</td>`;
-                }).join('')}</tr>`;
-            }).join('');
-
-            document.getElementById('recordCount').innerText = `${data.length} Record${data.length !== 1 ? 's' : ''}`;
-        }
-
-        function filterTable() {
-            const query = document.getElementById('tableSearch').value.toLowerCase();
-            const filtered = rawData.filter(row =>
-                (row['MRS']      && String(row['MRS']).toLowerCase().includes(query)) ||
-                (row['R/O No']   && String(row['R/O No']).toLowerCase().includes(query)) ||
-                (row['Claim No'] && String(row['Claim No']).toLowerCase().includes(query))
-            );
-            renderData(filtered);
-        }
-
-        window.addEventListener('load', () => { setTimeout(initTable, 50); });
-
+        // Navigation
         function goBack() {
             try { window.parent.showScreen('screen-menu'); }
-            catch (e) { window.history.back(); }
+            catch(ex) { window.history.back(); }
         }
+
+        // ══════════════════════════
+        // Custom UI Utilities
+        // ══════════════════════════
+
+        // Toast
+        let _toastTimer;
+        function showToast(msg, type) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.style.borderColor = type === 'danger' ? 'rgba(239,68,68,0.4)' :
+                                   type === 'warn'   ? 'rgba(245,158,11,0.4)' :
+                                   type === 'success'? 'rgba(16,185,129,0.4)' : 'var(--border)';
+            t.classList.add('show');
+            clearTimeout(_toastTimer);
+            _toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        // Confirm Dialog (replaces browser confirm())
+        function showConfirm(msg, iconEmoji, onYes, onNo) {
+            const dlg     = document.getElementById('confirmDialog');
+            const iconEl  = document.getElementById('confirmIcon');
+            const msgEl   = document.getElementById('confirmMsg');
+            const yesBtn  = document.getElementById('confirmYes');
+            const noBtn   = document.getElementById('confirmNo');
+            msgEl.textContent = msg;
+            iconEl.innerHTML  = iconEmoji ? `<span style="font-size:2.5rem;line-height:1;">${iconEmoji}</span>` : '';
+            dlg.classList.add('active');
+            function cleanup() { dlg.classList.remove('active'); yesBtn.onclick = null; noBtn.onclick = null; }
+            yesBtn.onclick = () => { cleanup(); if (onYes) onYes(); };
+            noBtn.onclick  = () => { cleanup(); if (onNo) onNo(); };
+        }
+        // Close confirm on backdrop click
+        document.getElementById('confirmDialog').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                document.getElementById('confirmDialog').classList.remove('active');
+            }
+        });
     </script>
 </body>
-
 </html>
