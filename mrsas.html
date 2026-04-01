@@ -1441,6 +1441,27 @@
         </div>
     </div>
 
+    <!-- Admin Authorization Modal -->
+    <div class="modal-backdrop" id="adminPassModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3>Admin Authorization</h3>
+                <p>Master Password required to reset ledger</p>
+            </div>
+            <div class="modal-body">
+                <label class="mrs-input-label">Master Password</label>
+                <div class="mrs-input-wrap">
+                    <input type="password" id="adminPassInput" class="mrs-number-input" placeholder="••••••••" 
+                           onkeydown="if(event.key==='Enter') confirmAdminPass(); if(event.key==='Escape') closeAdminModal();">
+                </div>
+                <div class="modal-btn-row">
+                    <button class="modal-btn-cancel" style="flex:1;" onclick="closeAdminModal()">Cancel</button>
+                    <button class="modal-btn-save" style="flex:1;" onclick="confirmAdminPass()">Authorize</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast -->
     <div id="toast"></div>
 
@@ -1621,17 +1642,23 @@
         }
 
         // ── Clear Database ──
-        function clearLedger() {
-            if (!rawData.length) { showToast('Ledger is already empty.', 'warn'); return; }
-            
-            const pass = prompt('Admin Authorization Required:\nEnter Master Password to clear entire database:');
-            if (!pass) return; // cancel
-            
+        // ── Admin Authorization Modal ──
+        function closeAdminModal() {
+            document.getElementById('adminPassModal').classList.remove('active');
+            document.getElementById('adminPassInput').value = '';
+        }
+
+        function confirmAdminPass() {
+            const pass = document.getElementById('adminPassInput').value;
+            if (!pass) return;
             if (pass.toLowerCase() !== 'hmi-wrty') {
-                showToast('Incorrect Master Password! Action Aborted.', 'danger');
+                showToast('Incorrect Master Password! Access Denied.', 'danger');
+                closeAdminModal();
                 return;
             }
-
+            
+            closeAdminModal();
+            // Proceed to final confirmation
             showConfirm(
                 'Clear entire database? This cannot be undone.',
                 '⚠️ CRITICAL',
@@ -1640,6 +1667,13 @@
                     showToast('✓ Ledger database has been reset.', 'success');
                 }
             );
+        }
+
+        function clearLedger() {
+            if (!rawData.length) { showToast('Ledger is already empty.', 'warn'); return; }
+            // Open custom password modal
+            document.getElementById('adminPassModal').classList.add('active');
+            setTimeout(() => document.getElementById('adminPassInput').focus(), 300);
         }
 
         // ── Pagination state ──
