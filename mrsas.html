@@ -334,56 +334,54 @@
         .upload-tile {
             position: relative;
             background: var(--bg-base);
-            border: 2px dashed var(--border);
-            border-radius: 12px;
-            padding: 10px 16px;
+            border: 1px dashed var(--border); /* Slightly thinner border */
+            border-radius: 10px;
+            padding: 6px 12px; /* Ultra-compact padding */
             display: flex;
-            flex-direction: row; /* Horizontal for compactness */
+            flex-direction: row;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             text-align: left;
             cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transition: all 0.2s ease;
             overflow: hidden;
         }
 
         .upload-tile .tile-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            border: 1px solid rgba(42, 181, 165, 0.18);
-            transition: all 0.25s ease;
-            font-size: 0.8rem;
+            width: 26px;
+            height: 26px;
+            border-radius: 6px;
+            border: 1px solid rgba(42, 181, 165, 0.15);
+            transition: all 0.2s ease;
+            font-size: 0.75rem;
         }
 
         .upload-tile .tile-icon svg {
-            width: 16px;
-            height: 16px;
+            width: 14px;
+            height: 14px;
         }
 
         .upload-tile div {
             display: flex;
             flex-direction: column;
+            line-height: normal;
         }
 
         .upload-tile:hover {
             border-color: var(--primary);
             background: rgba(42, 181, 165, 0.04);
-            transform: translateY(-1px);
         }
 
         .upload-tile span {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: 700;
             color: var(--text-main);
-            line-height: 1.2;
         }
 
         .upload-tile p {
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             color: var(--text-muted);
             margin: 0;
-            line-height: 1.2;
         }
 
         .upload-tile input[type="file"] {
@@ -1625,12 +1623,21 @@
         // ── Clear Database ──
         function clearLedger() {
             if (!rawData.length) { showToast('Ledger is already empty.', 'warn'); return; }
+            
+            const pass = prompt('Admin Authorization Required:\nEnter Master Password to clear entire database:');
+            if (!pass) return; // cancel
+            
+            if (pass.toLowerCase() !== 'hmi-wrty') {
+                showToast('Incorrect Master Password! Action Aborted.', 'danger');
+                return;
+            }
+
             showConfirm(
-                'Clear entire database?\nThis cannot be undone.',
-                '⚠️',
+                'Clear entire database? This cannot be undone.',
+                '⚠️ CRITICAL',
                 () => {
                     rawData.length = 0; saveLedger(); renderData(rawData);
-                    showToast('✓ Ledger cleared.', 'success');
+                    showToast('✓ Ledger database has been reset.', 'success');
                 }
             );
         }
