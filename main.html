@@ -1387,6 +1387,33 @@
             color: var(--text-main);
             font-weight: 600;
             font-size: 0.85rem;
+            position: relative; /* Added for notif badge */
+        }
+
+        .menu-card-notif {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--danger);
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 800;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: none; /* hidden by default */
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+            border: 2px solid var(--surface);
+            z-index: 10;
+            animation: pulse-danger 2s infinite;
+        }
+
+        @keyframes pulse-danger {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
 
         .menu-card:hover {
@@ -3020,6 +3047,7 @@
             </div>
             <div class="menu-card" tabindex="0" onclick="showScreen('screen-mrs-assigner')"
                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showScreen('screen-mrs-assigner');}">
+                <div class="menu-card-notif" id="mrs-notif-count">0</div>
                 <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
                     stroke-linecap="round" stroke-linejoin="round">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -3114,6 +3142,12 @@
                     style="border-top: 4px solid var(--text-muted);" onclick="setDashFilter('pending')">
                     <div class="stat-value" id="dash-pending">0</div>
                     <div class="stat-label">Total Claims Pending</div>
+                </div>
+                <!-- MRS Assigner Data Integration -->
+                <div class="stat-card claim-card" id="dash-card-mrs"
+                    style="border-top: 4px solid var(--primary);" onclick="showScreen('screen-mrs-assigner')">
+                    <div class="stat-value" id="dash-mrs-pending" style="color:var(--primary)">0</div>
+                    <div class="stat-label">MRS Payments Pending</div>
                 </div>
             </div>
             <!-- Suspense Urgent Card — centred in its own row -->
