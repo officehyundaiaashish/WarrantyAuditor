@@ -584,8 +584,6 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 0.72rem;
-            /* Scaled up for readability */
-            min-width: 950px;
             table-layout: auto;
         }
 
@@ -617,12 +615,20 @@
             font-size: 0.7rem;
         }
 
-        /* Essential columns should not cut off; Part Desc can have ellipsis */
-        td:nth-child(2),
-        td:nth-child(8) {
-            max-width: 80px;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        /* Allow Multi-line wrapping for compact A4 fit */
+        td:nth-child(2) /* VIN */,
+        td:nth-child(8) /* Part Desc */,
+        td:nth-child(16) /* Invoice No */ {
+            white-space: normal;
+            word-break: break-word; /* Allows breaking WIN... long strings */
+            line-height: 1.25;
+            min-width: 80px;
+            max-width: 130px;
+        }
+        
+        td:nth-child(8) { 
+            max-width: 180px; 
+            min-width: 120px;
         }
 
         /* Tighter widths for amount columns */
@@ -1581,16 +1587,23 @@
                 width: 100%;
             }
 
-            /* Search row — stack vertically */
+            /* Search row — stack vertically and allow wrapping */
             .search-row {
                 flex-direction: column;
                 align-items: stretch;
-                gap: 8px;
+                gap: 12px;
+            }
+
+            .search-row > div {
+                min-width: 0 !important; /* Override desktop min-widths */
+                flex-wrap: wrap;
+                justify-content: center;
             }
 
             .search-bar {
-                max-width: 100%;
+                max-width: 100% !important;
                 width: 100%;
+                min-width: 0 !important;
             }
 
             .search-bar input::placeholder {
@@ -1599,8 +1612,9 @@
 
             .btn-clear-all,
             .record-count {
-                align-self: flex-end;
+                align-self: center;
             }
+
 
             /* Table wrap — allow horizontal scroll, reduce height */
             .table-wrap {
@@ -2538,20 +2552,16 @@
 
             const rect = e.target.getBoundingClientRect();
             picker.style.display = 'flex'; // Temporarily show to get offsetHeight correctly
-            const pickerHeight = picker.offsetHeight || 310;
-            const pickerWidth = picker.offsetWidth || 280;
+            // Assume calendar is at least 320px tall to prevent bad initial calculation
+            const pickerHeight = Math.max(picker.offsetHeight || 0, 320);
+            const pickerWidth = Math.max(picker.offsetWidth || 0, 280);
 
-            const spaceAbove = rect.top;
-            const spaceBelow = window.innerHeight - rect.bottom;
+            // User requested that the calendar should always open TO THE TOP by default.
+            picker.style.top = (rect.top - pickerHeight - 8) + 'px';
 
-            // Prefer Opening ABOVE, but fallback to BELOW if it would cut off the top
-            if (spaceAbove > pickerHeight + 10) {
-                picker.style.top = (rect.top - pickerHeight - 8) + 'px';
-            } else if (spaceBelow > pickerHeight + 10) {
+            // Fallback safety if opening at top pushes it off-screen 
+            if ((rect.top - pickerHeight - 8) < 0) {
                 picker.style.top = (rect.bottom + 8) + 'px';
-            } else {
-                // If neither fits, anchor to the top of screen to prevent total cut-off
-                picker.style.top = '10px';
             }
 
             // HORIZONTAL SAFETY: Ensure doesn't go off left/right
@@ -3206,17 +3216,20 @@
                 picker.appendChild(div);
             });
 
-            document.body.appendChild(picker);
+            evt.currentTarget.appendChild(picker);
 
-            // Position
-            const rect = evt.currentTarget.getBoundingClientRect();
-            picker.style.top = `${rect.bottom + 6}px`;
-            picker.style.left = `${rect.left}px`;
+            // Position relative to the parent trigger (which has position: relative)
+            picker.style.position = 'absolute';
+            picker.style.top = 'calc(100% + 6px)';
+            picker.style.left = '0';
+            picker.style.right = '0';
             picker.style.minWidth = '220px';
+            picker.style.maxHeight = '300px';
+            picker.style.overflowY = 'auto';
 
             activeBookPicker = picker;
             const close = (e) => {
-                if (activeBookPicker && !activeBookPicker.contains(e.target)) {
+                if (activeBookPicker && !evt.currentTarget.contains(e.target)) {
                     activeBookPicker.remove();
                     activeBookPicker = null;
                     window.removeEventListener('click', close);
