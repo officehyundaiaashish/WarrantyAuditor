@@ -1886,25 +1886,29 @@
                     // Step 2: process all rows, identifying dividers and data
                     source3Data = [];
                     for (let i = 0; i < aoa.length; i++) {
-                        // FORCE SKIP: skip row 0 if it contains many headers, or if identified by detection
-                        if (i === 0 || i === headerRowIdx) continue;
+                        // Skip identified header row
+                        if (i === headerRowIdx) continue;
 
                         const rowArr = aoa[i];
                         const nonEmptyCells = rowArr.filter(v => v !== '').length;
                         if (nonEmptyCells === 0) continue; 
 
                         const firstCell = String(rowArr[0] || '').trim();
+                        const isMrsBook = firstCell.toUpperCase().includes('MRS BOOK');
                         
                         // Check for MRS BOOK divider (Merged row in Excel)
-                        if (firstCell.toUpperCase().includes('MRS BOOK') || (nonEmptyCells === 1 && firstCell && !headers.includes(firstCell))) {
+                        if (isMrsBook || (nonEmptyCells === 1 && firstCell && !headers.includes(firstCell))) {
                             const rangeMatch = firstCell.match(/(\d+)/); 
                             const sortVal = rangeMatch ? parseInt(rangeMatch[0]) : 0;
                             source3Data.push({ isDivider: true, dividerText: firstCell, MRS: sortVal });
                             continue;
                         }
 
-                        // Skip rows before header unless they were dividers
+                        // Skip rows before header unless they were identified as dividers
                         if (headerRowIdx !== -1 && i < headerRowIdx) continue;
+                        
+                        // Also skip row 0 by default case if headerRowIdx wasn't 0
+                        if (i === 0) continue;
 
                         const obj = {};
                         headers.forEach((h, idx) => {
@@ -1997,10 +2001,12 @@
                             return;
                         }
 
-                        const claimKey = String(
+                        const claimKeyStr = String(
                             row['Claim No'] || row['Clm No'] || row['Claim Number'] || row['Claim#'] || ''
                         ).trim();
-                        if (!claimKey) { skipped++; return; }
+                        // EXPLICIT HEADER SKIP: ignore row if 'Claim No' column contains the literal string 'Claim No'
+                        if (!claimKeyStr || /^CLAIM\s*(NO|#)$/i.test(claimKeyStr)) { skipped++; return; }
+                        const claimKey = claimKeyStr;
 
                         const newRow = {};
                         columns.forEach(col => {
@@ -2087,10 +2093,13 @@
                 let newlyAdded = 0;
 
                 source1Data.forEach(match1 => {
-                    const claimKey = String(findVal(match1, ["Claim No", "Clm No", "Claim Number", "Claim#"]) || "").trim();
-                    const roKey = String(findVal(match1, ["R/O No", "RO No", "RO Number", "Repair Order", "RO Suffix"]) || "").trim();
+                    const claimKeyStr = String(findVal(match1, ["Claim No", "Clm No", "Claim Number", "Claim#"]) || "").trim();
+                    // EXPLICIT HEADER SKIP
+                    if (!claimKeyStr || /^CLAIM\s*(NO|#)$/i.test(claimKeyStr)) return;
+                    const claimKey = claimKeyStr;
 
-                    if (!claimKey || !roKey || /^CANC(LE|EL)$/i.test(roKey)) return;
+                    const roKey = String(findVal(match1, ["R/O No", "RO No", "RO Number", "Repair Order", "RO Suffix"]) || "").trim();
+                    if (!roKey || /^CANC(LE|EL)$/i.test(roKey) || /^R\/O\s*NO$/i.test(roKey)) return;
 
                     // Standard Audit Filtering Logic (Robust Detection)
 
