@@ -1939,6 +1939,8 @@
             await localforage.setItem(LOCK_KEY, isLocked);
             updateLockUI();
             showToast(isLocked ? '🔒 Ledger Locked! No changes allowed.' : '🔓 Ledger Unlocked!', isLocked ? 'warn' : 'success');
+            // Notify parent to trigger sync/updates
+            window.parent.postMessage({ type: 'mrs-data-changed' }, '*');
         }
         
         let _saveTimeout;
