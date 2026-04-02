@@ -1872,6 +1872,9 @@
                         style="font-size:0.95rem; letter-spacing:1px; cursor:pointer;"
                         onclick="toggleCalendar(event)"
                         onkeydown="if(event.key==='Enter') saveMRS(); if(event.key==='Escape') closeMRSModal();">
+                    <div style="position:absolute; right:12px; top:52%; transform:translateY(-50%); pointer-events:none; color:var(--text-muted); opacity:0.6">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    </div>
                 </div>
                 <!-- Apply to all same RO claims -->
                 <div id="mrsApplyAllWrap" style="display:none;margin-top:8px;">
@@ -2326,6 +2329,9 @@
                     ${['M','T','W','T','F','S','S'].map(d => `<div class="calendar-day-head">${d}</div>`).join('')}
                     <div id="calendarDays" style="display:contents"></div>
                 </div>
+                <div style="margin-top:4px; padding-top:8px; border-top:1px solid var(--border); display:flex; justify-content:center">
+                    <button onclick="selectDate('',0,0)" style="background:none; border:none; color:var(--danger); font-size:0.7rem; font-weight:800; cursor:pointer; padding:4px 8px; border-radius:6px; transition:all 0.2s" onmouseover="this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.background='none'">CLEAR PAYMENT DATE</button>
+                </div>
             `;
             
             const daysContainer = document.getElementById('calendarDays');
@@ -2363,7 +2369,11 @@
         function jumpYear(y) { calendarDate.setFullYear(y); renderCalendar(); }
         function selectDate(d, m, y) {
             const di = document.getElementById('mrsDateInput');
-            di.value = `${String(d).padStart(2,'0')}/${String(m+1).padStart(2,'0')}/${y}`;
+            if (d === '') {
+                di.value = '';
+            } else {
+                di.value = `${String(d).padStart(2,'0')}/${String(m+1).padStart(2,'0')}/${y}`;
+            }
             const p = document.getElementById('calendarDropdown');
             p.style.display = 'none';
             p.dataset.active = 'false';
@@ -3248,7 +3258,8 @@
                 rawData.forEach(r => {
                     if (String(r['R/O No'] || '').trim() === roNo) {
                         r['MRS'] = val;
-                        if (dateVal) r['PAYMENT DATE'] = dateVal;
+                        // Update payment date (allow clearing with '—')
+                        r['PAYMENT DATE'] = dateVal || '—';
                         count++;
                     }
                 });
@@ -3259,7 +3270,7 @@
                 showToast(`✓ MRS ${val} — ${count} claims updated (RO: ${roNo})`, 'success');
             } else {
                 rawData[currentEditingRowIdx]['MRS'] = val;
-                if (dateVal) rawData[currentEditingRowIdx]['PAYMENT DATE'] = dateVal;
+                rawData[currentEditingRowIdx]['PAYMENT DATE'] = dateVal || '—';
                 
                 saveLedger();
                 if (activeFilterFunc) activeFilterFunc(true); else filterTable();
