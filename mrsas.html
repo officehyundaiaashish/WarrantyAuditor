@@ -3512,12 +3512,6 @@
                         const sClass = (val === 'PAYMENT SHORT') ? 'badge-short' : (val === 'PAID') ? 'badge-paid' : (String(val).toUpperCase().includes('CANCEL') || String(val).toUpperCase().includes('OTHER')) ? 'badge-cancel' : '';
                         return `<td><span class="badge ${sClass}" onclick="event.stopPropagation(); showRemarkPicker(event, ${ri})" title="Click to change remark">${val}</span></td>`;
                     }
-                    if (col === 'VIN') {
-                        const strVal = String(val);
-                        // User requested to only display the last 6 digits of VIN
-                        const displayedVin = (strVal.length > 6) ? `...${strVal.slice(-6)}` : strVal;
-                        return `<td class="editable" ondblclick="startEdit(event,this,${ri},'${col}')" title="Full VIN: ${strVal}">${displayedVin}</td>`;
-                    }
                     if (col === ' ') {
                         return `<td style="text-align:center;">
                             <button onclick="event.stopPropagation(); deleteEntry(${ri})" title="Delete claim" style="background:transparent;border:none;color:var(--danger);cursor:pointer;opacity:0.6;transition:0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">
@@ -3560,7 +3554,10 @@
             searchMode = (searchMode === 'ro') ? 'mrs' : 'ro';
             const btn = document.getElementById('searchModeBtn');
             const inp = document.getElementById('tableSearch');
-            if (searchMode === 'mrs') {
+            if (searchMode === 'vin') {
+                btn.childNodes[0].textContent = 'VIN No';
+                inp.placeholder = 'Search by Last 6 of VIN...';
+            } else if (searchMode === 'mrs') {
                 btn.childNodes[0].textContent = 'MRS No';
                 inp.placeholder = 'Search by MRS No...';
             } else {
@@ -3583,7 +3580,8 @@
                     return mrs.includes(query);
                 } else if (searchMode === 'vin') {
                     const vin = String(row['VIN'] || '').toLowerCase();
-                    return (query.length <= 6) ? vin.endsWith(query) : vin.includes(query);
+                    // Suffix matching for last-six digits
+                    return vin.includes(query) || vin.endsWith(query);
                 } else {
                     const ro = String(row['R/O No'] || '').toLowerCase();
                     const roSuffix = ro.replace(/^[^0-9]*/, '');
