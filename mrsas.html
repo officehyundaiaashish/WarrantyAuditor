@@ -1404,31 +1404,33 @@
             }
         }
 
-        /* ══ MRS Range Sub-header Bar ══ */
-        .mrs-range-bar {
-            display: none;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 16px;
-            background: linear-gradient(135deg, rgba(42,181,165,0.10) 0%, rgba(77,207,195,0.07) 100%);
-            border: 1.5px solid rgba(42,181,165,0.28);
-            border-radius: 12px;
-            margin-bottom: 10px;
-            font-size: 0.82rem;
-            font-weight: 700;
-            color: var(--primary);
-            letter-spacing: 0.2px;
-            animation: fadeInUp 0.25s ease-out;
+        /* ══ Custom Dropdown ══ */
+        .c-drop { position: relative; width: 100%; }
+        .c-drop-trigger {
+            width: 100%; display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 14px; border-radius: 10px; border: 1.5px solid var(--border);
+            background: var(--bg-base); color: var(--text-main); font-size: 0.85rem;
+            font-weight: 600; font-family: inherit; cursor: pointer; text-align: left;
+            transition: all 0.2s ease;
         }
-        .mrs-range-bar.active { display: flex; }
-        .mrs-range-bar .range-label { flex: 1; }
-        .mrs-range-bar .range-clear {
-            display: inline-flex; align-items: center; gap: 4px;
-            padding: 3px 10px; border-radius: 8px; border: 1px solid rgba(42,181,165,0.35);
-            background: transparent; color: var(--primary); font-size: 0.72rem; font-weight: 700;
-            cursor: pointer; transition: all 0.18s ease;
+        .c-drop-trigger:hover, .c-drop.open .c-drop-trigger {
+            border-color: var(--danger); box-shadow: 0 0 0 4px rgba(239,68,68,0.08);
         }
-        .mrs-range-bar .range-clear:hover { background: var(--primary); color: #fff; }
+        .c-drop.open .c-drop-trigger svg { transform: rotate(180deg); }
+        .c-drop-trigger svg { transition: transform 0.2s ease; flex-shrink: 0; opacity: 0.6; }
+        .c-drop-list {
+            display: none; position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+            background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 200; overflow: hidden;
+            list-style: none; padding: 4px;
+        }
+        .c-drop.open .c-drop-list { display: block; animation: fadeInUp 0.15s ease; }
+        .c-drop-list li {
+            padding: 9px 12px; border-radius: 7px; font-size: 0.83rem; font-weight: 600;
+            color: var(--text-main); cursor: pointer; transition: all 0.15s ease;
+        }
+        .c-drop-list li:hover { background: rgba(239,68,68,0.08); color: var(--danger); }
+        .c-drop-list li.selected { color: var(--danger); background: rgba(239,68,68,0.06); }
     </style>
 </head>
 
@@ -1751,31 +1753,47 @@
 
     <!-- Cancelled MRS Modal -->
     <div class="modal-backdrop" id="cancelMRSModal">
-        <div class="modal-dialog" style="max-width:440px;">
+        <div class="modal-dialog" style="max-width:420px;">
             <div class="modal-header">
-                <h3>Add Cancelled MRS</h3>
-                <p>Type any MRS numbers — random, single, or range</p>
+                <h3>Cancelled MRS</h3>
+                <p>Single, multiple or range (e.g. 1502, 1520-1525)</p>
             </div>
             <div class="modal-body">
-                <label class="mrs-input-label">MRS Numbers (comma or space separated)</label>
+                <label class="mrs-input-label">MRS Numbers</label>
                 <textarea id="cancelMRSInput"
-                    placeholder="e.g.  1502, 1507, 1515  or  1520-1525  or mix both"
+                    placeholder="1502, 1507  or  1520-1525"
                     onkeydown="if(event.key==='Enter' && event.ctrlKey) saveCancelledMRS();"
-                    style="width:100%;min-height:90px;resize:vertical;background:var(--bg-base);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-size:0.95rem;font-weight:700;color:var(--primary);font-family:inherit;outline:none;letter-spacing:2px;transition:all 0.25s ease;line-height:1.8;"
+                    style="width:100%;min-height:72px;resize:vertical;background:var(--bg-base);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-size:0.95rem;font-weight:700;color:var(--primary);font-family:inherit;outline:none;letter-spacing:2px;transition:all 0.25s ease;line-height:1.8;"
                     onfocus="this.style.borderColor='var(--danger)';this.style.boxShadow='0 0 0 4px rgba(239,68,68,0.1)';"
                     onblur="this.style.borderColor='';this.style.boxShadow='';"></textarea>
-                <p style="font-size:0.65rem;color:var(--text-muted);margin:5px 0 14px;font-weight:500;">
-                    Examples: &nbsp;<b>1502</b> &nbsp;·&nbsp; <b>1502, 1507, 1515</b> &nbsp;·&nbsp; <b>1520-1525</b> &nbsp;·&nbsp; <b>1502 1507 1520-1522</b>
-                    &nbsp;·&nbsp; Ctrl+Enter to save
-                </p>
-                <div class="modal-btn-row">
+                <label class="mrs-input-label" style="margin-top:12px;">Reason of Cancellation</label>
+                <!-- Custom Dropdown -->
+                <div class="c-drop" id="cancelReasonDrop">
+                    <button type="button" class="c-drop-trigger" onclick="toggleCancelDrop(event)">
+                        <span id="cancelReasonDisplay">— Select Reason —</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <ul class="c-drop-list" id="cancelReasonList">
+                        <li onclick="selectCancelReason('','— Select Reason —')">— Select Reason —</li>
+                        <li onclick="selectCancelReason('Part Returned','Part Returned')">Part Returned</li>
+                        <li onclick="selectCancelReason('Part Found Ok','Part Found Ok')">Part Found Ok</li>
+                        <li onclick="selectCancelReason('Vehicle Taken Back','Vehicle Taken Back')">Vehicle Taken Back</li>
+                        <li onclick="selectCancelReason('Wrong Part Issued','Wrong Part Issued')">Wrong Part Issued</li>
+                        <li onclick="selectCancelReason('Received From Vendor','Received From Vendor')">Received From Vendor</li>
+                        <li onclick="selectCancelReason('Other','Other (mention below)')">Other…</li>
+                    </ul>
+                </div>
+                <input type="hidden" id="cancelReasonSelect" value="">
+                <input type="text" id="cancelReasonOther" placeholder="Mention reason..." style="display:none;margin-top:8px;width:100%;padding:9px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg-base);color:var(--text-main);font-size:0.85rem;font-weight:600;font-family:inherit;outline:none;transition:all 0.25s ease;"
+                    onfocus="this.style.borderColor='var(--danger)';" onblur="this.style.borderColor='';">
+                <div class="modal-btn-row" style="margin-top:16px;">
                     <button class="modal-btn-confirm" onclick="saveCancelledMRS()" style="background:linear-gradient(135deg,#ef4444,#f87171);">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
                             style="display:inline;vertical-align:middle;margin-right:6px;">
                             <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
                         </svg>
-                        Mark as Cancelled
+                        Mark Cancelled
                     </button>
                     <button class="modal-btn-cancel" onclick="closeCancelMRSModal()">Close</button>
                 </div>
@@ -2059,7 +2077,7 @@
                 acc.total += total;
                 acc.recvd += recvd;
 
-                const isCancelled = String(r['REMARKS']).toUpperCase() === 'CANCELLED';
+                const isCancelled = String(r['REMARKS']).toUpperCase().startsWith('CANCELLED');
                 if (isCancelled) acc.cancelled++;
 
                 const isPending = !isCancelled &&
@@ -2169,12 +2187,12 @@
                         return `<td><span class="${css}">${val}</span></td>`;
                     }
                     if (col === 'REMARKS') {
-                        const sClass = (val === 'PAYMENT SHORT') ? 'badge-short' : (val === 'PAID') ? 'badge-paid' : (val === 'CANCELLED') ? 'badge-cancel' : '';
+                        const sClass = (val === 'PAYMENT SHORT') ? 'badge-short' : (val === 'PAID') ? 'badge-paid' : String(val).toUpperCase().startsWith('CANCELLED') ? 'badge-cancel' : '';
                         return `<td><span class="badge ${sClass}">${val}</span></td>`;
                     }
                     return `<td class="editable" ondblclick="startEdit(event,this,${ri},'${col}')" title="Double-click to edit">${val}</td>`;
                 }).join('');
-                rows.push(`<tr class="row-clickable${String(row['REMARKS']).toUpperCase() === 'CANCELLED' ? ' row-cancelled' : ''}" onclick="openMRSModal(${ri})" title="Click to assign MRS #${mrsVal}">${cells}</tr>`);
+                rows.push(`<tr class="row-clickable${String(row['REMARKS']).toUpperCase().startsWith('CANCELLED') ? ' row-cancelled' : ''}" onclick="openMRSModal(${ri})" title="Click to assign MRS #${mrsVal}">${cells}</tr>`);
             });
             tbody.innerHTML = rows.join('');
 
@@ -2367,6 +2385,12 @@
         // ── Cancelled MRS ──
         function openCancelMRSModal() {
             document.getElementById('cancelMRSInput').value = '';
+            document.getElementById('cancelReasonSelect').value = '';
+            document.getElementById('cancelReasonDisplay').textContent = '— Select Reason —';
+            document.getElementById('cancelReasonOther').value = '';
+            document.getElementById('cancelReasonOther').style.display = 'none';
+            document.getElementById('cancelReasonDrop').classList.remove('open');
+            document.querySelectorAll('#cancelReasonList li').forEach(li => li.classList.remove('selected'));
             document.getElementById('cancelMRSModal').classList.add('active');
             setTimeout(() => document.getElementById('cancelMRSInput').focus(), 280);
         }
@@ -2377,7 +2401,11 @@
             const raw = document.getElementById('cancelMRSInput').value.trim();
             if (!raw) { showToast('Please enter at least one MRS number.', 'warn'); return; }
 
-            // Parse: supports comma, space, newline separated — and ranges like 1520-1525
+            const reasonSel = document.getElementById('cancelReasonSelect').value;
+            const reasonOther = document.getElementById('cancelReasonOther').value.trim();
+            const reason = (reasonSel === 'Other') ? (reasonOther || 'Other') : reasonSel;
+            const remarkVal = reason ? `CANCELLED · ${reason}` : 'CANCELLED';
+
             const toAdd = [];
             const tokens = raw.split(/[\s,;\n]+/).filter(Boolean);
             for (const token of tokens) {
@@ -2401,7 +2429,7 @@
                 const cancelRow = {};
                 columns.forEach(col => { cancelRow[col] = ''; });
                 cancelRow['MRS']     = num;
-                cancelRow['REMARKS'] = 'CANCELLED';
+                cancelRow['REMARKS'] = remarkVal;
                 rawData.push(cancelRow);
                 existingMRS.add(String(num));
                 added++;
@@ -2412,6 +2440,30 @@
             const skipMsg = skipped ? ` · ${skipped} already exist` : '';
             showToast(`✓ ${added} Cancelled MRS added${skipMsg}.`, 'success');
         }
+        // Show/hide Other input based on dropdown
+        document.getElementById('cancelReasonSelect').addEventListener('change', function() {
+            document.getElementById('cancelReasonOther').style.display = this.value === 'Other' ? 'block' : 'none';
+        });
+
+        // ── Custom Cancel Reason Dropdown ──
+        function toggleCancelDrop(e) {
+            e.stopPropagation();
+            document.getElementById('cancelReasonDrop').classList.toggle('open');
+        }
+        function selectCancelReason(val, label) {
+            document.getElementById('cancelReasonSelect').value = val;
+            document.getElementById('cancelReasonDisplay').textContent = label;
+            document.getElementById('cancelReasonOther').style.display = val === 'Other' ? 'block' : 'none';
+            // mark selected
+            document.querySelectorAll('#cancelReasonList li').forEach(li => li.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+            document.getElementById('cancelReasonDrop').classList.remove('open');
+        }
+        // Close dropdown on outside click
+        document.addEventListener('click', (e) => {
+            const drop = document.getElementById('cancelReasonDrop');
+            if (drop && !drop.contains(e.target)) drop.classList.remove('open');
+        });
         document.getElementById('cancelMRSModal').addEventListener('click', (e) => {
             if (e.target === e.currentTarget) closeCancelMRSModal();
         });
@@ -2532,7 +2584,7 @@
         }
 
         function triggerCancelledFilter() {
-            const cancelled = rawData.filter(r => String(r['REMARKS']).toUpperCase() === 'CANCELLED');
+            const cancelled = rawData.filter(r => String(r['REMARKS']).toUpperCase().startsWith('CANCELLED'));
 
             const isCurrentlyShowingCancelled = (currentDataset.length === cancelled.length &&
                 currentDataset.every((v, i) => v === cancelled[i]));
@@ -2574,7 +2626,7 @@
 
             const headerRow = printCols.map(c => `<th>${c}</th>`).join('');
             const bodyRows = sorted.map(row => {
-                const isCancelled = String(row['REMARKS']).toUpperCase() === 'CANCELLED';
+                const isCancelled = String(row['REMARKS']).toUpperCase().startsWith('CANCELLED');
                 const rowStyle = isCancelled ? ' style="opacity:0.45;background:#fff5f5;"' : '';
                 const cells = printCols.map(col => {
                     const val = (row[col] !== undefined && row[col] !== null && row[col] !== '') ? row[col] : '—';
@@ -2585,7 +2637,7 @@
 
             const totalClaims = rawData.filter(r => String(r['REMARKS']).toUpperCase() !== 'CANCELLED').length;
             const unassigned  = rawData.filter(r => String(r['REMARKS']).toUpperCase() !== 'CANCELLED' && (!r['MRS'] || r['MRS'] === '')).length;
-            const cancelled   = rawData.filter(r => String(r['REMARKS']).toUpperCase() === 'CANCELLED').length;
+            const cancelled   = rawData.filter(r => String(r['REMARKS']).toUpperCase().startsWith('CANCELLED')).length;
             const pending     = rawData.filter(r => String(r['REMARKS']).toUpperCase() !== 'CANCELLED' && (!r['AMT RECEIVED'] || r['AMT RECEIVED'] === 0)).length;
 
             const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
