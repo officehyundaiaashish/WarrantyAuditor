@@ -499,6 +499,7 @@
             padding: 9px 14px;
             flex: 1;
             max-width: 400px;
+            position: relative;
             transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
             color: var(--text-muted);
         }
@@ -2007,11 +2008,11 @@
                             <circle cx="11" cy="11" r="8" />
                             <line x1="21" y1="21" x2="16.65" y2="16.65" />
                         </svg>
-                        <input type="text" id="tableSearch" placeholder="Search RO No..." oninput="filterTable()">
+                        <input type="text" id="tableSearch" placeholder="Search RO No..." oninput="filterTable()" style="flex:1; min-width:0; order:2;">
                         
                         <!-- Search Mode Custom Dropdown inside input wrap -->
-                        <div class="c-drop" id="searchModeDrop" style="margin-left:auto; flex-shrink:0;">
-                            <button type="button" class="c-drop-trigger" onclick="toggleSearchDrop(event)" style="padding:4px 8px; font-size:0.65rem; background:rgba(42,181,165,0.1); border:1px solid var(--primary); color:var(--primary); border-radius:6px; font-weight:800; display:flex; align-items:center; gap:4px; transform:translateY(-1px);">
+                        <div class="c-drop" id="searchModeDrop" style="width: auto; margin-left:auto; flex-shrink:0; order:3;">
+                            <button type="button" class="c-drop-trigger" onclick="toggleSearchDrop(event)" style="padding:4px 8px; font-size:0.65rem; background:rgba(42,181,165,0.1); border:1px solid var(--primary); color:var(--primary); border-radius:6px; font-weight:800; display:flex; align-items:center; gap:4px; transform:translateY(-1px); width: auto; border-color: var(--primary) !important;">
                                 <span id="searchModeDisplay">RO No</span>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                                     <polyline points="6 9 12 15 18 9"/>
@@ -3178,7 +3179,11 @@
 
         function togglemrsBookPicker(evt) {
             evt.stopPropagation();
-            if (activeBookPicker) { activeBookPicker.remove(); activeBookPicker = null; return; }
+            if (activeBookPicker) { 
+                activeBookPicker.remove(); 
+                activeBookPicker = null; 
+                return; 
+            }
 
             const books = [];
             rawData.forEach(r => {
@@ -3251,15 +3256,30 @@
             picker.style.overflowY = 'auto';
 
             activeBookPicker = picker;
-            const close = (e) => {
-                if (activeBookPicker && !evt.currentTarget.contains(e.target)) {
-                    activeBookPicker.remove();
-                    activeBookPicker = null;
-                    window.removeEventListener('click', close);
-                }
-            };
-            setTimeout(() => window.addEventListener('click', close), 10);
         }
+
+        // Unified Global Collapse Listeners
+        window.addEventListener('click', (e) => {
+            // 1. Close Jump to Book picker
+            const pickerBtn = e.target.closest('.search-bar[onclick*="togglemrsBookPicker"]');
+            if (activeBookPicker && (!pickerBtn || e.target.classList.contains('book-option'))) {
+                activeBookPicker.remove();
+                activeBookPicker = null;
+            }
+
+            // 2. Close Search Mode dropdown
+            const searchDrop = document.getElementById('searchModeDrop');
+            if (searchDrop && !searchDrop.contains(e.target)) {
+                searchDrop.classList.remove('open');
+            }
+        });
+
+        window.addEventListener('scroll', (e) => {
+            if (activeBookPicker) {
+                activeBookPicker.remove();
+                activeBookPicker = null;
+            }
+        }, true);
 
         function selectMRSBook(bookName) {
             document.getElementById('mrsBookLabel').textContent = bookName;
@@ -3587,10 +3607,6 @@
             renderData(rawData);
             inp.focus();
         }
-        document.addEventListener('click', (e) => {
-            const drop = document.getElementById('searchModeDrop');
-            if (drop && !drop.contains(e.target)) drop.classList.remove('open');
-        });
 
 
         // ── Feature #4: Global keydown — type number → focus search & insert digit ──
