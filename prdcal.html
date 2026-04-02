@@ -1674,7 +1674,22 @@
                     </svg>
                     Clear All
                 </button>
-                <div class="record-count" id="recordCount">0 Records</div>
+                <button class="btn-premium btn-outline" onclick="backupLedger()" style="padding:7px 14px;font-size:0.78rem;border-color:var(--success);color:var(--success);">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Safety Backup
+                </button>
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <button id="lockStatusBtn" onclick="togglemrsBookPicker(event)" class="btn-premium btn-outline" style="padding:6px 12px; font-size:0.7rem; border-color:var(--border); display:inline-flex; align-items:center; gap:6px;">
+                        <span id="lockIcon">🔓</span> <span id="lockLabel">UNLOCKED</span>
+                    </button>
+                    <div id="saveStatus" style="font-size:0.68rem; font-weight:800; color:var(--success); display:flex; align-items:center; gap:4px; opacity:0; transition:opacity 0.3s; pointer-events:none;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        SAVED
+                    </div>
+                    <div class="record-count" id="recordCount">0 Records</div>
+                </div>
             </div>
 
             <!-- HARMONIZED: table-wrap exactly matches main.html container style -->
@@ -1881,23 +1896,96 @@
     </div>
 
     <script>
-        // ── Persistence ──
+        // ── LocalForage Config ──
+        localforage.config({ name: 'WarrantyAuditor', storeName: 'mrs_ledger_store' });
+
         const LEDGER_KEY = 'mrs_ledger';
+        const LOCK_KEY = 'mrs_is_locked';
         let rawData = [];
+        let isLocked = false;
 
         async function loadLedger() {
             try {
                 const saved = await localforage.getItem(LEDGER_KEY);
-                if (saved) { rawData = saved; renderData(rawData); }
-            } catch (e) { console.error('Load ledger:', e); }
+                const lockedState = await localforage.getItem(LOCK_KEY);
+                isLocked = !!lockedState;
+                updateLockUI();
+                
+                if (saved && Array.isArray(saved)) { 
+                    rawData = saved; 
+                    renderData(rawData); 
+                }
+            } catch (e) { 
+                console.error('Load ledger:', e);
+                showToast('Storage Error: Could not load data.', 'danger');
+            }
         }
+        
+        function updateLockUI() {
+            const btn = document.getElementById('lockStatusBtn');
+            const icon = document.getElementById('lockIcon');
+            const label = document.getElementById('lockLabel');
+            if (isLocked) {
+                btn.style.borderColor = 'var(--danger)';
+                btn.style.color = 'var(--danger)';
+                btn.style.background = 'rgba(239,68,68,0.05)';
+                icon.textContent = '🔒';
+                label.textContent = 'LOCKED (READ ONLY)';
+                document.querySelector('.btn-feed').disabled = true;
+                document.querySelector('.btn-feed').style.opacity = '0.5';
+            } else {
+                btn.style.borderColor = 'var(--border)';
+                btn.style.color = 'inherit';
+                btn.style.background = '';
+                icon.textContent = '🔓';
+                label.textContent = 'UNLOCKED';
+                document.querySelector('.btn-feed').disabled = false;
+                document.querySelector('.btn-feed').style.opacity = '1';
+            }
+        }
+
+        async function toggleGlobalLock() {
+            isLocked = !isLocked;
+            await localforage.setItem(LOCK_KEY, isLocked);
+            updateLockUI();
+            showToast(isLocked ? '🔒 Ledger Locked! No changes allowed.' : '🔓 Ledger Unlocked!', isLocked ? 'warn' : 'success');
+        }
+        
+        let _saveTimeout;
         async function saveLedger() {
             try {
                 await localforage.setItem(LEDGER_KEY, rawData);
+                
+                // Show "SAVED" indicator
+                const status = document.getElementById('saveStatus');
+                status.style.opacity = '1';
+                clearTimeout(_saveTimeout);
+                _saveTimeout = setTimeout(() => { status.style.opacity = '0'; }, 2000);
+
                 // Notify parent for real-time dashboard updates
                 window.parent.postMessage({ type: 'mrs-data-changed' }, '*');
             }
-            catch (e) { console.error('Save ledger:', e); }
+            catch (e) { 
+                console.error('Save ledger:', e);
+                showToast('🚨 CRITICAL SAVE ERROR! Check disk space.', 'danger');
+                // Fallback to localStorage for small data if IndexedDB fails
+                try { localStorage.setItem(LEDGER_KEY + '_fallback', JSON.stringify(rawData)); } catch(ex){}
+            }
+        }
+
+        function backupLedger() {
+            if (!rawData.length) { showToast('Nothing to backup!', 'warn'); return; }
+            const dataStr = JSON.stringify(rawData, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `MRS_Ledger_Backup_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('✓ Safety Backup Downloaded!', 'success');
         }
 
         // ── Columns ──
@@ -2117,6 +2205,8 @@
                 return;
             }
 
+            if (isLocked) { showToast('🔒 Cannot import while ledger is LOCKED!', 'danger'); return; }
+
             // ── Source 1 + 2 flow ──
             if (!source1Data) {
                 showToast('Please upload Source 1 (Main Claims) file.', 'warn'); return;
@@ -2286,8 +2376,14 @@
             setTimeout(() => document.getElementById('adminPassInput').focus(), 300);
         }
 
+        // ── Pagination & State ──
+        const PAGE_SIZE = 100;
+        let currentPage = 1;
+        let currentDataset = []; 
+
         // ── Feature: MRS Book Picker (Solid Custom List) ──
         let activeBookPicker = null;
+
         function togglemrsBookPicker(evt) {
             evt.stopPropagation();
             if (activeBookPicker) { activeBookPicker.remove(); activeBookPicker = null; return; }
@@ -2302,8 +2398,25 @@
             const picker = document.createElement('div');
             picker.className = 'mrs-book-popover';
             
+            // "Lock/Unlock" toggle inside dropdown
+            const lockSection = document.createElement('div');
+            lockSection.className = 'book-option';
+            lockSection.style.borderBottom = '1px solid var(--border)';
+            lockSection.style.marginBottom = '5px';
+            lockSection.style.paddingBottom = '8px';
+            lockSection.style.color = isLocked ? 'var(--danger)' : 'var(--success)';
+            lockSection.innerHTML = `<span>${isLocked ? '🔓' : '🔒'}</span> ${isLocked ? 'Unlock for Changes' : 'Lock Ledger Permanently'}`;
+            lockSection.onclick = (e) => {
+                e.stopPropagation();
+                toggleGlobalLock();
+                picker.remove();
+                activeBookPicker = null;
+            };
+            picker.appendChild(lockSection);
+
             // "Show All" option
             const allOpt = document.createElement('div');
+
             allOpt.className = 'book-option';
             allOpt.innerHTML = `<span style="font-size:10px;">📊</span> Show All Data`;
             allOpt.onclick = () => {
@@ -2700,6 +2813,7 @@
             }, 100);
         }
         function saveMRS() {
+            if (isLocked) { showToast('🔒 Locked: Cannot assign MRS.', 'danger'); return; }
             if (currentEditingRowIdx === null) return;
             const val = parseInt(document.getElementById('mrsNumberInput').value);
             if (!val || val < 1) { showToast('Please enter a valid MRS number.', 'warn'); return; }
@@ -2746,6 +2860,7 @@
             document.getElementById('cancelMRSModal').classList.remove('active');
         }
         function saveCancelledMRS() {
+            if (isLocked) { showToast('🔒 Locked: Bulk actions disabled.', 'danger'); return; }
             const raw = document.getElementById('cancelMRSInput').value.trim();
             if (!raw) { showToast('Please enter at least one MRS number.', 'warn'); return; }
 
@@ -2835,6 +2950,7 @@
             input.addEventListener('click', e => e.stopPropagation());
 
             function commitEdit() {
+                if (isLocked) { cancelEdit(); showToast('🔒 Locked: Editing disabled.', 'danger'); return; }
                 const newVal = input.value.trim();
                 td.classList.remove('editing');
                 if (newVal !== '') {
@@ -2866,7 +2982,9 @@
 
         // ── Feature: Delete Entry ──
         function deleteEntry(idx) {
+            if (isLocked) { showToast('🔒 Locked: No deletions allowed.', 'danger'); return; }
             const entry = rawData[idx];
+
             const name = entry.isDivider ? "Divider" : (entry['Claim No'] || 'Claim');
             showConfirm(
                 `Delete this entry (${name})?`,
@@ -2882,6 +3000,7 @@
 
         // ── Feature: Rename Divider ──
         function startEditDivider(evt, td, rowIdx) {
+            if (isLocked) { showToast('🔒 Locked: No changes allowed.', 'danger'); return; }
             if (evt) evt.stopPropagation();
             if (td.classList.contains('editing')) return;
             const row = rawData[rowIdx];
@@ -2962,7 +3081,9 @@
         }
 
         function setRemark(idx, val) {
+            if (isLocked) { showToast('🔒 Locked: Cannot change remarks.', 'danger'); return; }
             const row = rawData[idx];
+
             if (val === 'OTHER') {
                 const custom = prompt("Enter custom remark:", "");
                 if (custom) row['REMARKS'] = custom;
@@ -3270,6 +3391,7 @@
             document.getElementById('mrsRangeModal').classList.remove('active');
         }
         function saveMRSRange() {
+            if (isLocked) { showToast('🔒 Locked: Range creation disabled.', 'danger'); return; }
             const fromVal = parseInt(document.getElementById('mrsRangeFrom').value);
             const toVal = parseInt(document.getElementById('mrsRangeTo').value);
             if (!fromVal || fromVal < 1) { showToast('Valid "From" MRS number daalo.', 'warn'); return; }
