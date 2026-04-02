@@ -1873,19 +1873,82 @@
                     let appended = 0, skipped = 0;
                     const ledgerMap = {};
                     rawData.forEach(r => { if (r['Claim No']) ledgerMap[String(r['Claim No']).trim()] = r; });
+
+                    // Flexible header aliases for old exports
+                    const colAliases = {
+                        'MRS':           ['MRS', 'Mrs', 'MRS No', 'MRS Number'],
+                        'VIN':           ['VIN', 'Vin', 'Chassis No', 'Chassis'],
+                        'Claim No':      ['Claim No', 'Clm No', 'Claim Number', 'Claim#', 'ClaimNo'],
+                        'Claim Date':    ['Claim Date', 'Clm Date', 'ClaimDate'],
+                        'Claim Type':    ['Claim Type', 'Clm Type', 'TypeOfClaim', 'Type'],
+                        'R/O No':        ['R/O No', 'RO No', 'RO Number', 'Repair Order', 'RO Suffix', 'RONo'],
+                        'R/O Date':      ['R/O Date', 'RO Date', 'RODate'],
+                        'Part Desc':     ['Part Desc', 'Part Description', 'Part Name', 'Item Description', 'PartDesc'],
+                        'Total Amt':     ['Total Amt', 'Total Amount', 'Claim Amount', 'Approve Amount by HMI', 'Amt', 'TotalAmt'],
+                        'Labour':        ['Labour', 'Labor', 'Labour Amt'],
+                        'part':          ['part', 'Part', 'Parts', 'Parts Amt'],
+                        'Sublet':        ['Sublet', 'Sublet Amt'],
+                        'IGST':          ['IGST', 'GST', 'Tax', 'Total Approved Tax Amt'],
+                        'AMT RECEIVED':  ['AMT RECEIVED', 'Amt Received', 'Gross Amount', 'Remittance Amt', 'Ramittance Amt.', 'Received'],
+                        'DIFF AMT':      ['DIFF AMT', 'Diff Amt', 'Difference'],
+                        'Invoice No':    ['Invoice No', 'Invoice Number', 'InvoiceNo'],
+                        'PAYMENT DATE':  ['PAYMENT DATE', 'Payment Date', 'Payment Cheque Date', 'PaymentDate'],
+                        'AUTH. SIGN':    [], // always blank
+                        'REMARKS':       ['REMARKS', 'Remarks', 'Status', 'Remark'],
+                    };
+
+                    // Build a resolver: for a given old row, find value by alias list
+                    const resolveCol = (row, col) => {
+                        const aliases = colAliases[col] || [col];
+                        for (const alias of aliases) {
+                            if (row[alias] !== undefined && row[alias] !== null && row[alias] !== '') return row[alias];
+                        }
+                        return '';
+                    };
+
                     source3Data.forEach(row => {
-                        const claimKey = String(row['Claim No'] || row['Clm No'] || row['Claim Number'] || '').trim();
+                        const claimKey = String(
+                            row['Claim No'] || row['Clm No'] || row['Claim Number'] || row['Claim#'] || ''
+                        ).trim();
                         if (!claimKey) { skipped++; return; }
                         if (ledgerMap[claimKey]) { skipped++; return; }
+
                         const newRow = {};
-                        columns.forEach(col => { newRow[col] = (row[col] !== undefined && row[col] !== null) ? row[col] : ''; });
+                        columns.forEach(col => {
+                            if (col === 'AUTH. SIGN') { newRow[col] = ''; return; } // always blank
+                            newRow[col] = resolveCol(row, col);
+                        });
                         newRow['Claim No'] = claimKey;
-                        if (!newRow['MRS']) newRow['MRS'] = '';
-                        recalcRow(newRow);
+
+                        // MRS: keep if valid number, else blank
+                        const mrsRaw = parseInt(newRow['MRS']);
+                        newRow['MRS'] = (!isNaN(mrsRaw) && mrsRaw > 0) ? mrsRaw : '';
+
+                        // REMARKS: if CANCELLED variant keep it, else recalc will set it
+                        const existingRemark = String(newRow['REMARKS']).toUpperCase();
+                        if (existingRemark.startsWith('CANCELLED')) {
+                            // keep as-is
+                        } else {
+                            newRow['REMARKS'] = ''; // recalcRow will set PAID / PAYMENT SHORT
+                        }
+
+                        // Normalize numeric fields
+                        ['Total Amt','Labour','part','Sublet','IGST','AMT RECEIVED','DIFF AMT'].forEach(f => {
+                            const v = parseFloat(String(newRow[f] || '').replace(/[^\d.-]/g, ''));
+                            newRow[f] = isNaN(v) ? '' : v;
+                        });
+
+                        // Recalculate DIFF AMT and REMARKS (unless cancelled)
+                        if (!existingRemark.startsWith('CANCELLED')) recalcRow(newRow);
+
                         rawData.push(newRow);
                         ledgerMap[claimKey] = newRow;
                         appended++;
                     });
+
+                    // Sort by MRS ascending after append
+                    rawData.sort((a, b) => (parseInt(a['MRS']) || 0) - (parseInt(b['MRS']) || 0));
+
                     source3Data = null;
                     document.getElementById('status-source3').innerText = 'Direct Append';
                     document.getElementById('status-source3').style.color = '';
@@ -1895,7 +1958,7 @@
                 } catch (err) {
                     showToast('Append error: ' + err.message, 'danger');
                 } finally { btn.innerHTML = orig; btn.classList.remove('loading'); }
-                return; // ← always stop here, never fall into source1/2 flow
+                return;
             }
 
             // ── Source 1 + 2 flow ──
