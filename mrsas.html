@@ -731,6 +731,15 @@
             border-left-color: var(--primary);
         }
 
+        tbody tr.row-clickable:focus {
+            outline: none;
+        }
+
+        tbody tr.row-clickable:focus-visible td {
+            background: rgba(42, 181, 165, 0.15) !important;
+            box-shadow: inset 0 0 0 2px var(--primary);
+        }
+
         /* Editable cell styling */
         td.editable {
             cursor: pointer;
@@ -1999,6 +2008,21 @@
                             <line x1="21" y1="21" x2="16.65" y2="16.65" />
                         </svg>
                         <input type="text" id="tableSearch" placeholder="Search RO No..." oninput="filterTable()">
+                        
+                        <!-- Search Mode Custom Dropdown inside input wrap -->
+                        <div class="c-drop" id="searchModeDrop" style="margin-left:auto; flex-shrink:0;">
+                            <button type="button" class="c-drop-trigger" onclick="toggleSearchDrop(event)" style="padding:4px 8px; font-size:0.65rem; background:rgba(42,181,165,0.1); border:1px solid var(--primary); color:var(--primary); border-radius:6px; font-weight:800; display:flex; align-items:center; gap:4px; transform:translateY(-1px);">
+                                <span id="searchModeDisplay">RO No</span>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"/>
+                                </svg>
+                            </button>
+                            <ul class="c-drop-list" id="searchModeList" style="width:110px; right:0; left:auto; top:calc(100% + 4px);">
+                                <li onclick="selectSearchMode('ro', 'RO No')" class="selected">RO No</li>
+                                <li onclick="selectSearchMode('mrs', 'MRS No')">MRS No</li>
+                                <li onclick="selectSearchMode('vin', 'VIN No')">VIN No</li>
+                            </ul>
+                        </div>
                     </div>
                     <div class="search-bar" onclick="togglemrsBookPicker(event)"
                         style="flex:1; min-width:180px; max-width:260px; cursor:pointer; position:relative; user-select:none;">
@@ -2020,10 +2044,6 @@
 
                 <!-- Group 2: Action Buttons -->
                 <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
-                    <button id="searchModeBtn" onclick="toggleSearchMode()" class="btn-premium btn-outline"
-                        style="padding:7px 10px; border-radius:9px; border-color:var(--primary); background:rgba(42,181,165,0.08); color:var(--primary); font-size:0.68rem; font-weight:800; cursor:pointer; flex-shrink:0;">
-                        RO No
-                    </button>
                     <div
                         style="display:flex; gap:4px; align-items:center; background:rgba(0,0,0,0.03); padding:3px; border-radius:10px; border:1px solid var(--border);">
                         <button class="btn-premium btn-outline" onclick="openCancelMRSModal()"
@@ -2556,13 +2576,10 @@
             const pickerHeight = Math.max(picker.offsetHeight || 0, 320);
             const pickerWidth = Math.max(picker.offsetWidth || 0, 280);
 
-            // User requested that the calendar should always open TO THE TOP by default.
-            picker.style.top = (rect.top - pickerHeight - 8) + 'px';
-
-            // Fallback safety if opening at top pushes it off-screen 
-            if ((rect.top - pickerHeight - 8) < 0) {
-                picker.style.top = (rect.bottom + 8) + 'px';
-            }
+            // User requested that the calendar should always open TO THE TOP unconditionally.
+            // If opening at the top pushes it off-screen, we just clamp it to the top edge (10px).
+            let targetTop = rect.top - pickerHeight - 8;
+            picker.style.top = Math.max(10, targetTop) + 'px';
 
             // HORIZONTAL SAFETY: Ensure doesn't go off left/right
             let leftPos = rect.left;
@@ -3169,6 +3186,12 @@
                     if (!books.includes(r.dividerText)) books.push(r.dividerText);
                 }
             });
+            // Ensure dropdown list is explicitly descending numerically
+            books.sort((a, b) => {
+                const numA = parseInt((a.match(/\d+/) || [0])[0]);
+                const numB = parseInt((b.match(/\d+/) || [0])[0]);
+                return numB - numA;
+            });
 
             const picker = document.createElement('div');
             picker.className = 'mrs-book-popover';
@@ -3488,7 +3511,7 @@
                     isUnassigned ? 'row-unassigned' : ''
                 ].filter(Boolean).join(' ');
 
-                rows.push(`<tr class="${rowClasses}" onclick="openMRSModal(${ri})" title="${isRowLocked ? '🔒 Locked - Click to view' : isUnassigned ? 'Click to assign MRS' : 'Click to view MRS #' + mrsVal}">${cells}</tr>`);
+                rows.push(`<tr class="${rowClasses}" tabindex="0" onkeydown="handleRowKey(event, ${ri})" onclick="openMRSModal(${ri})" title="${isRowLocked ? '🔒 Locked - Click to view' : isUnassigned ? 'Click to assign MRS' : 'Click to view MRS #' + mrsVal}">${cells}</tr>`);
             });
             tbody.innerHTML = rows.join('');
 
@@ -3532,6 +3555,9 @@
                 if (searchMode === 'mrs') {
                     const mrs = String(row['MRS'] || '').toLowerCase();
                     return mrs.includes(query);
+                } else if (searchMode === 'vin') {
+                    const vin = String(row['VIN'] || '').toLowerCase();
+                    return vin.includes(query);
                 } else {
                     const ro = String(row['R/O No'] || '').toLowerCase();
                     const roSuffix = ro.replace(/^[^0-9]*/, '');
@@ -3540,6 +3566,32 @@
             });
             renderData(filtered);
         }
+
+        // ── Animated Search Mode Dropdown ──
+        function toggleSearchDrop(e) {
+            e.stopPropagation();
+            document.getElementById('searchModeDrop').classList.toggle('open');
+        }
+        function selectSearchMode(mode, label) {
+            searchMode = mode;
+            document.getElementById('searchModeDisplay').textContent = label;
+            document.getElementById('searchModeDrop').classList.remove('open');
+            
+            const inp = document.getElementById('tableSearch');
+            inp.placeholder = `Search by ${label}...`;
+            inp.value = '';
+            
+            document.querySelectorAll('#searchModeList li').forEach(li => li.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+            
+            renderData(rawData);
+            inp.focus();
+        }
+        document.addEventListener('click', (e) => {
+            const drop = document.getElementById('searchModeDrop');
+            if (drop && !drop.contains(e.target)) drop.classList.remove('open');
+        });
+
 
         // ── Feature #4: Global keydown — type number → focus search & insert digit ──
         // ── Feature #4: Keyboard Listener (Type to search & Enter to open) ──
@@ -3588,6 +3640,40 @@
                 return;
             }
         });
+
+        // ── Keyboard Row Navigation ──
+        function handleRowKey(e, ri) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                openMRSModal(ri);
+            } else if (e.key === 'Backspace' || e.key === 'Delete') {
+                e.preventDefault();
+                if (isLocked) { showToast('🔒 Ledger Locked', 'danger'); return; }
+                const row = rawData[ri];
+                if (row && !row.isRowLocked && row['MRS']) {
+                    row['MRS'] = '';
+                    row['PAYMENT DATE'] = '—';
+                    saveLedger();
+                    renderData(rawData);
+                    showToast('Assigned MRS Cleared.', 'info');
+                    // Refocus the same row if possible
+                    setTimeout(() => {
+                        const trs = document.querySelectorAll('tbody tr:not(.mrs-range-divider-row)');
+                        if (trs[ri % PAGE_SIZE]) trs[ri % PAGE_SIZE].focus();
+                    }, 50);
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                let next = e.currentTarget.nextElementSibling;
+                while (next && next.classList.contains('mrs-range-divider-row')) next = next.nextElementSibling;
+                if (next) next.focus();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                let prev = e.currentTarget.previousElementSibling;
+                while (prev && prev.classList.contains('mrs-range-divider-row')) prev = prev.previousElementSibling;
+                if (prev) prev.focus();
+            }
+        }
 
         // ── Feature #5+6: MRS Modal ──
         function openMRSModal(rowIdx) {
@@ -3757,7 +3843,12 @@
                 added++;
             });
 
-            rawData.sort((a, b) => (parseInt(a['MRS']) || 0) - (parseInt(b['MRS']) || 0));
+            rawData.sort((a, b) => {
+                const sA = (a.isDivider || (a['MRS'] && a['MRS'] !== '-')) ? 1 : 0;
+                const sB = (b.isDivider || (b['MRS'] && b['MRS'] !== '-')) ? 1 : 0;
+                if (sA !== sB) return sA - sB;
+                return (parseInt(b['MRS']) || 0) - (parseInt(a['MRS']) || 0);
+            });
             saveLedger(); renderData(rawData); closeCancelMRSModal();
             const skipMsg = skipped ? ` · ${skipped} already exist` : '';
             showToast(`✓ ${added} Cancelled MRS added${skipMsg}.`, 'success');
@@ -4372,7 +4463,12 @@
             rawData.push({ isDivider: true, dividerText: dividerText, MRS: fromVal });
 
             // Sort to place divider correctly
-            rawData.sort((a, b) => (parseInt(a['MRS']) || 0) - (parseInt(b['MRS']) || 0));
+            rawData.sort((a, b) => {
+                const sA = (a.isDivider || (a['MRS'] && a['MRS'] !== '-')) ? 1 : 0;
+                const sB = (b.isDivider || (b['MRS'] && b['MRS'] !== '-')) ? 1 : 0;
+                if (sA !== sB) return sA - sB;
+                return (parseInt(b['MRS']) || 0) - (parseInt(a['MRS']) || 0);
+            });
 
             saveLedger();
             renderData(rawData);
