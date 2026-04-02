@@ -2245,11 +2245,21 @@
                             if (target.isRowLocked) return;
                             // Protect existing payment info
                             if (!target['AMT RECEIVED'] || target['AMT RECEIVED'] === 0 || target['AMT RECEIVED'] === '—') {
-                                const rawAmt = match2['Gross Amount'] || match2['Ramittance Amt.'] || 0;
+                                // Broadened aliases based on common HMI report formats
+                                const rawAmt = findVal(match2, [
+                                    "Gross Amount", 
+                                    "Total Approved Amt. (W Tax)", 
+                                    "Total Approved Amt.(W Tax)", 
+                                    "Total Claimed Amt.(W Tax)",
+                                    "Ramittance Amt.", 
+                                    "Remittance Amt", 
+                                    "Amount Received", 
+                                    "Payment Amount"
+                                ]) || 0;
                                 target['AMT RECEIVED'] = Math.round(parseFloat(String(rawAmt).replace(/[^\d.-]/g, '')) * 100) / 100 || 0;
                             }
                             if (!target['PAYMENT DATE'] || target['PAYMENT DATE'] === '—' || !target['PAYMENT DATE']) {
-                                target['PAYMENT DATE'] = match2['Payment Cheque Date'] || '';
+                                target['PAYMENT DATE'] = findVal(match2, ["Payment Cheque Date", "Payment Date", "Cheque Date", "Date", "Payment Date1"]) || '';
                             }
                             recalcRow(target);
                             updated++;
@@ -2354,11 +2364,20 @@
                     if (match2) {
                         // "recived amount and payment date reset dont change" - only fill if empty
                         if (!target['AMT RECEIVED'] || target['AMT RECEIVED'] === 0) {
-                            const rawAmt = match2['Gross Amount'] || match2['Ramittance Amt.'] || 0;
+                            const rawAmt = findVal(match2, [
+                                "Gross Amount", 
+                                "Total Approved Amt. (W Tax)", 
+                                "Total Approved Amt.(W Tax)", 
+                                "Total Claimed Amt.(W Tax)",
+                                "Ramittance Amt.", 
+                                "Remittance Amt", 
+                                "Amount Received", 
+                                "Payment Amount"
+                            ]) || 0;
                             target['AMT RECEIVED'] = Math.round(parseFloat(String(rawAmt).replace(/[^\d.-]/g, '')) * 100) / 100 || 0;
                         }
                         if (!target['PAYMENT DATE'] || target['PAYMENT DATE'] === '—' || !target['PAYMENT DATE']) {
-                            target['PAYMENT DATE'] = match2['Payment Cheque Date'] || '';
+                            target['PAYMENT DATE'] = findVal(match2, ["Payment Cheque Date", "Payment Date", "Cheque Date", "Date", "Payment Date1"]) || '';
                         }
                     }
                     recalcRow(target);
