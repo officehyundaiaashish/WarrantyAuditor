@@ -1903,6 +1903,18 @@
                 updateLockUI();
                 
                 if (saved && Array.isArray(saved)) { 
+                    // Migration: Round noisy floats from previous imports
+                    saved.forEach(r => {
+                        if (!r.isDivider) {
+                            ['Total Amt','Labour','part','Sublet','IGST','AMT RECEIVED','DIFF AMT'].forEach(f => {
+                                if (r[f]) {
+                                    const v = parseFloat(String(r[f]).replace(/[^\d.-]/g, ''));
+                                    if (!isNaN(v)) r[f] = Math.round(v * 100) / 100 || 0;
+                                }
+                            });
+                            recalcRow(r);
+                        }
+                    });
                     rawData = saved; 
                     renderData(rawData); 
                 }
@@ -2167,7 +2179,7 @@
 
                         ['Total Amt','Labour','part','Sublet','IGST','AMT RECEIVED','DIFF AMT'].forEach(f => {
                             const v = parseFloat(String(newRow[f] || '').replace(/[^\d.-]/g, ''));
-                            newRow[f] = isNaN(v) ? '' : v;
+                            newRow[f] = isNaN(v) ? '' : (Math.round(v * 100) / 100);
                         });
 
                         const remarkRaw = String(newRow['REMARKS']).toUpperCase();
@@ -2362,10 +2374,19 @@
 
         // ── Recalculate DIFF AMT & REMARKS ──
         function recalcRow(row) {
-            const total = parseFloat(row['Total Amt']) || 0;
-            const received = parseFloat(row['AMT RECEIVED']) || 0;
+            // Force precision on inputs to handle Excel float noise (e.g. 0.019999999998)
+            const rawTotal = parseFloat(row['Total Amt']) || 0;
+            const rawReceived = parseFloat(row['AMT RECEIVED']) || 0;
+            
+            const total = Math.round(rawTotal * 100) / 100;
+            const received = Math.round(rawReceived * 100) / 100;
+
+            // Store back cleaned values
+            if (row['Total Amt'] !== undefined && row['Total Amt'] !== '' && row['Total Amt'] !== '—') row['Total Amt'] = total;
+            if (row['AMT RECEIVED'] !== undefined && row['AMT RECEIVED'] !== '' && row['AMT RECEIVED'] !== '—') row['AMT RECEIVED'] = received;
+
             const diff = total - received;
-            row['DIFF AMT'] = Math.round(diff);
+            row['DIFF AMT'] = Math.round(diff * 100) / 100; // Force precision on difference too
 
             // If absolutely no payment info or total, keep it blank for manual entry if requested
             if (!total && !received) return;
@@ -2374,7 +2395,9 @@
             const cur = String(row['REMARKS'] || "").toUpperCase();
             const autoTypes = ["", "PAID", "PAYMENT SHORT", "—", "BY HMI", "PENDING"];
             if (autoTypes.some(t => cur === t || cur.includes("PAYMENT SHORT"))) {
-                if (diff > 0) row['REMARKS'] = 'PAYMENT SHORT';
+                // If diff is effectively zero (precision safe check)
+                if (Math.abs(diff) < 0.01) row['REMARKS'] = 'PAID';
+                else if (diff > 0) row['REMARKS'] = 'PAYMENT SHORT';
                 else row['REMARKS'] = 'PAID';
             }
         }
