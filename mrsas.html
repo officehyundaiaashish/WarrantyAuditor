@@ -1886,11 +1886,11 @@
     </div>
 
     <script>
-        // ── LocalForage Config ──
-        localforage.config({ name: 'WarrantyAuditor', storeName: 'mrs_ledger_store' });
+        // ── Storage Configuration (Aligned with main.html) ──
+        localforage.config({ name: 'AutoPuncherDB', storeName: 'audits' });
 
         const LEDGER_KEY = 'mrs_ledger';
-        const LOCK_KEY = 'mrs_is_locked';
+        const LOCK_KEY   = 'mrs_is_locked';
         let rawData = [];
         let isLocked = false;
 
