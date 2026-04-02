@@ -2198,22 +2198,61 @@
             if (isLocked) { showToast('🔒 Cannot import while ledger is LOCKED!', 'danger'); return; }
 
             // ── Source 1 + 2 flow ──
-            if (!source1Data) {
-                showToast('Please upload Source 1 (Main Claims) file.', 'warn'); return;
-            }
-            if (!source2Data) {
-                showToast('Please upload Source 2 (Payments) file.', 'warn'); return;
+            if (!source1Data && !source2Data) {
+                showToast('Please upload Source 1 or Source 2 to continue.', 'warn'); return;
             }
             const btn = document.querySelector('.btn-feed');
             const orig = btn.innerHTML;
             btn.innerHTML = '<span class="loading-spinner"></span> Processing...';
             btn.classList.add('loading');
             await new Promise(r => setTimeout(r, 100));
+
             const findVal = (m, terms) => {
                 const lowTerms = terms.map(t => t.toLowerCase().replace(/[\s_\-\.]/g, ''));
                 const key = Object.keys(m).find(k => lowTerms.includes(k.toLowerCase().replace(/[\s_\-\.]/g, '')));
                 return key ? m[key] : null;
             };
+
+            // Solo Source 2 logic: Sync payments to existing database
+            if (source2Data && !source1Data) {
+                try {
+                    const payMap = {};
+                    source2Data.forEach(row => {
+                        const k = String(findVal(row, ["Claim No", "Clm No", "Claim Number", "Claim#"]) || "").trim();
+                        if (k) payMap[k] = row;
+                    });
+                    let updated = 0;
+                    rawData.forEach(target => {
+                        const ck = String(target['Claim No'] || '').trim();
+                        if (!ck || target.isDivider) return;
+                        const match2 = payMap[ck];
+                        if (match2) {
+                            if (target.isRowLocked) return;
+                            // Protect existing payment info
+                            if (!target['AMT RECEIVED'] || target['AMT RECEIVED'] === 0 || target['AMT RECEIVED'] === '—') {
+                                target['AMT RECEIVED'] = match2['Gross Amount'] || match2['Ramittance Amt.'] || 0;
+                            }
+                            if (!target['PAYMENT DATE'] || target['PAYMENT DATE'] === '—' || !target['PAYMENT DATE']) {
+                                target['PAYMENT DATE'] = match2['Payment Cheque Date'] || '';
+                            }
+                            recalcRow(target);
+                            updated++;
+                        }
+                    });
+                    saveLedger(); renderData(rawData);
+                    showToast(`✓ Sync Complete: ${updated} claims updated with payment data.`, 'success');
+                } catch(err) {
+                    showToast('Sync error: ' + err.message, 'danger');
+                } finally { btn.innerHTML = orig; btn.classList.remove('loading'); }
+                return;
+            }
+
+            if (!source1Data) {
+                showToast('Please upload Source 1 (Main Claims) file.', 'warn'); return;
+            }
+            if (!source2Data) {
+                showToast('Please upload Source 2 (Payments) file.', 'warn'); return;
+            }
 
             try {
                 const payMap = {};
@@ -2786,8 +2825,10 @@
 
         // ── Feature #5+6: MRS Modal ──
         function openMRSModal(rowIdx) {
-            currentEditingRowIdx = rowIdx;
+            if (isLocked) { showToast('🔒 Ledger is LOCKED! Editing disabled.', 'warn'); return; }
             const row = rawData[rowIdx];
+            if (row.isRowLocked) { showToast('🔒 This claim is individually LOCKED!', 'danger'); return; }
+            currentEditingRowIdx = rowIdx;
             document.getElementById('mrsInfoRO').textContent = row['R/O No'] || '—';
             document.getElementById('mrsInfoClaim').textContent = row['Claim No'] || '—';
             document.getElementById('mrsInfoType').textContent = row['Claim Type'] || '—';
