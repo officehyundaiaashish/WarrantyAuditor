@@ -1501,6 +1501,8 @@
                             <span id="mrs-header-pending" class="pending-badge-header" style="display:none;"
                                 onclick="triggerPendingFilter()" title="Click to filter pending payments">0
                                 Pending</span>
+                            <span id="mrs-header-unmarked" class="pending-badge-header" style="display:none;"
+                                onclick="triggerUnmarkedFilter()" title="Click to filter unmarked MRS">0 No MRS</span>
                             <span id="mrs-header-total" class="stat-badge total-badge">Tot: —</span>
                             <span id="mrs-header-received" class="stat-badge received-badge">Rec: —</span>
                             <span id="mrs-header-diff" class="stat-badge diff-badge">Dif: —</span>
@@ -1931,13 +1933,23 @@
                 const isPending = (!r['AMT RECEIVED'] || r['AMT RECEIVED'] === 0) &&
                     (!r['PAYMENT DATE'] || r['PAYMENT DATE'] === '' || r['PAYMENT DATE'] === '—');
                 if (isPending) acc.pending++;
+
+                const isUnmarked = !r['MRS'] || r['MRS'] === '' || r['MRS'] === '—';
+                if (isUnmarked) acc.unmarked++;
+
                 return acc;
-            }, { total: 0, recvd: 0, pending: 0 });
+            }, { total: 0, recvd: 0, pending: 0, unmarked: 0 });
 
             const hBadge = document.getElementById('mrs-header-pending');
             if (hBadge) {
                 hBadge.textContent = `${stats.pending} Pending`;
                 hBadge.style.display = stats.pending > 0 ? 'inline-flex' : 'none';
+            }
+
+            const uBadge = document.getElementById('mrs-header-unmarked');
+            if (uBadge) {
+                uBadge.textContent = `${stats.unmarked} No MRS`;
+                uBadge.style.display = stats.unmarked > 0 ? 'inline-flex' : 'none';
             }
 
             document.getElementById('mrs-header-count').textContent = `Claims: ${rawData.length}`;
@@ -2215,6 +2227,27 @@
                 const sInput = document.getElementById('tableSearch');
                 if (sInput) sInput.value = '';
                 showToast(`Showing ${pending.length} Pending Collections`, 'success');
+            }
+        }
+
+        function triggerUnmarkedFilter() {
+            const unmarked = rawData.filter(r => !r['MRS'] || r['MRS'] === '' || r['MRS'] === '—');
+
+            const isCurrentlyShowingUnmarked = (currentDataset.length === unmarked.length &&
+                currentDataset.every((v, i) => v === unmarked[i]));
+
+            if (isCurrentlyShowingUnmarked) {
+                renderData(rawData);
+                showToast("Showing All Records", "info");
+            } else {
+                if (unmarked.length === 0) {
+                    showToast("All claims have MRS numbers!", "success");
+                    return;
+                }
+                renderData(unmarked);
+                const sInput = document.getElementById('tableSearch');
+                if (sInput) sInput.value = '';
+                showToast(`Showing ${unmarked.length} claims without MRS`, 'warn');
             }
         }
 
