@@ -574,18 +574,18 @@
         }
 
         td {
-            padding: 8px 10px;
-            /* Tighter padding */
+            padding: 5px 6px;
             border-bottom: 1px solid var(--border);
             color: var(--text-main);
             transition: background-color 0.1s;
             white-space: nowrap;
+            font-size: 0.7rem;
         }
 
         /* Essential columns should not cut off; Part Desc can have ellipsis */
         td:nth-child(2),
         td:nth-child(8) {
-            max-width: 100px;
+            max-width: 80px;
             overflow: hidden;
             text-overflow: ellipsis;
         }
@@ -598,15 +598,27 @@
         td:nth-child(13),
         td:nth-child(14),
         td:nth-child(15) {
-            max-width: 70px;
+            width: 55px;
             text-align: right;
+            padding-right: 5px;
+        }
+
+        /* Fixed width for date columns to prevent "Indian Standard Time" spill */
+        td:nth-child(4), 
+        td:nth-child(7), 
+        td:nth-child(17) {
+            width: 75px;
+            min-width: 75px;
+            text-align: center;
         }
 
         /* Prevent shift on hover by reserving space for the indicator border */
         td:first-child {
             border-left: 3px solid transparent;
-            padding-left: 7px;
+            padding-left: 5px;
             /* Tight padding */
+            width: 60px; /* MRS column */
+            min-width: 60px;
         }
 
         tr:last-child td {
@@ -1847,6 +1859,14 @@
                 const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
                 const ws = wb.Sheets[wb.SheetNames[0]];
 
+                const formatDate = (d) => {
+                    if (!d || !(d instanceof Date) || isNaN(d)) return d;
+                    const day = String(d.getDate()).padStart(2, '0');
+                    const month = String(d.getMonth() + 1).padStart(2, '0');
+                    const year = d.getFullYear();
+                    return `${day}/${month}/${year}`;
+                };
+
                 if (type === 'source3') {
                     // ── Raw parse: respect Excel headers + merged cells ──
                     const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
@@ -1866,35 +1886,50 @@
                     // Step 2: process all rows, identifying dividers and data
                     source3Data = [];
                     for (let i = 0; i < aoa.length; i++) {
-                        if (i === headerRowIdx) continue; // Skip the header row itself
+                        // FORCE SKIP: skip row 0 if it contains many headers, or if identified by detection
+                        if (i === 0 || i === headerRowIdx) continue;
 
                         const rowArr = aoa[i];
                         const nonEmptyCells = rowArr.filter(v => v !== '').length;
-                        if (nonEmptyCells === 0) continue; // skip fully empty rows
+                        if (nonEmptyCells === 0) continue; 
 
                         const firstCell = String(rowArr[0] || '').trim();
                         
                         // Check for MRS BOOK divider (Merged row in Excel)
-                        if (firstCell.toUpperCase().includes('MRS BOOK') || (nonEmptyCells === 1 && firstCell)) {
+                        if (firstCell.toUpperCase().includes('MRS BOOK') || (nonEmptyCells === 1 && firstCell && !headers.includes(firstCell))) {
                             const rangeMatch = firstCell.match(/(\d+)/); 
                             const sortVal = rangeMatch ? parseInt(rangeMatch[0]) : 0;
                             source3Data.push({ isDivider: true, dividerText: firstCell, MRS: sortVal });
                             continue;
                         }
 
-                        // If we haven't found a header yet, or this row is before header, skip it if not a divider
-                        if (headerRowIdx === -1 || i < headerRowIdx) continue;
+                        // Skip rows before header unless they were dividers
+                        if (headerRowIdx !== -1 && i < headerRowIdx) continue;
 
                         const obj = {};
                         headers.forEach((h, idx) => {
-                            if (h) obj[h] = (rowArr[idx] !== undefined && rowArr[idx] !== null) ? rowArr[idx] : '';
+                            if (h) {
+                                let val = (rowArr[idx] !== undefined && rowArr[idx] !== null) ? rowArr[idx] : '';
+                                if (val instanceof Date) val = formatDate(val);
+                                obj[h] = val;
+                            }
                         });
                         source3Data.push(obj);
                     }
                 } else {
                     const data = XLSX.utils.sheet_to_json(ws);
-                    if (type === 'source1') source1Data = data;
-                    else if (type === 'source2') source2Data = data;
+                    // Format dates in Source 1 and 2 as well
+                    const formattedData = data.map(row => {
+                        const newRow = {};
+                        for (const key in row) {
+                            let val = row[key];
+                            if (val instanceof Date) val = formatDate(val);
+                            newRow[key] = val;
+                        }
+                        return newRow;
+                    });
+                    if (type === 'source1') source1Data = formattedData;
+                    else if (type === 'source2') source2Data = formattedData;
                 }
 
                 status.innerText = '✓ ' + file.name; status.style.color = 'var(--primary)';
@@ -2171,7 +2206,7 @@
         }
 
         // ── Pagination state ──
-        const PAGE_SIZE = 50;
+        const PAGE_SIZE = 100;
         let currentPage = 1;
         let currentDataset = []; // the active filtered/full dataset
 
@@ -2644,6 +2679,7 @@
         }
         function triggerPendingFilter() {
             const pending = rawData.filter(r =>
+                !r.isDivider &&
                 String(r['REMARKS']).toUpperCase() !== 'CANCELLED' &&
                 (!r['AMT RECEIVED'] || r['AMT RECEIVED'] === 0) &&
                 (!r['PAYMENT DATE'] || r['PAYMENT DATE'] === '' || r['PAYMENT DATE'] === '—')
