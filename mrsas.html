@@ -2257,9 +2257,18 @@
             if (picker.dataset.active === 'true') { picker.style.display = 'none'; picker.dataset.active = 'false'; return; }
             
             const rect = e.target.getBoundingClientRect();
-            picker.style.top = (rect.bottom + 8) + 'px';
+            picker.style.display = 'flex'; // Temporarily show to get offsetHeight correctly
+            const pickerHeight = picker.offsetHeight || 310;
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const spaceAbove = rect.top;
+            
+            if (spaceBelow < pickerHeight && spaceAbove > pickerHeight) {
+                picker.style.top = (rect.top - pickerHeight - 8) + 'px';
+            } else {
+                picker.style.top = (rect.bottom + 8) + 'px';
+            }
+            
             picker.style.left = rect.left + 'px';
-            picker.style.display = 'flex';
             picker.dataset.active = 'true';
             
             // Try to set current date from input
