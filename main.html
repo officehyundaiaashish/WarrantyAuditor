@@ -4402,6 +4402,7 @@
 
     <script>
         // --- PERSISTENT THEME & ICONS ---
+        localforage.config({ name: 'AutoPuncherDB', storeName: 'audits' });
 
         // ════════════════════════════════════════════════════════
         // JS § 1 — THEME & UI UTILITIES
@@ -4602,7 +4603,12 @@
 
         window.addEventListener('message', (e) => {
             if (e.data && e.data.type === 'theme-change') applyTheme(e.data.theme);
-            if (e.data && e.data.type === 'mrs-data-changed') loadDashboardNotifications();
+            if (e.data && e.data.type === 'mrs-data-changed') {
+                loadDashboardNotifications();
+                if (isAutoSyncOn() && localStorage.getItem('gist_token_enc')) {
+                    localStorage.setItem('gist_dirty_flag', 'true');
+                }
+            }
         });
 
 
@@ -4701,8 +4707,15 @@
         async function backupDatabase() {
             showLoader(true);
             try {
-                let backupObj = {}; const keys = await localforage.keys();
-                for (let k of keys) { backupObj[k] = await localforage.getItem(k); }
+                let backupObj = {}; 
+                const keys = await localforage.keys();
+                for (let k of keys) { 
+                    backupObj[k] = await localforage.getItem(k); 
+                }
+                // Explicitly add MRS keys to ensure they are present
+                backupObj['mrs_ledger'] = await localforage.getItem('mrs_ledger') || [];
+                backupObj['mrs_is_locked'] = await localforage.getItem('mrs_is_locked') || 'false';
+                
                 // Core app settings
                 backupObj['_secConfig'] = localStorage.getItem('auditor_sec') || "{}";
                 backupObj['_autosync'] = localStorage.getItem('gist_autosync') || 'false';
@@ -4748,7 +4761,7 @@
         }
 
         // --- STATE & GLOBAL UTILS ---
-        localforage.config({ name: 'AutoPuncherDB', storeName: 'audits' });
+        // localforage.config called at top of script
         let dbIndex = {}; let currentSessionKey = null; let currentData = []; let currentFilteredData = []; let currentAuditData = {}; let colMap = {};
         let _isNewSession = false; // true = brand new audit, false = resumed draft
         let _sessionSnapshot = null; // deep copy of audit_data at the moment session was opened
@@ -7315,7 +7328,18 @@ Upload the correct file.`);
             const tok = await getDecryptedToken(); if (!tok) return;
             if (alert) showLoader(true);
             try {
-                let bk = {}; const ks = await localforage.keys(); for (let k of ks) bk[k] = await localforage.getItem(k); bk['_secConfig'] = localStorage.getItem('auditor_sec') || '{}'; bk['_autosync'] = localStorage.getItem('gist_autosync') || 'false'; bk['_theme'] = localStorage.getItem('auditor_theme') || 'light'; bk['_customCodes'] = localStorage.getItem('auditor_custom_codes') || '{}';
+                let bk = {}; 
+                const ks = await localforage.keys(); 
+                for (let k of ks) bk[k] = await localforage.getItem(k); 
+                
+                // Ensure MRS data is included
+                bk['mrs_ledger'] = await localforage.getItem('mrs_ledger') || [];
+                bk['mrs_is_locked'] = await localforage.getItem('mrs_is_locked') || 'false';
+
+                bk['_secConfig'] = localStorage.getItem('auditor_sec') || '{}'; 
+                bk['_autosync'] = localStorage.getItem('gist_autosync') || 'false'; 
+                bk['_theme'] = localStorage.getItem('auditor_theme') || 'light'; 
+                bk['_customCodes'] = localStorage.getItem('auditor_custom_codes') || '{}';
                 const gid = localStorage.getItem('gist_id'), ds = new Date().toLocaleString();
                 const res = await fetch(gid ? 'https://api.github.com/gists/' + gid : 'https://api.github.com/gists', { method: gid ? 'PATCH' : 'POST', headers: { 'Authorization': 'token ' + tok, 'Content-Type': 'application/json' }, body: JSON.stringify({ description: 'Audit-it Backup ' + ds, public: false, files: { 'auditor_backup.json': { content: JSON.stringify(bk) } } }) });
                 bumpRate();
@@ -7960,7 +7984,12 @@ Upload the correct file.`);
                 for (let k of ks) {
                     bk[k] = await localforage.getItem(k);
                 }
+                // Explicitly bundle MRS data for cloud sync
+                bk['mrs_ledger'] = await localforage.getItem('mrs_ledger') || [];
+                bk['mrs_is_locked'] = await localforage.getItem('mrs_is_locked') || 'false';
+
                 bk['_secConfig'] = localStorage.getItem('auditor_sec') || '{}';
+                bk['_autosync'] = localStorage.getItem('gist_autosync') || 'false';
                 bk['_theme'] = localStorage.getItem('auditor_theme') || 'light';
                 bk['_customCodes'] = localStorage.getItem('auditor_custom_codes') || '{}';
                 bk['_savedAt'] = new Date().toISOString();
@@ -8088,9 +8117,10 @@ Upload the correct file.`);
 
                     // Verify critical keys exist in backup
                     const sessionKeys = Object.keys(data).filter(k => k.startsWith('audit_'));
-                    if (sessionKeys.length === 0 && !data['_customCodes'] && !data['_secConfig']) {
+                    const hasMrsData = data['mrs_ledger'] && data['mrs_ledger'].length > 0;
+                    if (sessionKeys.length === 0 && !hasMrsData && !data['_customCodes'] && !data['_secConfig']) {
                         showLoader(false);
-                        return showAppAlert("Restore aborted: backup appears empty — no audit sessions or settings found.\n\nLocal data is untouched.");
+                        return showAppAlert("Restore aborted: backup appears empty — no audit sessions, MRS data, or settings found.\n\nLocal data is untouched.");
                     }
 
                     // ALL CHECKS PASSED — now safe to clear local and restore
