@@ -2119,9 +2119,42 @@
             const end = Math.min(start + PAGE_SIZE, data.length);
             const pageRows = data.slice(start, end);
 
-            tbody.innerHTML = pageRows.map((row) => {
+            // ── MRS Range merged divider row ──
+            const rangeBar = document.getElementById('mrsRangeBar');
+            const rangeFrom = rangeBar.classList.contains('active') ? parseInt(rangeBar.dataset.from) : null;
+            const rangeTo   = rangeBar.classList.contains('active') ? parseInt(rangeBar.dataset.to)   : null;
+            let rangeInserted = false;
+
+            const rows = [];
+            pageRows.forEach((row) => {
                 const ri = rawData.indexOf(row);
+                const mrsNum = parseInt(row['MRS']);
                 const mrsVal = (row['MRS'] !== undefined && row['MRS'] !== null && row['MRS'] !== '') ? row['MRS'] : '\u2014';
+
+                // Insert merged divider just before the exact rangeFrom MRS number row
+                if (!rangeInserted && rangeFrom !== null && mrsNum === rangeFrom) {
+                    rows.push(`<tr class="mrs-range-divider-row" style="pointer-events:none;">
+                        <td colspan="${columns.length}" style="
+                            padding: 7px 14px;
+                            background: linear-gradient(90deg, rgba(42,181,165,0.13) 0%, rgba(77,207,195,0.06) 100%);
+                            border-top: 2px solid rgba(42,181,165,0.45);
+                            border-bottom: 2px solid rgba(42,181,165,0.45);
+                            color: var(--primary);
+                            font-size: 0.72rem;
+                            font-weight: 800;
+                            letter-spacing: 0.4px;
+                            text-transform: uppercase;
+                            white-space: nowrap;
+                        ">
+                            <span style="display:inline-flex;align-items:center;gap:7px;">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                                MRS from ${rangeFrom} to ${rangeTo}
+                            </span>
+                        </td>
+                    </tr>`);
+                    rangeInserted = true;
+                }
+
                 const cells = columns.map(col => {
                     let val = (row[col] !== undefined && row[col] !== null && row[col] !== '') ? row[col] : '\u2014';
                     if (col === 'MRS') {
@@ -2138,8 +2171,9 @@
                     }
                     return `<td class="editable" ondblclick="startEdit(event,this,${ri},'${col}')" title="Double-click to edit">${val}</td>`;
                 }).join('');
-                return `<tr class="row-clickable${String(row['REMARKS']).toUpperCase() === 'CANCELLED' ? ' row-cancelled' : ''}" onclick="openMRSModal(${ri})" title="Click to assign MRS #${mrsVal}">${cells}</tr>`;
-            }).join('');
+                rows.push(`<tr class="row-clickable${String(row['REMARKS']).toUpperCase() === 'CANCELLED' ? ' row-cancelled' : ''}" onclick="openMRSModal(${ri})" title="Click to assign MRS #${mrsVal}">${cells}</tr>`);
+            });
+            tbody.innerHTML = rows.join('');
 
             // Scroll table back to top on page change
             document.querySelector('.table-wrap').scrollTop = 0;
