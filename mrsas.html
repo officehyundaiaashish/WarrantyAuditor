@@ -1844,11 +1844,54 @@
             status.innerText = 'Loading...'; status.style.color = 'var(--accent)';
             const reader = new FileReader();
             reader.onload = (e) => {
-                const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-                const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-                if (type === 'source1') source1Data = data;
-                else if (type === 'source2') source2Data = data;
-                else if (type === 'source3') source3Data = data;
+                const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+
+                if (type === 'source3') {
+                    // ── Raw parse: respect Excel headers + merged cells ──
+                    // Step 1: expand merged cells — fill each merged region with top-left value
+                    if (ws['!merges']) {
+                        ws['!merges'].forEach(merge => {
+                            const tl = XLSX.utils.encode_cell({ r: merge.s.r, c: merge.s.c });
+                            const tlVal = ws[tl] ? ws[tl].v : '';
+                            for (let r = merge.s.r; r <= merge.e.r; r++) {
+                                for (let c = merge.s.c; c <= merge.e.c; c++) {
+                                    const addr = XLSX.utils.encode_cell({ r, c });
+                                    if (!ws[addr]) ws[addr] = { v: tlVal, t: 's' };
+                                }
+                            }
+                        });
+                    }
+                    // Step 2: convert to AOA (all rows, no header assumption)
+                    const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+                    if (aoa.length < 2) {
+                        showToast('Source 3: No data found in file.', 'warn'); return;
+                    }
+                    // Step 3: find the actual header row — first row where >3 non-empty cells
+                    let headerRowIdx = 0;
+                    for (let i = 0; i < Math.min(aoa.length, 10); i++) {
+                        const nonEmpty = aoa[i].filter(v => v !== '').length;
+                        if (nonEmpty > 3) { headerRowIdx = i; break; }
+                    }
+                    const headers = aoa[headerRowIdx].map(h => String(h).trim());
+                    // Step 4: convert remaining rows to objects keyed by Excel headers
+                    source3Data = [];
+                    for (let i = headerRowIdx + 1; i < aoa.length; i++) {
+                        const rowArr = aoa[i];
+                        const hasData = rowArr.some(v => v !== '');
+                        if (!hasData) continue; // skip fully empty rows
+                        const obj = {};
+                        headers.forEach((h, idx) => {
+                            if (h) obj[h] = (rowArr[idx] !== undefined && rowArr[idx] !== null) ? rowArr[idx] : '';
+                        });
+                        source3Data.push(obj);
+                    }
+                } else {
+                    const data = XLSX.utils.sheet_to_json(ws);
+                    if (type === 'source1') source1Data = data;
+                    else if (type === 'source2') source2Data = data;
+                }
+
                 status.innerText = '✓ ' + file.name; status.style.color = 'var(--primary)';
                 tile.classList.add('active');
             };
