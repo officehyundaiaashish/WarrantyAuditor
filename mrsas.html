@@ -479,6 +479,8 @@
             background: var(--surface);
             color: var(--primary);
         }
+        .search-bar svg { flex-shrink: 0; }
+
 
         .search-bar input {
             background: transparent;
@@ -837,6 +839,41 @@
         .status-dot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); }
 
 
+        /* MRS Book Picker Popover (Semi-Transparent Solid) */
+        .mrs-book-popover {
+            position: fixed;
+            z-index: 11000;
+            background: rgba(var(--surface-rgb), 0.95); /* Semi-transparent solid */
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+            padding: 5px;
+            max-height: 220px; /* Shows ~5 books at a time */
+            overflow-y: auto;
+            animation: popIn 0.15s ease-out;
+        }
+        /* Custom scrollbar for dropdown */
+        .mrs-book-popover::-webkit-scrollbar { width: 5px; }
+        .mrs-book-popover::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+        
+        .book-option {
+            padding: 10px 14px;
+            border-radius: 7px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.15s;
+        }
+        .book-option:hover {
+            background: rgba(42,181,165,0.12);
+            color: var(--primary);
+        }
+        .book-option + .book-option { margin-top: 2px; }
+        
         .pending-badge-header {
             display: inline-flex;
             align-items: center;
@@ -897,6 +934,16 @@
         }
         tr.row-cancelled:hover td {
             opacity: 0.7;
+        }
+
+        /* Locked MRS rows */
+        tr.row-locked td {
+            opacity: 0.65;
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+        /* Keep action column interactive */
+        tr.row-locked td:last-child {
+            opacity: 1;
         }
 
         /* ══════════════════════════════════════════
@@ -1590,57 +1637,42 @@
             </div>
 
             <div class="search-row">
-                <div class="search-bar" style="max-width:300px;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8" />
-                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                    </svg>
-                    <input type="text" id="tableSearch" placeholder="Search by RO No..."
-                        oninput="filterTable()">
+                <!-- Group 1: Search Inputs -->
+                <div style="display:flex; align-items:center; gap:8px; flex:2; min-width:350px;">
+                    <div class="search-bar" style="flex:1; min-width:180px;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" id="tableSearch" placeholder="Search RO No..." oninput="filterTable()">
+                    </div>
+                    <div class="search-bar" onclick="togglemrsBookPicker(event)" style="flex:1; min-width:180px; max-width:260px; cursor:pointer; position:relative; user-select:none;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                        <span id="mrsBookLabel" style="font-size:0.75rem; font-weight:700; color:inherit; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Jump to Book...</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.6; flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
                 </div>
-                <!-- MRS Book Filter -->
-                <div class="search-bar" style="max-width:260px;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                    <select id="mrsBookFilter" onchange="filterByBook()" style="background:transparent;border:none;outline:none;color:inherit;font-size:0.75rem;font-weight:700;width:100%;cursor:pointer;">
-                        <option value="">Jump to MRS Book...</option>
-                    </select>
+
+                <!-- Group 2: Action Buttons -->
+                <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+                    <button id="searchModeBtn" onclick="toggleSearchMode()" class="btn-premium btn-outline" style="padding:7px 10px; border-radius:9px; border-color:var(--primary); background:rgba(42,181,165,0.08); color:var(--primary); font-size:0.68rem; font-weight:800; cursor:pointer; flex-shrink:0;">
+                        RO No
+                    </button>
+                    <div style="display:flex; gap:4px; align-items:center; background:rgba(0,0,0,0.03); padding:3px; border-radius:10px; border:1px solid var(--border);">
+                        <button class="btn-premium btn-outline" onclick="openCancelMRSModal()" style="padding:6px 10px; border:none; color:var(--danger);" title="Cancelled MRS"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></button>
+                        <button class="btn-premium btn-outline" onclick="openMRSRangeModal()" style="padding:6px 10px; border:none;" title="MRS Range"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+                        <button class="btn-premium btn-outline" onclick="printLedger()" style="padding:6px 10px; border:none;" title="Print PDF"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+                        <button class="btn-premium btn-outline" onclick="backupLedger()" style="padding:6px 10px; border:none; color:var(--success);" title="Safety Backup"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+                    </div>
                 </div>
-                <button id="searchModeBtn" onclick="toggleSearchMode()" title="Toggle search mode" style="
-                    display:inline-flex;align-items:center;gap:4px;
-                    padding:3px 9px;border-radius:7px;border:1.5px solid var(--primary);
-                    background:rgba(42,181,165,0.10);color:var(--primary);
-                    font-size:0.68rem;font-weight:800;cursor:pointer;white-space:nowrap;
-                    letter-spacing:0.2px;flex-shrink:0;transition:all 0.18s ease;">
-                    RO No
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 16 12 21 17 16"/><polyline points="7 8 12 3 17 8"/></svg>
-                </button>
-                <button class="btn-premium btn-outline" onclick="openCancelMRSModal()" style="border-color:rgba(239,68,68,0.35);color:var(--danger);padding:7px 14px;font-size:0.78rem;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
-                    </svg>
-                    Cancelled MRS
-                </button>
-                <button class="btn-premium btn-outline" onclick="openMRSRangeModal()" style="padding:7px 14px;font-size:0.78rem;" title="Set MRS range sub-header">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
-                    </svg>
-                    MRS Range
-                </button>
-                <button class="btn-premium btn-outline" onclick="printLedger()" style="padding:7px 14px;font-size:0.78rem;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
-                    </svg>
-                    Print / PDF
-                </button>
-                <button class="btn-clear-all" onclick="clearLedger()">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    </svg>
-                    Clear All
-                </button>
-                <div class="record-count" id="recordCount">0 Records</div>
+
+                <!-- Group 3: Status & Info -->
+                <div style="display:flex; align-items:center; gap:10px; flex-shrink:0;">
+                    <button id="lockStatusBtn" onclick="toggleGlobalLock()" class="btn-premium btn-outline" style="padding:7px 12px; font-size:0.68rem; font-weight:800; border-color:var(--border); display:inline-flex; align-items:center; gap:6px; min-width:105px;">
+                        <span id="lockIcon">🔓</span> <span id="lockLabel">ACTIVE</span>
+                    </button>
+                    <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                        <div id="saveStatus" style="font-size:0.6rem; font-weight:800; color:var(--success); opacity:0; transition:opacity 0.3s; pointer-events:none;">SAVED ✓</div>
+                        <div class="record-count" id="recordCount" style="margin:0;">0 Records</div>
+                    </div>
+                </div>
             </div>
 
             <!-- HARMONIZED: table-wrap exactly matches main.html container style -->
@@ -1692,6 +1724,9 @@
                 <p id="mrsModalSubtitle">Enter the MRS number for this claim</p>
             </div>
             <div class="modal-body">
+                <div id="mrsModalLockedNotice" style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(239,68,68,0.1);border:1.5px solid rgba(239,68,68,0.25);border-radius:10px;font-size:0.75rem;font-weight:800;color:var(--danger);text-align:center;text-transform:uppercase;letter-spacing:0.5px;">
+                    🔒 This row is LOCKED! Changes disabled.
+                </div>
                 <div class="claim-info-box" id="mrsClaimInfo">
                     <div><span>R/O No</span><strong id="mrsInfoRO">—</strong></div>
                     <div><span>Claim No</span><strong id="mrsInfoClaim">—</strong></div>
@@ -1847,28 +1882,101 @@
     </div>
 
     <script>
-        // ── Persistence ──
+        // ── LocalForage Config ──
+        localforage.config({ name: 'WarrantyAuditor', storeName: 'mrs_ledger_store' });
+
         const LEDGER_KEY = 'mrs_ledger';
+        const LOCK_KEY = 'mrs_is_locked';
         let rawData = [];
+        let isLocked = false;
 
         async function loadLedger() {
             try {
                 const saved = await localforage.getItem(LEDGER_KEY);
-                if (saved) { rawData = saved; renderData(rawData); }
-            } catch (e) { console.error('Load ledger:', e); }
+                const lockedState = await localforage.getItem(LOCK_KEY);
+                isLocked = !!lockedState;
+                updateLockUI();
+                
+                if (saved && Array.isArray(saved)) { 
+                    rawData = saved; 
+                    renderData(rawData); 
+                }
+            } catch (e) { 
+                console.error('Load ledger:', e);
+                showToast('Storage Error: Could not load data.', 'danger');
+            }
         }
+        
+        function updateLockUI() {
+            const btn = document.getElementById('lockStatusBtn');
+            const icon = document.getElementById('lockIcon');
+            const label = document.getElementById('lockLabel');
+            if (isLocked) {
+                btn.style.borderColor = 'var(--danger)';
+                btn.style.color = 'var(--danger)';
+                btn.style.background = 'rgba(239,68,68,0.05)';
+                icon.textContent = '🔒';
+                label.textContent = 'LOCKED';
+                document.querySelector('.btn-feed').disabled = true;
+                document.querySelector('.btn-feed').style.opacity = '0.5';
+            } else {
+                btn.style.borderColor = 'var(--border)';
+                btn.style.color = 'inherit';
+                btn.style.background = '';
+                icon.textContent = '🔓';
+                label.textContent = 'UNLOCKED';
+                document.querySelector('.btn-feed').disabled = false;
+                document.querySelector('.btn-feed').style.opacity = '1';
+            }
+        }
+
+        async function toggleGlobalLock() {
+            isLocked = !isLocked;
+            await localforage.setItem(LOCK_KEY, isLocked);
+            updateLockUI();
+            showToast(isLocked ? '🔒 Ledger Locked! No changes allowed.' : '🔓 Ledger Unlocked!', isLocked ? 'warn' : 'success');
+        }
+        
+        let _saveTimeout;
         async function saveLedger() {
             try {
                 await localforage.setItem(LEDGER_KEY, rawData);
+                
+                // Show "SAVED" indicator
+                const status = document.getElementById('saveStatus');
+                status.style.opacity = '1';
+                clearTimeout(_saveTimeout);
+                _saveTimeout = setTimeout(() => { status.style.opacity = '0'; }, 2000);
+
                 // Notify parent for real-time dashboard updates
                 window.parent.postMessage({ type: 'mrs-data-changed' }, '*');
             }
-            catch (e) { console.error('Save ledger:', e); }
+            catch (e) { 
+                console.error('Save ledger:', e);
+                showToast('🚨 CRITICAL SAVE ERROR! Check disk space.', 'danger');
+                // Fallback to localStorage for small data if IndexedDB fails
+                try { localStorage.setItem(LEDGER_KEY + '_fallback', JSON.stringify(rawData)); } catch(ex){}
+            }
+        }
+
+        function backupLedger() {
+            if (!rawData.length) { showToast('Nothing to backup!', 'warn'); return; }
+            const dataStr = JSON.stringify(rawData, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `MRS_Ledger_Backup_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('✓ Safety Backup Downloaded!', 'success');
         }
 
         // ── Columns ──
         const columns = [
-            "MRS", "VIN", "Claim No", "Claim Date", "Claim Type",
+            "", "MRS", "VIN", "Claim No", "Claim Date", "Claim Type",
             "R/O No", "R/O Date", "Part Desc", "Total Amt", "Labour",
             "part", "Sublet", "IGST", "AMT RECEIVED", "DIFF AMT",
             "Invoice No", "PAYMENT DATE", "AUTH. SIGN", "REMARKS", " "
@@ -2083,6 +2191,8 @@
                 return;
             }
 
+            if (isLocked) { showToast('🔒 Cannot import while ledger is LOCKED!', 'danger'); return; }
+
             // ── Source 1 + 2 flow ──
             if (!source1Data) {
                 showToast('Please upload Source 1 (Main Claims) file.', 'warn'); return;
@@ -2252,23 +2362,105 @@
             setTimeout(() => document.getElementById('adminPassInput').focus(), 300);
         }
 
-        // ── Pagination state ──
+        // ── Pagination & State ──
         const PAGE_SIZE = 100;
         let currentPage = 1;
         let currentDataset = []; 
+
+        // ── Feature: MRS Book Picker (Solid Custom List) ──
+        let activeBookPicker = null;
+
+        function togglemrsBookPicker(evt) {
+            evt.stopPropagation();
+            if (activeBookPicker) { activeBookPicker.remove(); activeBookPicker = null; return; }
+            
+            const books = [];
+            rawData.forEach(r => {
+                if (r.isDivider && r.dividerText) {
+                    if (!books.includes(r.dividerText)) books.push(r.dividerText);
+                }
+            });
+
+            const picker = document.createElement('div');
+            picker.className = 'mrs-book-popover';
+            
+            // "Lock/Unlock" toggle inside dropdown
+            const lockSection = document.createElement('div');
+            lockSection.className = 'book-option';
+            lockSection.style.borderBottom = '1px solid var(--border)';
+            lockSection.style.marginBottom = '5px';
+            lockSection.style.paddingBottom = '8px';
+            lockSection.style.color = isLocked ? 'var(--danger)' : 'var(--success)';
+            lockSection.innerHTML = `<span>${isLocked ? '🔓' : '🔒'}</span> ${isLocked ? 'Unlock for Changes' : 'Lock Ledger Permanently'}`;
+            lockSection.onclick = (e) => {
+                e.stopPropagation();
+                toggleGlobalLock();
+                picker.remove();
+                activeBookPicker = null;
+            };
+            picker.appendChild(lockSection);
+
+            // "Show All" option
+            const allOpt = document.createElement('div');
+
+            allOpt.className = 'book-option';
+            allOpt.innerHTML = `<span style="font-size:10px;">📊</span> Show All Data`;
+            allOpt.onclick = () => {
+                document.getElementById('mrsBookLabel').textContent = "Jump to MRS Book...";
+                currentPage = 1;
+                renderData(rawData);
+                picker.remove();
+                activeBookPicker = null;
+            };
+            picker.appendChild(allOpt);
+
+            books.forEach(b => {
+                const div = document.createElement('div');
+                div.className = 'book-option';
+                div.innerHTML = `<span style="font-size:10px;">📖</span> ${b}`;
+                div.onclick = (e) => {
+                    e.stopPropagation();
+                    selectMRSBook(b);
+                    picker.remove();
+                    activeBookPicker = null;
+                };
+                picker.appendChild(div);
+            });
+
+            document.body.appendChild(picker);
+            
+            // Position
+            const rect = evt.currentTarget.getBoundingClientRect();
+            picker.style.top = `${rect.bottom + 6}px`;
+            picker.style.left = `${rect.left}px`;
+            picker.style.minWidth = '220px';
+            
+            activeBookPicker = picker;
+            const close = (e) => {
+                if (activeBookPicker && !activeBookPicker.contains(e.target)) {
+                    activeBookPicker.remove();
+                    activeBookPicker = null;
+                    window.removeEventListener('click', close);
+                }
+            };
+            setTimeout(() => window.addEventListener('click', close), 10);
+        }
+
+        function selectMRSBook(bookName) {
+            document.getElementById('mrsBookLabel').textContent = bookName;
+            const foundIdx = paginatedSlices.findIndex(slice => slice.some(r => r.isDivider && r.dividerText === bookName));
+            if (foundIdx !== -1) {
+                currentPage = foundIdx + 1;
+                renderPage();
+                showToast(`Jumped to ${bookName}`, 'info');
+            }
+        }
+
         let paginatedSlices = []; 
 
         function updateBookFilter() {
-            const select = document.getElementById('mrsBookFilter');
-            const current = select.value;
-            select.innerHTML = '<option value="">All MRS Books...</option>';
-            const dividers = rawData.filter(r => r.isDivider).map(r => r.dividerText);
-            dividers.forEach(d => {
-                const opt = document.createElement('option');
-                opt.value = d; opt.textContent = d;
-                if (d === current) opt.selected = true;
-                select.appendChild(opt);
-            });
+            // Updated to ensure label stays correct if we are in book mode
+            // No action needed here, togglemrsBookPicker handles the list
         }
 
         // ── Render Table (paginated) ──
@@ -2307,19 +2499,26 @@
                 acc.total += total;
                 acc.recvd += recvd;
 
-                const isCancelled = String(r['REMARKS']).toUpperCase().startsWith('CANCELLED');
+                const rem = String(r['REMARKS'] || "").toUpperCase();
+                
+                const cNo = String(r['Claim No'] || "");
+                const isCancelled = !r.isDivider && (
+                    !cNo || !cNo.toUpperCase().startsWith("W0") ||
+                    rem.includes('CANCEL') || rem.includes('DUPLICATE') || total === 0
+                );
+                
                 if (isCancelled) acc.cancelled++;
 
-                const isOther = String(r['REMARKS']).toUpperCase().includes('OTHER');
-                const isPending = !isCancelled && !isOther &&
-                    (!r['AMT RECEIVED'] || r['AMT RECEIVED'] === 0) &&
-                    (!r['PAYMENT DATE'] || r['PAYMENT DATE'] === '' || r['PAYMENT DATE'] === '—');
+                const isPending = !r.isDivider && !isCancelled && (
+                    !r['PAYMENT DATE'] || r['PAYMENT DATE'] === '' || r['PAYMENT DATE'] === '—'
+                );
+                
                 if (isPending) acc.pending++;
 
-                const isUnmarked = !isCancelled && (!r['MRS'] || r['MRS'] === '' || r['MRS'] === '—');
+                const isUnmarked = !r.isDivider && !isCancelled && (!r['MRS'] || r['MRS'] === '' || r['MRS'] === '—');
                 if (isUnmarked) acc.unmarked++;
 
-                const isNoRemarks = !r.isDivider && (!r['REMARKS'] || r['REMARKS'] === '' || r['REMARKS'] === '—' || r['REMARKS'] === 'BY HMI');
+                const isNoRemarks = !r.isDivider && (rem === '' || rem === '—' || rem === 'BY HMI');
                 if (isNoRemarks) acc.noRemarks++;
 
                 return acc;
@@ -2399,11 +2598,20 @@
             pageRows.forEach((row) => {
                 const ri = rawData.indexOf(row);
                 if (row.isDivider) {
-                    rows.push(`<tr class="mrs-range-divider-row">
-                        <td colspan="${columns.length}" 
+                    const isRowLocked = !!row.isRowLocked;
+                    rows.push(`<tr class="mrs-range-divider-row ${isRowLocked ? 'row-locked' : ''}">
+                        <td style="text-align:center; background:rgba(77,207,195,0.18); border-top: 2.5px solid #2ab5a5; border-bottom: 2.5px solid #2ab5a5; width: 50px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); border-right: 1.5px solid rgba(42,181,165,0.3);">
+                            <button onclick="event.stopPropagation(); toggleRowLock(${ri})" title="${isRowLocked ? 'Unlock book' : 'Lock book'}" style="background:transparent;border:none;color:${isRowLocked ? 'var(--danger)' : 'var(--success)'};cursor:pointer;opacity:0.6;transition:0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">
+                                ${isRowLocked ? 
+                                    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' : 
+                                    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>'
+                                }
+                            </button>
+                        </td>
+                        <td colspan="${columns.length - 1}" 
                             class="editable" 
                             ondblclick="startEditDivider(event,this,${ri})"
-                            title="Double-click to rename"
+                            title="${isRowLocked ? '🔒 Locked Divider' : 'Double-click to rename'}"
                             style="
                             padding: 11px 18px;
                             background: linear-gradient(90deg, rgba(42,181,165,0.28) 0%, rgba(77,207,195,0.18) 100%);
@@ -2431,6 +2639,17 @@
 
                 const cells = columns.map(col => {
                     let val = (row[col] !== undefined && row[col] !== null && row[col] !== '') ? row[col] : '\u2014';
+                    if (col === '') {
+                        const isRowLocked = !!row.isRowLocked;
+                        return `<td style="text-align:center; width: 44px; background:rgba(0,0,0,0.012); border-right:1px solid var(--border);">
+                            <button onclick="event.stopPropagation(); toggleRowLock(${ri})" title="${isRowLocked ? 'Unlock row' : 'Lock row'}" style="background:transparent;border:none;color:${isRowLocked ? 'var(--danger)' : 'var(--success)'};cursor:pointer;opacity:0.6;transition:0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">
+                                ${isRowLocked ? 
+                                    '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' : 
+                                    '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>'
+                                }
+                            </button>
+                        </td>`;
+                    }
                     if (col === 'MRS') {
                         return `<td><span class="badge badge-mrs" title="Click row to assign MRS">${val} <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5;vertical-align:middle;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span></td>`;
                     }
@@ -2452,7 +2671,15 @@
                     }
                     return `<td class="editable" ondblclick="startEdit(event,this,${ri},'${col}')" title="Double-click to edit">${val}</td>`;
                 }).join('');
-                rows.push(`<tr class="row-clickable${String(row['REMARKS']).toUpperCase().startsWith('CANCELLED') ? ' row-cancelled' : ''}" onclick="openMRSModal(${ri})" title="Click to assign MRS #${mrsVal}">${cells}</tr>`);
+                const isCancelled = String(row['REMARKS']).toUpperCase().startsWith('CANCELLED');
+                const isRowLocked = !!row.isRowLocked;
+                const rowClasses = [
+                    'row-clickable',
+                    isCancelled ? 'row-cancelled' : '',
+                    isRowLocked ? 'row-locked' : ''
+                ].filter(Boolean).join(' ');
+
+                rows.push(`<tr class="${rowClasses}" onclick="openMRSModal(${ri})" title="${isRowLocked ? '🔒 Locked - Click to view' : 'Click to assign MRS #'+mrsVal}">${cells}</tr>`);
             });
             tbody.innerHTML = rows.join('');
 
@@ -2589,7 +2816,19 @@
             }
 
             document.getElementById('mrsModal').classList.add('active');
-            setTimeout(() => inp.focus(), 280);
+            
+            // Handle row lock state in modal
+            const isRowLocked = !!row.isRowLocked;
+            document.getElementById('mrsModalLockedNotice').style.display = isRowLocked ? 'block' : 'none';
+            document.getElementById('mrsNumberInput').disabled = isRowLocked;
+            const saveBtn = document.querySelector('#mrsModal .modal-btn-confirm');
+            if (saveBtn) {
+                saveBtn.disabled = isRowLocked;
+                saveBtn.style.opacity = isRowLocked ? '0.5' : '1';
+                saveBtn.style.pointerEvents = isRowLocked ? 'none' : 'auto';
+            }
+            
+            setTimeout(() => { if (!isRowLocked) inp.focus(); }, 280);
         }
         function closeMRSModal() {
             document.getElementById('mrsModal').classList.remove('active');
@@ -2600,12 +2839,14 @@
             }, 100);
         }
         function saveMRS() {
+            if (isLocked) { showToast('🔒 Locked: Cannot assign MRS.', 'danger'); return; }
             if (currentEditingRowIdx === null) return;
+            const row = rawData[currentEditingRowIdx];
+            if (row.isRowLocked) { showToast('🔒 Error: Individual MRS record is locked.', 'danger'); return; }
             const val = parseInt(document.getElementById('mrsNumberInput').value);
             if (!val || val < 1) { showToast('Please enter a valid MRS number.', 'warn'); return; }
 
             const applyAll = document.getElementById('mrsApplyAll').checked;
-            const row = rawData[currentEditingRowIdx];
             const roNo = String(row['R/O No'] || '').trim();
 
             if (applyAll && roNo) {
@@ -2646,6 +2887,7 @@
             document.getElementById('cancelMRSModal').classList.remove('active');
         }
         function saveCancelledMRS() {
+            if (isLocked) { showToast('🔒 Locked: Bulk actions disabled.', 'danger'); return; }
             const raw = document.getElementById('cancelMRSInput').value.trim();
             if (!raw) { showToast('Please enter at least one MRS number.', 'warn'); return; }
 
@@ -2735,10 +2977,13 @@
             input.addEventListener('click', e => e.stopPropagation());
 
             function commitEdit() {
+                if (isLocked) { cancelEdit(); showToast('🔒 Locked: Editing disabled.', 'danger'); return; }
+                const row = rawData[rowIdx];
+                if (row.isRowLocked) { cancelEdit(); showToast('🔒 Row is locked.', 'danger'); return; }
                 const newVal = input.value.trim();
                 td.classList.remove('editing');
                 if (newVal !== '') {
-                    const row = rawData[rowIdx];
+                    // Update data
                     row[col] = numericCols.has(col) ? (parseFloat(newVal) || 0) : newVal;
                     // Recalc if amount changed
                     if (numericCols.has(col) && (col === 'Total Amt' || col === 'AMT RECEIVED')) {
@@ -2766,7 +3011,9 @@
 
         // ── Feature: Delete Entry ──
         function deleteEntry(idx) {
+            if (isLocked) { showToast('🔒 Locked: No deletions allowed.', 'danger'); return; }
             const entry = rawData[idx];
+            if (entry.isRowLocked) { showToast('🔒 Cannot delete a locked record.', 'danger'); return; }
             const name = entry.isDivider ? "Divider" : (entry['Claim No'] || 'Claim');
             showConfirm(
                 `Delete this entry (${name})?`,
@@ -2780,11 +3027,33 @@
             );
         }
 
+        function toggleRowLock(idx) {
+            if (isLocked) { showToast('🔒 Cannot toggle lock while global ledger is locked!', 'danger'); return; }
+            const row = rawData[idx];
+            const newState = !row.isRowLocked;
+            row.isRowLocked = newState;
+
+            // If it's a divider, toggle all claims in this book
+            if (row.isDivider) {
+                for (let i = idx + 1; i < rawData.length; i++) {
+                    if (rawData[i].isDivider) break;
+                    rawData[i].isRowLocked = newState;
+                }
+            }
+
+            saveLedger();
+            renderData(currentDataset);
+            const msg = row.isRowLocked ? (row.isDivider ? '🔒 Entire Book Locked' : '🔒 Row Locked') : (row.isDivider ? '🔓 Entire Book Unlocked' : '🔓 Row Unlocked');
+            showToast(msg, row.isRowLocked ? 'warn' : 'success');
+        }
+
         // ── Feature: Rename Divider ──
         function startEditDivider(evt, td, rowIdx) {
+            if (isLocked) { showToast('🔒 Locked: No changes allowed.', 'danger'); return; }
+            const row = rawData[rowIdx];
+            if (row.isRowLocked) { showToast('🔒 Divider is locked.', 'danger'); return; }
             if (evt) evt.stopPropagation();
             if (td.classList.contains('editing')) return;
-            const row = rawData[rowIdx];
             const currentVal = row.dividerText || '';
             td.classList.add('editing');
             const input = document.createElement('input');
@@ -2862,7 +3131,10 @@
         }
 
         function setRemark(idx, val) {
+            if (isLocked) { showToast('🔒 Locked: Cannot change remarks.', 'danger'); return; }
             const row = rawData[idx];
+            if (row.isRowLocked) { showToast('🔒 Row is locked.', 'danger'); return; }
+
             if (val === 'OTHER') {
                 const custom = prompt("Enter custom remark:", "");
                 if (custom) row['REMARKS'] = custom;
@@ -2908,28 +3180,17 @@
 
         // ── Feature: MRS Book Jump ──
         function filterByBook() {
-            const bookName = document.getElementById('mrsBookFilter').value;
-            if (!bookName) {
-                renderData(rawData);
-                return;
-            }
-            // Find the slice index that matches the book
-            const foundIdx = paginatedSlices.findIndex(slice => slice.some(r => r.isDivider && r.dividerText === bookName));
-            if (foundIdx !== -1) {
-                currentPage = foundIdx + 1;
-                renderPage();
-                showToast(`Jumped to ${bookName}`, 'info');
-            }
+            // Custom dropdown handles this via selectMRSBook
         }
         function triggerPendingFilter() {
             const pending = rawData.filter(r => {
                 if (r.isDivider) return false;
-                const rem = String(r['REMARKS']).toUpperCase();
-                // Exclude Cancelled or Other manual statuses
-                if (rem.includes('CANCEL') || rem.includes('OTHER')) return false;
-
-                return (!r['AMT RECEIVED'] || r['AMT RECEIVED'] === 0) &&
-                       (!r['PAYMENT DATE'] || r['PAYMENT DATE'] === '' || r['PAYMENT DATE'] === '—');
+                const rem = String(r['REMARKS'] || "").toUpperCase();
+                const total = parseFloat(String(r['Total Amt'] || "0").replace(/[^\d.-]/g, '')) || 0;
+                const cNo = String(r['Claim No'] || "").toUpperCase();
+                const isCancelled = (!cNo || !cNo.startsWith("W0") || rem.includes('CANCEL') || rem.includes('DUPLICATE') || total === 0);
+                if (isCancelled) return false;
+                return (!r['PAYMENT DATE'] || r['PAYMENT DATE'] === '' || r['PAYMENT DATE'] === '—');
             });
 
             // Toggle Logic: If we are already exactly showing the pending list, show all
@@ -2973,7 +3234,13 @@
         }
 
         function triggerCancelledFilter() {
-            const cancelled = rawData.filter(r => String(r['REMARKS']).toUpperCase().startsWith('CANCELLED'));
+            const cancelled = rawData.filter(r => {
+                if (r.isDivider) return false;
+                const rem = String(r['REMARKS'] || "").toUpperCase();
+                const total = parseFloat(String(r['Total Amt'] || "0").replace(/[^\d.-]/g, '')) || 0;
+                const cNo = String(r['Claim No'] || "").toUpperCase();
+                return (!cNo || !cNo.startsWith("W0") || rem.includes('CANCEL') || rem.includes('DUPLICATE') || total === 0);
+            });
 
             const isCurrentlyShowingCancelled = (currentDataset.length === cancelled.length &&
                 currentDataset.every((v, i) => v === cancelled[i]));
@@ -3175,6 +3442,7 @@
             document.getElementById('mrsRangeModal').classList.remove('active');
         }
         function saveMRSRange() {
+            if (isLocked) { showToast('🔒 Locked: Range creation disabled.', 'danger'); return; }
             const fromVal = parseInt(document.getElementById('mrsRangeFrom').value);
             const toVal = parseInt(document.getElementById('mrsRangeTo').value);
             if (!fromVal || fromVal < 1) { showToast('Valid "From" MRS number daalo.', 'warn'); return; }
