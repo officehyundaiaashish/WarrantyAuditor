@@ -855,6 +855,14 @@
             border-color: rgba(239, 68, 68, 0.2);
         }
 
+        /* Cancelled MRS rows — dimmed */
+        tr.row-cancelled td {
+            opacity: 0.45;
+        }
+        tr.row-cancelled:hover td {
+            opacity: 0.7;
+        }
+
         /* ══════════════════════════════════════════
            §13 — EMPTY STATE
            ══════════════════════════════════════════ */
@@ -1435,33 +1443,32 @@
                     </svg>
                 </div>
                 <div>
-                    <div class="section-title">Source Data Import</div>
-                    <p style="font-size:0.75rem;color:var(--text-muted);margin:2px 0 0 0;">Sync repair orders and
-                        payment records</p>
+                    <div class="section-title">Import Warranty Data</div>
+                    <p style="font-size:0.75rem;color:var(--text-muted);margin:2px 0 0 0;">Upload Hyundai claim files to sync the ledger</p>
                 </div>
             </div>
             <div class="tile-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 10px;">
                 <div class="upload-tile" id="tile-source1">
                     <div class="tile-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
                     <div>
-                        <span>Source 1</span>
-                        <p id="status-source1">Main Claims</p>
+                        <span>Claims Report</span>
+                        <p id="status-source1">RO + Claim Details</p>
                     </div>
                     <input type="file" id="file-source1" accept=".xlsx,.xls,.csv" onchange="handleFileSelect('source1')">
                 </div>
                 <div class="upload-tile" id="tile-source2">
                     <div class="tile-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
                     <div>
-                        <span>Source 2</span>
-                        <p id="status-source2">Payments</p>
+                        <span>Payment Report</span>
+                        <p id="status-source2">Remittance Details</p>
                     </div>
                     <input type="file" id="file-source2" accept=".xlsx,.xls,.csv" onchange="handleFileSelect('source2')">
                 </div>
                 <div class="upload-tile" id="tile-source3">
                     <div class="tile-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 21V3"/><path d="M18 15L12 21L6 15"/></svg></div>
                     <div>
-                        <span>Previous List</span>
-                        <p id="status-source3">Direct Append</p>
+                        <span>Previous Ledger</span>
+                        <p id="status-source3">Append Old Records</p>
                     </div>
                     <input type="file" id="file-source3" accept=".xlsx,.xls,.csv" onchange="handleFileSelect('source3')">
                 </div>
@@ -1474,7 +1481,7 @@
                         <polyline points="1 20 1 14 7 14" />
                         <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
                     </svg>
-                    Feed To Database Table
+                    Import & Merge
                 </button>
             </div>
         </div>
@@ -1495,42 +1502,53 @@
                 </div>
                 <div>
                     <div class="section-title">
-                        Database Ledger
+                        MRS Ledger
                         <div class="header-stats-wrap">
                             <span id="mrs-header-count" class="stat-badge total-badge">Claims: —</span>
                             <span id="mrs-header-pending" class="pending-badge-header" style="display:none;"
                                 onclick="triggerPendingFilter()" title="Click to filter pending payments">0
                                 Pending</span>
                             <span id="mrs-header-unmarked" class="pending-badge-header" style="display:none;"
-                                onclick="triggerUnmarkedFilter()" title="Click to filter unmarked MRS">0 No MRS</span>
+                                onclick="triggerUnmarkedFilter()" title="Click to filter claims without MRS">0 Unassigned</span>
+                            <span id="mrs-header-cancelled" class="pending-badge-header" style="display:none;background:#fef2f2;color:#b91c1c;border-color:#fecaca;"
+                                onclick="triggerCancelledFilter()" title="Click to filter cancelled MRS">0 Cancelled</span>
                             <span id="mrs-header-total" class="stat-badge total-badge">Tot: —</span>
                             <span id="mrs-header-received" class="stat-badge received-badge">Rec: —</span>
                             <span id="mrs-header-diff" class="stat-badge diff-badge">Dif: —</span>
                         </div>
                     </div>
-                    <p style="font-size:0.75rem;color:var(--text-muted);margin:2px 0 0 0;">Click any row to assign its
-                        MRS number.</p>
+                    <p style="font-size:0.75rem;color:var(--text-muted);margin:2px 0 0 0;">
+                        👆 Click any row to assign its MRS number &nbsp;·&nbsp; Double-click a cell to edit it directly
+                    </p>
                 </div>
             </div>
 
             <div class="search-row">
-                <!-- Feature #4: typing a number auto-focuses search & filters by MRS -->
                 <div class="search-bar">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                         stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="8" />
                         <line x1="21" y1="21" x2="16.65" y2="16.65" />
                     </svg>
-                    <!-- Feature #7: search by RO suffix (last digits, any prefix) -->
-                    <input type="text" id="tableSearch" placeholder="Search by MRS or R/O suffix (e.g. 12345)..."
+                    <input type="text" id="tableSearch" placeholder="Search by MRS, RO No or Claim No..."
                         oninput="filterTable()">
                 </div>
-                <!-- Feature #8: Clear All button before record pill -->
+                <button class="btn-premium btn-outline" onclick="openCancelMRSModal()" style="border-color:rgba(239,68,68,0.35);color:var(--danger);padding:7px 14px;font-size:0.78rem;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                    Cancelled MRS
+                </button>
+                <button class="btn-premium btn-outline" onclick="printLedger()" style="padding:7px 14px;font-size:0.78rem;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
+                    </svg>
+                    Print / PDF
+                </button>
                 <button class="btn-clear-all" onclick="clearLedger()">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                         stroke-linecap="round" stroke-linejoin="round">
-                        <path
-                            d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                     </svg>
                     Clear All
                 </button>
@@ -1653,6 +1671,40 @@
 
     <!-- Toast -->
     <div id="toast"></div>
+
+    <!-- Cancelled MRS Modal -->
+    <div class="modal-backdrop" id="cancelMRSModal">
+        <div class="modal-dialog" style="max-width:440px;">
+            <div class="modal-header">
+                <h3>Add Cancelled MRS</h3>
+                <p>Type any MRS numbers — random, single, or range</p>
+            </div>
+            <div class="modal-body">
+                <label class="mrs-input-label">MRS Numbers (comma or space separated)</label>
+                <textarea id="cancelMRSInput"
+                    placeholder="e.g.  1502, 1507, 1515  or  1520-1525  or mix both"
+                    onkeydown="if(event.key==='Enter' && event.ctrlKey) saveCancelledMRS();"
+                    style="width:100%;min-height:90px;resize:vertical;background:var(--bg-base);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-size:0.95rem;font-weight:700;color:var(--primary);font-family:inherit;outline:none;letter-spacing:2px;transition:all 0.25s ease;line-height:1.8;"
+                    onfocus="this.style.borderColor='var(--danger)';this.style.boxShadow='0 0 0 4px rgba(239,68,68,0.1)';"
+                    onblur="this.style.borderColor='';this.style.boxShadow='';"></textarea>
+                <p style="font-size:0.65rem;color:var(--text-muted);margin:5px 0 14px;font-weight:500;">
+                    Examples: &nbsp;<b>1502</b> &nbsp;·&nbsp; <b>1502, 1507, 1515</b> &nbsp;·&nbsp; <b>1520-1525</b> &nbsp;·&nbsp; <b>1502 1507 1520-1522</b>
+                    &nbsp;·&nbsp; Ctrl+Enter to save
+                </p>
+                <div class="modal-btn-row">
+                    <button class="modal-btn-confirm" onclick="saveCancelledMRS()" style="background:linear-gradient(135deg,#ef4444,#f87171);">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                            style="display:inline;vertical-align:middle;margin-right:6px;">
+                            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                        Mark as Cancelled
+                    </button>
+                    <button class="modal-btn-cancel" onclick="closeCancelMRSModal()">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         // ── Persistence ──
@@ -1930,15 +1982,19 @@
                 acc.total += total;
                 acc.recvd += recvd;
 
-                const isPending = (!r['AMT RECEIVED'] || r['AMT RECEIVED'] === 0) &&
+                const isCancelled = String(r['REMARKS']).toUpperCase() === 'CANCELLED';
+                if (isCancelled) acc.cancelled++;
+
+                const isPending = !isCancelled &&
+                    (!r['AMT RECEIVED'] || r['AMT RECEIVED'] === 0) &&
                     (!r['PAYMENT DATE'] || r['PAYMENT DATE'] === '' || r['PAYMENT DATE'] === '—');
                 if (isPending) acc.pending++;
 
-                const isUnmarked = !r['MRS'] || r['MRS'] === '' || r['MRS'] === '—';
+                const isUnmarked = !isCancelled && (!r['MRS'] || r['MRS'] === '' || r['MRS'] === '—');
                 if (isUnmarked) acc.unmarked++;
 
                 return acc;
-            }, { total: 0, recvd: 0, pending: 0, unmarked: 0 });
+            }, { total: 0, recvd: 0, pending: 0, unmarked: 0, cancelled: 0 });
 
             const hBadge = document.getElementById('mrs-header-pending');
             if (hBadge) {
@@ -1950,6 +2006,12 @@
             if (uBadge) {
                 uBadge.textContent = `${stats.unmarked} No MRS`;
                 uBadge.style.display = stats.unmarked > 0 ? 'inline-flex' : 'none';
+            }
+
+            const cBadge = document.getElementById('mrs-header-cancelled');
+            if (cBadge) {
+                cBadge.textContent = `${stats.cancelled} Cancelled`;
+                cBadge.style.display = stats.cancelled > 0 ? 'inline-flex' : 'none';
             }
 
             document.getElementById('mrs-header-count').textContent = `Claims: ${rawData.length}`;
@@ -1998,12 +2060,12 @@
                         return `<td><span class="${css}">${val}</span></td>`;
                     }
                     if (col === 'REMARKS') {
-                        const sClass = (val === 'PAYMENT SHORT') ? 'badge-short' : (val === 'PAID') ? 'badge-paid' : '';
+                        const sClass = (val === 'PAYMENT SHORT') ? 'badge-short' : (val === 'PAID') ? 'badge-paid' : (val === 'CANCELLED') ? 'badge-cancel' : '';
                         return `<td><span class="badge ${sClass}">${val}</span></td>`;
                     }
                     return `<td class="editable" ondblclick="startEdit(event,this,${ri},'${col}')" title="Double-click to edit">${val}</td>`;
                 }).join('');
-                return `<tr class="row-clickable" onclick="openMRSModal(${ri})" title="Click to assign MRS #${mrsVal}">${cells}</tr>`;
+                return `<tr class="row-clickable${String(row['REMARKS']).toUpperCase() === 'CANCELLED' ? ' row-cancelled' : ''}" onclick="openMRSModal(${ri})" title="Click to assign MRS #${mrsVal}">${cells}</tr>`;
             }).join('');
 
             // Scroll table back to top on page change
@@ -2137,6 +2199,58 @@
             if (e.target === e.currentTarget) closeMRSModal();
         });
 
+        // ── Cancelled MRS ──
+        function openCancelMRSModal() {
+            document.getElementById('cancelMRSInput').value = '';
+            document.getElementById('cancelMRSModal').classList.add('active');
+            setTimeout(() => document.getElementById('cancelMRSInput').focus(), 280);
+        }
+        function closeCancelMRSModal() {
+            document.getElementById('cancelMRSModal').classList.remove('active');
+        }
+        function saveCancelledMRS() {
+            const raw = document.getElementById('cancelMRSInput').value.trim();
+            if (!raw) { showToast('Please enter at least one MRS number.', 'warn'); return; }
+
+            // Parse: supports comma, space, newline separated — and ranges like 1520-1525
+            const toAdd = [];
+            const tokens = raw.split(/[\s,;\n]+/).filter(Boolean);
+            for (const token of tokens) {
+                const rangeMatch = token.match(/^(\d+)-(\d+)$/);
+                if (rangeMatch) {
+                    const from = parseInt(rangeMatch[1]), to = parseInt(rangeMatch[2]);
+                    if (to < from || to - from > 500) { showToast(`Invalid range: ${token}`, 'warn'); return; }
+                    for (let n = from; n <= to; n++) toAdd.push(n);
+                } else {
+                    const num = parseInt(token);
+                    if (!isNaN(num) && num >= 1) toAdd.push(num);
+                }
+            }
+
+            if (toAdd.length === 0) { showToast('No valid MRS numbers found.', 'warn'); return; }
+
+            const existingMRS = new Set(rawData.map(r => String(r['MRS']).trim()));
+            let added = 0, skipped = 0;
+            toAdd.forEach(num => {
+                if (existingMRS.has(String(num))) { skipped++; return; }
+                const cancelRow = {};
+                columns.forEach(col => { cancelRow[col] = ''; });
+                cancelRow['MRS']     = num;
+                cancelRow['REMARKS'] = 'CANCELLED';
+                rawData.push(cancelRow);
+                existingMRS.add(String(num));
+                added++;
+            });
+
+            rawData.sort((a, b) => (parseInt(a['MRS']) || 0) - (parseInt(b['MRS']) || 0));
+            saveLedger(); renderData(rawData); closeCancelMRSModal();
+            const skipMsg = skipped ? ` · ${skipped} already exist` : '';
+            showToast(`✓ ${added} Cancelled MRS added${skipMsg}.`, 'success');
+        }
+        document.getElementById('cancelMRSModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeCancelMRSModal();
+        });
+
         // ── Feature #9: Inline Cell Edit ──
         function startEdit(evt, td, rowIdx, col) {
             // Stop propagation so the row-click (openMRSModal) doesn't fire
@@ -2207,6 +2321,7 @@
         }
         function triggerPendingFilter() {
             const pending = rawData.filter(r =>
+                String(r['REMARKS']).toUpperCase() !== 'CANCELLED' &&
                 (!r['AMT RECEIVED'] || r['AMT RECEIVED'] === 0) &&
                 (!r['PAYMENT DATE'] || r['PAYMENT DATE'] === '' || r['PAYMENT DATE'] === '—')
             );
@@ -2251,6 +2366,27 @@
             }
         }
 
+        function triggerCancelledFilter() {
+            const cancelled = rawData.filter(r => String(r['REMARKS']).toUpperCase() === 'CANCELLED');
+
+            const isCurrentlyShowingCancelled = (currentDataset.length === cancelled.length &&
+                currentDataset.every((v, i) => v === cancelled[i]));
+
+            if (isCurrentlyShowingCancelled) {
+                renderData(rawData);
+                showToast("Showing All Records", "info");
+            } else {
+                if (cancelled.length === 0) {
+                    showToast("No cancelled MRS found.", "info");
+                    return;
+                }
+                renderData(cancelled);
+                const sInput = document.getElementById('tableSearch');
+                if (sInput) sInput.value = '';
+                showToast(`Showing ${cancelled.length} Cancelled MRS`, 'warn');
+            }
+        }
+
         window.addEventListener('message', (e) => {
             if (e.data && e.data.type === 'theme-change') applyTheme(e.data.theme);
             if (e.data && e.data.type === 'filter-pending') triggerPendingFilter();
@@ -2258,6 +2394,94 @@
         window.addEventListener('load', () => setTimeout(initTable, 50));
 
         // Navigation
+        // ── Print / PDF ──
+        function printLedger() {
+            if (!rawData.length) { showToast('No data to print.', 'warn'); return; }
+
+            // Sort by MRS ascending (old to new)
+            const sorted = [...rawData].sort((a, b) => (parseInt(a['MRS']) || 0) - (parseInt(b['MRS']) || 0));
+
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+            const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+            const printCols = ['MRS', 'R/O No', 'Claim No', 'Claim Date', 'Claim Type', 'VIN', 'Total Amt', 'AMT RECEIVED', 'DIFF AMT', 'PAYMENT DATE', 'REMARKS', 'AUTH. SIGN'];
+
+            const headerRow = printCols.map(c => `<th>${c}</th>`).join('');
+            const bodyRows = sorted.map(row => {
+                const isCancelled = String(row['REMARKS']).toUpperCase() === 'CANCELLED';
+                const rowStyle = isCancelled ? ' style="opacity:0.45;background:#fff5f5;"' : '';
+                const cells = printCols.map(col => {
+                    const val = (row[col] !== undefined && row[col] !== null && row[col] !== '') ? row[col] : '—';
+                    return `<td>${val}</td>`;
+                }).join('');
+                return `<tr${rowStyle}>${cells}</tr>`;
+            }).join('');
+
+            const totalClaims = rawData.filter(r => String(r['REMARKS']).toUpperCase() !== 'CANCELLED').length;
+            const unassigned  = rawData.filter(r => String(r['REMARKS']).toUpperCase() !== 'CANCELLED' && (!r['MRS'] || r['MRS'] === '')).length;
+            const cancelled   = rawData.filter(r => String(r['REMARKS']).toUpperCase() === 'CANCELLED').length;
+            const pending     = rawData.filter(r => String(r['REMARKS']).toUpperCase() !== 'CANCELLED' && (!r['AMT RECEIVED'] || r['AMT RECEIVED'] === 0)).length;
+
+            const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>MRS Ledger Report — ${dateStr}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
+  body { background: #fff; color: #1f2937; font-size: 11px; padding: 20px; }
+  .print-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #2ab5a5; }
+  .print-title { font-size: 20px; font-weight: 800; color: #2ab5a5; letter-spacing: -0.5px; }
+  .print-subtitle { font-size: 11px; color: #6b7280; margin-top: 3px; }
+  .print-meta { text-align: right; font-size: 10px; color: #6b7280; line-height: 1.7; }
+  .summary-row { display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+  .summary-box { padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 700; border: 1px solid #e5e7eb; }
+  .s-total   { background: #f3f4f6; color: #374151; }
+  .s-unassigned { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+  .s-cancelled { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+  .s-pending { background: #fff7ed; color: #9a3412; border-color: #fed7aa; }
+  table { width: 100%; border-collapse: collapse; font-size: 10px; }
+  thead { background: #f0fdf9; }
+  th { padding: 7px 8px; text-align: left; font-weight: 800; color: #065f46; border-bottom: 2px solid #2ab5a5; white-space: nowrap; font-size: 9px; text-transform: uppercase; letter-spacing: 0.4px; }
+  td { padding: 6px 8px; border-bottom: 1px solid #f0f0f0; color: #1f2937; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  .print-footer { margin-top: 16px; padding-top: 10px; border-top: 1px solid #e5e7eb; font-size: 9px; color: #9ca3af; display: flex; justify-content: space-between; }
+  @media print {
+    body { padding: 10px; }
+    @page { margin: 12mm; size: A4 landscape; }
+  }
+</style></head><body>
+<div class="print-header">
+  <div>
+    <div class="print-title">MRS Warranty Ledger</div>
+    <div class="print-subtitle">Audit-it · MRS Assigner — Sorted by MRS Number (Old → New)</div>
+  </div>
+  <div class="print-meta">
+    Printed: ${dateStr} at ${timeStr}<br>
+    Total Entries: ${rawData.length}
+  </div>
+</div>
+<div class="summary-row">
+  <div class="summary-box s-total">✅ Total Claims: ${totalClaims}</div>
+  <div class="summary-box s-unassigned">⚠️ Unassigned MRS: ${unassigned}</div>
+  <div class="summary-box s-pending">⏳ Pending Payment: ${pending}</div>
+  <div class="summary-box s-cancelled">❌ Cancelled MRS: ${cancelled}</div>
+</div>
+<table>
+  <thead><tr>${headerRow}</tr></thead>
+  <tbody>${bodyRows}</tbody>
+</table>
+<div class="print-footer">
+  <span>Audit-it — MRS Warranty Tracking System</span>
+  <span>Generated: ${dateStr} ${timeStr}</span>
+</div>
+<script>window.onload = () => { window.print(); }<\/script>
+</body></html>`;
+
+            const blob = new Blob([html], { type: 'text/html' });
+            const url  = URL.createObjectURL(blob);
+            const win  = window.open(url, '_blank');
+            if (!win) showToast('Allow popups to print/save PDF.', 'warn');
+        }
+
         function goBack() {
             try { window.parent.showScreen('screen-menu'); }
             catch (ex) { window.history.back(); }
