@@ -2259,16 +2259,28 @@
             const rect = e.target.getBoundingClientRect();
             picker.style.display = 'flex'; // Temporarily show to get offsetHeight correctly
             const pickerHeight = picker.offsetHeight || 310;
-            const spaceBelow = window.innerHeight - rect.bottom;
-            const spaceAbove = rect.top;
+            const pickerWidth = picker.offsetWidth || 280;
             
-            if (spaceBelow < pickerHeight && spaceAbove > pickerHeight) {
+            const spaceAbove = rect.top;
+            const spaceBelow = window.innerHeight - rect.bottom;
+            
+            // Prefer Opening ABOVE, but fallback to BELOW if it would cut off the top
+            if (spaceAbove > pickerHeight + 10) {
                 picker.style.top = (rect.top - pickerHeight - 8) + 'px';
-            } else {
+            } else if (spaceBelow > pickerHeight + 10) {
                 picker.style.top = (rect.bottom + 8) + 'px';
+            } else {
+                // If neither fits, anchor to the top of screen to prevent total cut-off
+                picker.style.top = '10px';
             }
             
-            picker.style.left = rect.left + 'px';
+            // HORIZONTAL SAFETY: Ensure doesn't go off left/right
+            let leftPos = rect.left;
+            if (leftPos + pickerWidth > window.innerWidth) {
+                leftPos = window.innerWidth - pickerWidth - 16;
+            }
+            picker.style.left = Math.max(16, leftPos) + 'px';
+            
             picker.dataset.active = 'true';
             
             // Try to set current date from input
