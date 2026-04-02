@@ -2449,48 +2449,30 @@
                     return `${day}/${month}/${year}`;
                 };
 
-                if (type === 'source3') {
-                    // ── Raw parse: respect Excel headers + merged cells ──
+                if (type === 'source1' || type === 'source2' || type === 'source3') {
                     const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-                    if (aoa.length < 2) {
-                        showToast('Source 3: No data found in file.', 'warn'); return;
-                    }
+                    if (aoa.length < 2) { showToast(`Source ${type.slice(-1)}: No data found.`, 'warn'); return; }
 
-                    // Step 1: find the actual header row — first row where >4 non-empty cells
+                    // Find header row: First row with many non-empty values
                     let headerRowIdx = -1;
-                    for (let i = 0; i < Math.min(aoa.length, 15); i++) {
-                        const nonEmpty = aoa[i].filter(v => v !== '').length;
-                        if (nonEmpty > 4) { headerRowIdx = i; break; }
+                    for (let i = 0; i < Math.min(aoa.length, 20); i++) {
+                        const row = aoa[i];
+                        const nonEmpty = row.filter(v => v !== '').length;
+                        // Special keywords check for specific sources
+                        const rowStr = row.join(' ').toLowerCase();
+                        const isMatch = (type === 'source1' && (rowStr.includes('claim no') || rowStr.includes('r/o no'))) ||
+                                        (type === 'source2' && (rowStr.includes('claim no') || rowStr.includes('gross amount'))) ||
+                                        (type === 'source3' && (nonEmpty > 4));
+                        if (isMatch || nonEmpty > 6) { headerRowIdx = i; break; }
                     }
 
                     const headers = (headerRowIdx !== -1) ? aoa[headerRowIdx].map(h => String(h).trim()) : [];
+                    const formattedData = [];
 
-                    // Step 2: process all rows, identifying dividers and data
-                    source3Data = [];
-                    for (let i = 0; i < aoa.length; i++) {
-                        // Skip identified header row
-                        if (i === headerRowIdx) continue;
-
+                    for (let i = headerRowIdx + 1; i < aoa.length; i++) {
                         const rowArr = aoa[i];
-                        const nonEmptyCells = rowArr.filter(v => v !== '').length;
-                        if (nonEmptyCells === 0) continue;
-
-                        const firstCell = String(rowArr[0] || '').trim();
-                        const isMrsBook = firstCell.toUpperCase().includes('MRS BOOK');
-
-                        // Check for MRS BOOK divider (Merged row in Excel)
-                        if (isMrsBook || (nonEmptyCells === 1 && firstCell && !headers.includes(firstCell))) {
-                            const rangeMatch = firstCell.match(/(\d+)/);
-                            const sortVal = rangeMatch ? parseInt(rangeMatch[0]) : 0;
-                            source3Data.push({ isDivider: true, dividerText: firstCell, MRS: sortVal });
-                            continue;
-                        }
-
-                        // Skip rows before header unless they were identified as dividers
-                        if (headerRowIdx !== -1 && i < headerRowIdx) continue;
-
-                        // Also skip row 0 by default case if headerRowIdx wasn't 0
-                        if (i === 0) continue;
+                        const nonEmpty = rowArr.filter(v => v !== '').length;
+                        if (nonEmpty < 2) continue;
 
                         const obj = {};
                         headers.forEach((h, idx) => {
@@ -2500,22 +2482,23 @@
                                 obj[h] = val;
                             }
                         });
-                        source3Data.push(obj);
-                    }
-                } else {
-                    const data = XLSX.utils.sheet_to_json(ws);
-                    // Format dates in Source 1 and 2 as well
-                    const formattedData = data.map(row => {
-                        const newRow = {};
-                        for (const key in row) {
-                            let val = row[key];
-                            if (val instanceof Date) val = formatDate(val);
-                            newRow[key] = val;
+                        
+                        // Handle dividers specifically for source3
+                        if (type === 'source3') {
+                            const firstCell = String(rowArr[0] || '').trim();
+                            if (firstCell.toUpperCase().includes('MRS BOOK') || (nonEmpty === 1 && firstCell && !headers.includes(firstCell))) {
+                                const rangeMatch = firstCell.match(/(\d+)/);
+                                obj.isDivider = true;
+                                obj.dividerText = firstCell;
+                                obj.MRS = rangeMatch ? parseInt(rangeMatch[0]) : 0;
+                            }
                         }
-                        return newRow;
-                    });
+                        formattedData.push(obj);
+                    }
+
                     if (type === 'source1') source1Data = formattedData;
                     else if (type === 'source2') source2Data = formattedData;
+                    else if (type === 'source3') source3Data = formattedData;
                 }
 
                 status.innerText = '✓ ' + file.name; status.style.color = 'var(--primary)';
@@ -2803,6 +2786,8 @@
             btn.classList.add('loading');
             await new Promise(r => setTimeout(r, 100));
 
+            const normalizeKey = (k) => String(k || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
             const findVal = (m, terms) => {
                 const lowTerms = terms.map(t => t.toLowerCase().replace(/[\s_\-\.]/g, ''));
                 const key = Object.keys(m).find(k => lowTerms.includes(k.toLowerCase().replace(/[\s_\-\.]/g, '')));
@@ -2814,19 +2799,21 @@
                 try {
                     const payMap = {};
                     source2Data.forEach(row => {
-                        const k = String(findVal(row, ["Claim No", "Clm No", "Claim Number", "Claim#"]) || "").trim();
+                        const rawKey = findVal(row, ["Claim No", "Clm No", "Claim Number", "Claim#"]) || "";
+                        const k = normalizeKey(rawKey);
                         if (k) payMap[k] = row;
                     });
                     let updated = 0;
                     rawData.forEach(target => {
-                        const ck = String(target['Claim No'] || '').trim();
+                        const rawTargetKey = target['Claim No'] || '';
+                        const ck = normalizeKey(rawTargetKey);
                         if (!ck || target.isDivider) return;
                         const match2 = payMap[ck];
                         if (match2) {
                             if (target.isRowLocked) return;
                             // SPECIAL REQUEST: Update if current amount is small (< 5) and incoming is larger (> 5)
                             // This fixes issues with partial/incorrect previous imports
-                            const existingRecvd = parseFloat(target['AMT RECEIVED']) || 0;
+                            const existingRecvd = parseFloat(String(target['AMT RECEIVED'] || "0").replace(/[^\d.-]/g, '')) || 0;
                             const rawIncoming = findVal(match2, [
                                 "Gross Amount", "Total Approved Amt. (W Tax)", "Total Approved Amt.(W Tax)",
                                 "Total Claimed Amt.(W Tax)", "Ramittance Amt.", "Remittance Amt",
@@ -2834,16 +2821,48 @@
                             ]) || 0;
                             const incomingRecvd = Math.round(parseFloat(String(rawIncoming).replace(/[^\d.-]/g, '')) * 100) / 100 || 0;
 
-                            const isUnpaid = !target['AMT RECEIVED'] || target['AMT RECEIVED'] === 0 || target['AMT RECEIVED'] === '—';
-                            const needsUpdate = isUnpaid || (existingRecvd < 5 && incomingRecvd > 5);
+                            let rowWasUpdated = false;
 
-                            if (needsUpdate) {
+                            // 1. Update Amount if missing or previously incorrect
+                            if ((!target['AMT RECEIVED'] || target['AMT RECEIVED'] === '—' || existingRecvd < 5) && incomingRecvd > 5) {
                                 target['AMT RECEIVED'] = incomingRecvd;
-                                // Also update date if we're picking up a real payment
-                                target['PAYMENT DATE'] = findVal(match2, ["Payment Cheque Date", "Payment Date", "Cheque Date", "Date", "Payment Date1"]) || '';
+                                rowWasUpdated = true;
                             }
+
+                            // 2. ALWAYS update Payment Date if currently missing
+                            if (!target['PAYMENT DATE'] || target['PAYMENT DATE'] === '—' || target['PAYMENT DATE'] === '') {
+                                const newDate = findVal(match2, ["Payment Cheque Date", "Payment Date", "Cheque Date", "Date", "Payment Date1"]);
+                                if (newDate) {
+                                    target['PAYMENT DATE'] = newDate;
+                                    rowWasUpdated = true;
+                                }
+                            }
+                                    
+                            // 3. Auto-populate missing structural data from Source 2 if empty or < 2
+                            const updateIfEmpty = (f, terms) => {
+                                const curVal = parseFloat(String(target[f] || "0").replace(/[^\d.-]/g, '')) || 0;
+                                if (curVal < 2 || !target[f] || target[f] === '—') {
+                                    const newVal = findVal(match2, terms);
+                                    if (newVal !== null && newVal !== '') {
+                                        if (numericCols.has(f)) {
+                                            target[f] = Math.round(parseFloat(String(newVal).replace(/[^\d.-]/g, '')) * 100) / 100 || 0;
+                                        } else {
+                                            target[f] = newVal;
+                                        }
+                                        rowWasUpdated = true;
+                                    }
+                                }
+                            };
+
+                            updateIfEmpty('Total Amt', ["Gross Amount", "Total Approved Amt", "Total Claimed Amt", "Amt"]);
+                            updateIfEmpty('Labour', ["Labour Amt", "Labor", "Labour"]);
+                            updateIfEmpty('part', ["Parts Amt", "Part", "part"]);
+                            updateIfEmpty('Sublet', ["Sublet Amt", "Sublet"]);
+                            updateIfEmpty('IGST', ["Total Approved Tax Amt", "GST", "IGST", "Tax"]);
+                            updateIfEmpty('Invoice No', ["Invoice Number", "Invoice No", "Inv No"]);
+                            
                             recalcRow(target);
-                            if (needsUpdate) updated++;
+                            if (rowWasUpdated) updated++;
                         }
                     });
 
@@ -2868,7 +2887,8 @@
             try {
                 const payMap = {};
                 source2Data.forEach(row => {
-                    const k = String(findVal(row, ["Claim No", "Clm No", "Claim Number", "Claim#"]) || "").trim();
+                    const rawKey = findVal(row, ["Claim No", "Clm No", "Claim Number", "Claim#"]) || "";
+                    const k = normalizeKey(rawKey);
                     if (k) payMap[k] = row;
                 });
                 // Filter existing rawData to remove any old invalid claims (Cleanup pass)
@@ -2890,10 +2910,11 @@
                 let newlyAdded = 0;
 
                 source1Data.forEach(match1 => {
-                    const claimKeyStr = String(findVal(match1, ["Claim No", "Clm No", "Claim Number", "Claim#"]) || "").trim();
+                    const rawKey = findVal(match1, ["Claim No", "Clm No", "Claim Number", "Claim#"]) || "";
                     // EXPLICIT HEADER SKIP
-                    if (!claimKeyStr || /^CLAIM\s*(NO|#)$/i.test(claimKeyStr)) return;
-                    const claimKey = claimKeyStr;
+                    if (!rawKey || /^CLAIM\s*(NO|#)$/i.test(String(rawKey).trim())) return;
+                    const claimKey = String(rawKey).trim();
+                    const normClaimKey = normalizeKey(claimKey);
 
                     const roKey = String(findVal(match1, ["R/O No", "RO No", "RO Number", "Repair Order", "RO Suffix"]) || "").trim();
                     if (!roKey || /^CANC(LE|EL)$/i.test(roKey) || /^R\/O\s*NO$/i.test(roKey)) return;
@@ -2908,15 +2929,15 @@
                     if (typeStr.includes("FREESERVICE") || typeStr.includes("FSC")) return;
                     if (typeStr.includes("CAMPAIGN") && amtVal < 300 && !descStr.includes("POWERWINDOW") && !descStr.includes("FUELPUMP")) return;
 
-                    let target = ledgerMap[claimKey];
+                    let target = rawData.find(r => normalizeKey(r['Claim No']) === normClaimKey);
 
                     if (!target) {
                         // Disable auto-filling MRS; leave it blank initially
                         target = { "MRS": "", "Claim No": claimKey, "R/O No": roKey };
                         rawData.push(target);
-                        ledgerMap[claimKey] = target;
                         newlyAdded++;
                     }
+                    // Re-index even if found (though we use rawData.find now for safety)
 
                     // 100% Matching/Updating logic
                     const updateField = (f, val) => {
@@ -2945,9 +2966,9 @@
                     updateField('Invoice No', match1['Invoice No']);
 
                     // SOURCE 2 MAPPING (Payment details) - Protect existing payment data
-                    const match2 = payMap[claimKey];
+                    const match2 = payMap[normClaimKey];
                     if (match2) {
-                        const existingRecvd = parseFloat(target['AMT RECEIVED']) || 0;
+                        const existingRecvd = parseFloat(String(target['AMT RECEIVED'] || "0").replace(/[^\d.-]/g, '')) || 0;
                         const rawIncoming = findVal(match2, [
                             "Gross Amount", "Total Approved Amt. (W Tax)", "Total Approved Amt.(W Tax)",
                             "Total Claimed Amt.(W Tax)", "Ramittance Amt.", "Remittance Amt",
@@ -2955,13 +2976,39 @@
                         ]) || 0;
                         const incomingRecvd = Math.round(parseFloat(String(rawIncoming).replace(/[^\d.-]/g, '')) * 100) / 100 || 0;
 
-                        const isUnpaid = !target['AMT RECEIVED'] || target['AMT RECEIVED'] === 0 || target['AMT RECEIVED'] === '—';
-                        const needsUpdate = isUnpaid || (existingRecvd < 5 && incomingRecvd > 5);
-
-                        if (needsUpdate) {
+                        // 1. Update Amount if missing or previously incorrect
+                        if ((!target['AMT RECEIVED'] || target['AMT RECEIVED'] === '—' || existingRecvd < 5) && incomingRecvd > 5) {
                             target['AMT RECEIVED'] = incomingRecvd;
-                            target['PAYMENT DATE'] = findVal(match2, ["Payment Cheque Date", "Payment Date", "Cheque Date", "Date", "Payment Date1"]) || '';
                         }
+
+                        // 2. ALWAYS update Payment Date if currently missing
+                        if (!target['PAYMENT DATE'] || target['PAYMENT DATE'] === '—' || target['PAYMENT DATE'] === '') {
+                            const newDate = findVal(match2, ["Payment Cheque Date", "Payment Date", "Cheque Date", "Date", "Payment Date1"]);
+                            if (newDate) {
+                                target['PAYMENT DATE'] = newDate;
+                            }
+                        }
+                                
+                        // 3. Fill in holes for claim details using Source 2 (Remittance) if Source 1 was missing them
+                        const fillHole = (f, terms) => {
+                            const v = parseFloat(String(target[f] || "0").replace(/[^\d.-]/g, '')) || 0;
+                            if (v < 2 || !target[f] || target[f] === '—') {
+                                const val = findVal(match2, terms);
+                                if (val !== null && val !== '') {
+                                    if (numericCols.has(f)) {
+                                        target[f] = Math.round(parseFloat(String(val).replace(/[^\d.-]/g, '')) * 100) / 100 || 0;
+                                    } else {
+                                        target[f] = val;
+                                    }
+                                }
+                            }
+                        };
+                        fillHole('Total Amt', ["Gross Amount", "Total Approved Amt", "Total Claimed Amt"]);
+                        fillHole('Labour', ["Labour Amt", "Labor", "Labour"]);
+                        fillHole('part', ["Parts Amt", "Part", "part"]);
+                        fillHole('Sublet', ["Sublet Amt", "Sublet"]);
+                        fillHole('IGST', ["Total Approved Tax Amt", "GST", "IGST", "Tax"]);
+                        fillHole('Invoice No', ["Invoice Number", "Invoice No", "Inv No"]);
                     }
                     recalcRow(target);
                 });
