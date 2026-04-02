@@ -1994,7 +1994,7 @@
                         </div>
                     </div>
                     <p style="font-size:0.75rem;color:var(--text-muted);margin:2px 0 0 0;">
-                        👆 Click any row to assign its MRS number &nbsp;·&nbsp; Double-click a cell to edit it directly
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px; opacity:0.7;"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg> Click any row to assign its MRS number &nbsp;·&nbsp; Double-click a cell to edit it directly
                     </p>
                 </div>
             </div>
@@ -2018,10 +2018,13 @@
                                     <polyline points="6 9 12 15 18 9"/>
                                 </svg>
                             </button>
-                            <ul class="c-drop-list" id="searchModeList" style="width:110px; right:0; left:auto; top:calc(100% + 4px);">
+                            <ul class="c-drop-list" id="searchModeList" style="width:110px; right:0; left:auto; top:calc(100% + 4px); max-height: 152px; overflow-y: auto;">
                                 <li onclick="selectSearchMode('ro', 'RO No')" class="selected">RO No</li>
                                 <li onclick="selectSearchMode('mrs', 'MRS No')">MRS No</li>
                                 <li onclick="selectSearchMode('vin', 'VIN No')">VIN No</li>
+                                <li onclick="selectSearchMode('part', 'Part Desc')">Part Desc</li>
+                                <li onclick="selectSearchMode('invoice', 'Invoice No')">Invoice No</li>
+                                <li onclick="selectSearchMode('date', 'Payment Date')">Payment Date</li>
                             </ul>
                         </div>
                     </div>
@@ -2083,11 +2086,11 @@
                 <!-- Group 3: Status & Info -->
                 <div style="display:flex; align-items:center; gap:10px; flex-shrink:0;">
                     <button id="workingModeBtn" onclick="toggleWorkingMode()" class="btn-working-mode inactive" title="Show only unassigned claims">
-                        <span id="workingIcon">🎯</span> <span id="workingLabel">ALL MODE</span>
+                        <span id="workingIcon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> <span id="workingLabel">ALL MODE</span>
                     </button>
                     <button id="lockStatusBtn" onclick="toggleGlobalLock()" class="btn-premium btn-outline"
                         style="padding:7px 12px; font-size:0.68rem; font-weight:800; border-color:var(--border); display:inline-flex; align-items:center; gap:6px; min-width:105px;">
-                        <span id="lockIcon">🔓</span> <span id="lockLabel">ACTIVE</span>
+                        <span id="lockIcon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg></span> <span id="lockLabel">ACTIVE</span>
                     </button>
                     <div style="display:flex; flex-direction:column; align-items:flex-end;">
                         <div id="saveStatus"
@@ -2152,7 +2155,7 @@
             <div class="modal-body">
                 <div id="mrsModalLockedNotice"
                     style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(239,68,68,0.1);border:1.5px solid rgba(239,68,68,0.25);border-radius:10px;font-size:0.75rem;font-weight:800;color:var(--danger);text-align:center;text-transform:uppercase;letter-spacing:0.5px;">
-                    🔒 This row is LOCKED! Changes disabled.
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> This row is LOCKED! Changes disabled.
                 </div>
                 <div class="claim-info-box" id="mrsClaimInfo">
                     <div><span>R/O No</span><strong id="mrsInfoRO">—</strong></div>
@@ -2346,6 +2349,16 @@
         // ── Storage Configuration (Aligned with main.html) ──
         localforage.config({ name: 'AutoPuncherDB', storeName: 'audits' });
 
+        // ── Shared SVG Components ──
+        const ICONS = {
+            LOCK: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+            UNLOCK: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>',
+            TARGET: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
+            WARN: '&#9888;',
+            CHECK: '&#10003;',
+            FAIL: '&#10007;'
+        };
+
         const LEDGER_KEY = 'mrs_ledger';
         const LOCK_KEY = 'mrs_is_locked';
         let rawData = [];
@@ -2389,7 +2402,7 @@
                 btn.style.borderColor = 'var(--danger)';
                 btn.style.color = 'var(--danger)';
                 btn.style.background = 'rgba(239,68,68,0.05)';
-                icon.textContent = '🔒';
+                icon.innerHTML = ICONS.LOCK;
                 label.textContent = 'LOCKED';
                 document.querySelector('.btn-feed').disabled = true;
                 document.querySelector('.btn-feed').style.opacity = '0.5';
@@ -2397,20 +2410,46 @@
                 btn.style.borderColor = 'var(--border)';
                 btn.style.color = 'inherit';
                 btn.style.background = '';
-                icon.textContent = '🔓';
-                label.textContent = 'UNLOCKED';
+                icon.innerHTML = ICONS.UNLOCK;
+                label.textContent = 'ACTIVE';
                 document.querySelector('.btn-feed').disabled = false;
                 document.querySelector('.btn-feed').style.opacity = '1';
             }
         }
 
         async function toggleGlobalLock() {
-            isLocked = !isLocked;
-            await localforage.setItem(LOCK_KEY, isLocked);
-            updateLockUI();
-            showToast(isLocked ? '🔒 Ledger Locked! No changes allowed.' : '🔓 Ledger Unlocked!', isLocked ? 'warn' : 'success');
-            // Notify parent to trigger sync/updates
-            window.parent.postMessage({ type: 'mrs-data-changed' }, '*');
+            // Master Auth Check
+            const targetState = !isLocked;
+            openAuthModal(targetState);
+        }
+
+        function openAuthModal(targetState) {
+            const mod = document.getElementById('authModal');
+            const inp = document.getElementById('authInput');
+            inp.value = '';
+            mod.dataset.targetState = targetState;
+            mod.classList.add('active');
+            setTimeout(() => inp.focus(), 300);
+        }
+        function closeAuthModal() {
+            document.getElementById('authModal').classList.remove('active');
+        }
+        async function verifyAuth() {
+            const val = document.getElementById('authInput').value.trim();
+            const mod = document.getElementById('authModal');
+            // Master Password: 7894
+            if (val === '7894') {
+                isLocked = (mod.dataset.targetState === 'true');
+                await localforage.setItem(LOCK_KEY, isLocked);
+                updateLockUI();
+                closeAuthModal();
+                showToast(isLocked ? `${ICONS.LOCK} Ledger Locked Instantly` : `${ICONS.CHECK} System Access Authorized`, isLocked ? 'warn' : 'success');
+                window.parent.postMessage({ type: 'mrs-data-changed' }, '*');
+            } else {
+                showToast(`${ICONS.FAIL} Access Denied: Incorrect Code`, 'danger');
+                document.getElementById('authInput').value = '';
+                document.getElementById('authInput').focus();
+            }
         }
 
         let _saveTimeout;
@@ -2429,7 +2468,7 @@
             }
             catch (e) {
                 console.error('Save ledger:', e);
-                showToast('🚨 CRITICAL SAVE ERROR! Check disk space.', 'danger');
+                showToast(`${ICONS.FAIL} CRITICAL SAVE ERROR! Check disk space.`, 'danger');
                 // Fallback to localStorage for small data if IndexedDB fails
                 try { localStorage.setItem(LEDGER_KEY + '_fallback', JSON.stringify(rawData)); } catch (ex) { }
             }
@@ -2447,7 +2486,7 @@
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            showToast('✓ Safety Backup Downloaded!', 'success');
+            showToast(`${ICONS.CHECK} Safety Backup Downloaded!`, 'success');
         }
 
         // ── Columns ──
@@ -2802,7 +2841,7 @@
                 return;
             }
 
-            if (isLocked) { showToast('🔒 Cannot import while ledger is LOCKED!', 'danger'); return; }
+            if (isLocked) { showToast(`${ICONS.LOCK} Locked: Cannot import while ledger is LOCKED!`, 'danger'); return; }
 
             // ── Source 1 + 2 flow ──
             if (!source1Data && !source2Data) {
@@ -3208,7 +3247,7 @@
             lockSection.style.marginBottom = '5px';
             lockSection.style.paddingBottom = '8px';
             lockSection.style.color = isLocked ? 'var(--danger)' : 'var(--success)';
-            lockSection.innerHTML = `<span>${isLocked ? '🔓' : '🔒'}</span> ${isLocked ? 'Unlock for Changes' : 'Lock Ledger Permanently'}`;
+            lockSection.innerHTML = `<span>${isLocked ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'}</span> ${isLocked ? 'Unlock for Changes' : 'Lock Ledger Permanently'}`;
             lockSection.onclick = (e) => {
                 e.stopPropagation();
                 toggleGlobalLock();
@@ -3221,7 +3260,7 @@
             const allOpt = document.createElement('div');
 
             allOpt.className = 'book-option';
-            allOpt.innerHTML = `<span style="font-size:10px;">📊</span> Show All Data`;
+            allOpt.innerHTML = `<span style="font-size:10px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span> Show All Data`;
             allOpt.onclick = () => {
                 document.getElementById('mrsBookLabel').textContent = "Jump to MRS Book...";
                 currentPage = 1;
@@ -3234,7 +3273,7 @@
             books.forEach(b => {
                 const div = document.createElement('div');
                 div.className = 'book-option';
-                div.innerHTML = `<span style="font-size:10px;">📖</span> ${b}`;
+                div.innerHTML = `<span style="font-size:10px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span> ${b}`;
                 div.onclick = (e) => {
                     e.stopPropagation();
                     selectMRSBook(b);
@@ -3461,7 +3500,7 @@
                         <td colspan="${columns.length - 1}" 
                             class="editable" 
                             ondblclick="startEditDivider(event,this,${ri})"
-                            title="${isRowLocked ? '🔒 Locked Divider' : 'Double-click to rename'}"
+                            title="${isRowLocked ? 'Locked Divider' : 'Double-click to rename'}"
                             style="
                             padding: 11px 18px;
                             background: linear-gradient(90deg, rgba(42,181,165,0.28) 0%, rgba(77,207,195,0.18) 100%);
@@ -3531,7 +3570,7 @@
                     isUnassigned ? 'row-unassigned' : ''
                 ].filter(Boolean).join(' ');
 
-                rows.push(`<tr class="${rowClasses}" tabindex="0" onkeydown="handleRowKey(event, ${ri})" onclick="openMRSModal(${ri})" title="${isRowLocked ? '🔒 Locked - Click to view' : isUnassigned ? 'Click to assign MRS' : 'Click to view MRS #' + mrsVal}">${cells}</tr>`);
+                rows.push(`<tr class="${rowClasses}" tabindex="0" onkeydown="handleRowKey(event, ${ri})" onclick="openMRSModal(${ri})" title="${isRowLocked ? 'Locked - Click to view' : isUnassigned ? 'Click to assign MRS' : 'Click to view MRS #' + mrsVal}">${cells}</tr>`);
             });
             tbody.innerHTML = rows.join('');
 
@@ -3582,6 +3621,15 @@
                     const vin = String(row['VIN'] || '').toLowerCase();
                     // Suffix matching for last-six digits
                     return vin.includes(query) || vin.endsWith(query);
+                } else if (searchMode === 'part') {
+                    const part = String(row['Part Desc'] || '').toLowerCase();
+                    return part.includes(query);
+                } else if (searchMode === 'invoice') {
+                    const inv = String(row['Invoice No'] || '').toLowerCase();
+                    return inv.includes(query);
+                } else if (searchMode === 'date') {
+                    const dt = String(row['PAYMENT DATE'] || '').toLowerCase();
+                    return dt.includes(query);
                 } else {
                     const ro = String(row['R/O No'] || '').toLowerCase();
                     const roSuffix = ro.replace(/^[^0-9]*/, '');
@@ -4377,10 +4425,10 @@
   </div>
 </div>
 <div class="summary-row">
-  <div class="summary-box s-total">✅ Total Claims: ${totalClaims}</div>
-  <div class="summary-box s-unassigned">⚠️ Unassigned MRS: ${unassigned}</div>
-  <div class="summary-box s-pending">⏳ Pending Payment: ${pending}</div>
-  <div class="summary-box s-cancelled">❌ Cancelled MRS: ${cancelled}</div>
+  <div class="summary-box s-total">Total Claims: ${totalClaims}</div>
+  <div class="summary-box s-unassigned">Unassigned MRS: ${unassigned}</div>
+  <div class="summary-box s-pending">Pending Payment: ${pending}</div>
+  <div class="summary-box s-cancelled">Cancelled MRS: ${cancelled}</div>
 </div>
 <table>
   <thead><tr>${headerRow}</tr></thead>
@@ -4412,7 +4460,7 @@
         let _toastTimer;
         function showToast(msg, type) {
             const t = document.getElementById('toast');
-            t.textContent = msg;
+            t.innerHTML = msg;
             t.style.borderColor = type === 'danger' ? 'rgba(239,68,68,0.4)' :
                 type === 'warn' ? 'rgba(245,158,11,0.4)' :
                     type === 'success' ? 'rgba(16,185,129,0.4)' : 'var(--border)';
@@ -4458,7 +4506,7 @@
             document.getElementById('mrsRangeModal').classList.remove('active');
         }
         function saveMRSRange() {
-            if (isLocked) { showToast('🔒 Locked: Range creation disabled.', 'danger'); return; }
+            if (isLocked) { showToast(`${ICONS.LOCK} Locked: Range creation disabled.`, 'danger'); return; }
             const fromVal = parseInt(document.getElementById('mrsRangeFrom').value);
             const toVal = parseInt(document.getElementById('mrsRangeTo').value);
             if (!fromVal || fromVal < 1) { showToast('Valid "From" MRS number daalo.', 'warn'); return; }
@@ -4473,7 +4521,7 @@
 
             if (overlap) {
                 const type = overlap.isDivider ? 'divider' : 'claim';
-                showToast(`Range Error: MRS ${overlap['MRS']} pe pehle se ही ek ${type} hai! Range empty honi chahiye.`, 'danger');
+                showToast(`${ICONS.FAIL} Range Error: MRS ${overlap['MRS']} pe pehle se hi ek ${type} hai! Range empty honi chahiye.`, 'danger');
                 return;
             }
 
@@ -4493,7 +4541,7 @@
             saveLedger();
             renderData(rawData);
             closeMRSRangeModal();
-            showToast(`✓ MRS BOOK divider added for ${fromVal}-${toVal}`, 'success');
+            showToast(`${ICONS.CHECK} MRS BOOK divider added for ${fromVal}-${toVal}`, 'success');
         }
         function clearMRSRange() {
             // Remove all dividers added via this tool
@@ -4508,6 +4556,32 @@
         });
     </script>
     <div id="calendarDropdown" class="calendar-dropdown" aria-hidden="true" data-active="false"></div>
+
+    <!-- Authorization Challenge (bypass pass managers) -->
+    <div class="modal-backdrop" id="authModal">
+        <div class="modal-dialog" style="max-width:320px;">
+            <div class="modal-header" style="text-align:center;">
+                <h3 style="color:var(--primary); font-size:1.1rem; letter-spacing:1px;">Security Authorization</h3>
+                <p style="font-size:0.75rem;">Enter authorization code to continue</p>
+            </div>
+            <div class="modal-body" style="padding:10px 20px 20px;">
+                <div style="margin-bottom:15px; position:relative;">
+                    <!-- Use type='tel' to trigger numeric keypad and avoid password save prompts -->
+                    <input type="tel" id="authInput" 
+                        placeholder="••••" 
+                        autocomplete="new-password"
+                        name="auth-token-mrs"
+                        maxlength="4"
+                        onkeydown="if(event.key==='Enter') verifyAuth(); if(event.key==='Escape') closeAuthModal();"
+                        style="width:100%; text-align:center; padding:12px; font-size:1.8rem; letter-spacing:8px; border-radius:12px; border:2px solid var(--border); background:rgba(0,0,0,0.02); outline:none; font-family:monospace; transition:all 0.3s; color:var(--primary);">
+                </div>
+                <div class="modal-btn-row">
+                    <button class="modal-btn-confirm" onclick="verifyAuth()" style="width:100%; justify-content:center;">Unlock System</button>
+                </div>
+                <button onclick="closeAuthModal()" style="width:100%; margin-top:10px; background:transparent; border:none; color:var(--text-muted); font-size:0.7rem; cursor:pointer; font-weight:700;">Cancel</button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
