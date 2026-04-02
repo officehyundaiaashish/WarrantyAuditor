@@ -1849,37 +1849,42 @@
 
                 if (type === 'source3') {
                     // ── Raw parse: respect Excel headers + merged cells ──
-                    // Step 1: expand merged cells — fill each merged region with top-left value
-                    if (ws['!merges']) {
-                        ws['!merges'].forEach(merge => {
-                            const tl = XLSX.utils.encode_cell({ r: merge.s.r, c: merge.s.c });
-                            const tlVal = ws[tl] ? ws[tl].v : '';
-                            for (let r = merge.s.r; r <= merge.e.r; r++) {
-                                for (let c = merge.s.c; c <= merge.e.c; c++) {
-                                    const addr = XLSX.utils.encode_cell({ r, c });
-                                    if (!ws[addr]) ws[addr] = { v: tlVal, t: 's' };
-                                }
-                            }
-                        });
-                    }
-                    // Step 2: convert to AOA (all rows, no header assumption)
                     const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
                     if (aoa.length < 2) {
                         showToast('Source 3: No data found in file.', 'warn'); return;
                     }
-                    // Step 3: find the actual header row — first row where >3 non-empty cells
-                    let headerRowIdx = 0;
-                    for (let i = 0; i < Math.min(aoa.length, 10); i++) {
+
+                    // Step 1: find the actual header row — first row where >4 non-empty cells
+                    let headerRowIdx = -1;
+                    for (let i = 0; i < Math.min(aoa.length, 15); i++) {
                         const nonEmpty = aoa[i].filter(v => v !== '').length;
-                        if (nonEmpty > 3) { headerRowIdx = i; break; }
+                        if (nonEmpty > 4) { headerRowIdx = i; break; }
                     }
-                    const headers = aoa[headerRowIdx].map(h => String(h).trim());
-                    // Step 4: convert remaining rows to objects keyed by Excel headers
+                    
+                    const headers = (headerRowIdx !== -1) ? aoa[headerRowIdx].map(h => String(h).trim()) : [];
+
+                    // Step 2: process all rows, identifying dividers and data
                     source3Data = [];
-                    for (let i = headerRowIdx + 1; i < aoa.length; i++) {
+                    for (let i = 0; i < aoa.length; i++) {
+                        if (i === headerRowIdx) continue; // Skip the header row itself
+
                         const rowArr = aoa[i];
-                        const hasData = rowArr.some(v => v !== '');
-                        if (!hasData) continue; // skip fully empty rows
+                        const nonEmptyCells = rowArr.filter(v => v !== '').length;
+                        if (nonEmptyCells === 0) continue; // skip fully empty rows
+
+                        const firstCell = String(rowArr[0] || '').trim();
+                        
+                        // Check for MRS BOOK divider (Merged row in Excel)
+                        if (firstCell.toUpperCase().includes('MRS BOOK') || (nonEmptyCells === 1 && firstCell)) {
+                            const rangeMatch = firstCell.match(/(\d+)/); 
+                            const sortVal = rangeMatch ? parseInt(rangeMatch[0]) : 0;
+                            source3Data.push({ isDivider: true, dividerText: firstCell, MRS: sortVal });
+                            continue;
+                        }
+
+                        // If we haven't found a header yet, or this row is before header, skip it if not a divider
+                        if (headerRowIdx === -1 || i < headerRowIdx) continue;
+
                         const obj = {};
                         headers.forEach((h, idx) => {
                             if (h) obj[h] = (rowArr[idx] !== undefined && rowArr[idx] !== null) ? rowArr[idx] : '';
@@ -1913,11 +1918,10 @@
                 btn.classList.add('loading');
                 await new Promise(r => setTimeout(r, 100));
                 try {
-                    let appended = 0, skipped = 0;
+                    let appended = 0, skipped = 0, dividersAdded = 0;
                     const ledgerMap = {};
                     rawData.forEach(r => { if (r['Claim No']) ledgerMap[String(r['Claim No']).trim()] = r; });
 
-                    // Flexible header aliases for old exports
                     const colAliases = {
                         'MRS':           ['MRS', 'Mrs', 'MRS No', 'MRS Number'],
                         'VIN':           ['VIN', 'Vin', 'Chassis No', 'Chassis'],
@@ -1940,7 +1944,6 @@
                         'REMARKS':       ['REMARKS', 'Remarks', 'Status', 'Remark'],
                     };
 
-                    // Build a resolver: for a given old row, find value by alias list
                     const resolveCol = (row, col) => {
                         const aliases = colAliases[col] || [col];
                         for (const alias of aliases) {
@@ -1950,35 +1953,38 @@
                     };
 
                     source3Data.forEach(row => {
+                        if (row.isDivider) {
+                            // Check if this divider already exists
+                            if (!rawData.some(r => r.isDivider && r.dividerText === row.dividerText)) {
+                                rawData.push(row);
+                                dividersAdded++;
+                            }
+                            return;
+                        }
+
                         const claimKey = String(
                             row['Claim No'] || row['Clm No'] || row['Claim Number'] || row['Claim#'] || ''
                         ).trim();
                         if (!claimKey) { skipped++; return; }
 
-                        // Build normalized row from old data
                         const newRow = {};
                         columns.forEach(col => {
-                            if (col === 'AUTH. SIGN') { newRow[col] = ''; return; } // always blank
+                            if (col === 'AUTH. SIGN') { newRow[col] = ''; return; }
                             newRow[col] = resolveCol(row, col);
                         });
                         newRow['Claim No'] = claimKey;
-
-                        // MRS: keep if valid number, else blank
                         const mrsRaw = parseInt(newRow['MRS']);
                         newRow['MRS'] = (!isNaN(mrsRaw) && mrsRaw > 0) ? mrsRaw : '';
 
-                        // Normalize numeric fields
                         ['Total Amt','Labour','part','Sublet','IGST','AMT RECEIVED','DIFF AMT'].forEach(f => {
                             const v = parseFloat(String(newRow[f] || '').replace(/[^\d.-]/g, ''));
                             newRow[f] = isNaN(v) ? '' : v;
                         });
 
-                        // REMARKS: if CANCELLED keep, else recalcRow sets PAID / PAYMENT SHORT
                         const remarkRaw = String(newRow['REMARKS']).toUpperCase();
                         if (!remarkRaw.startsWith('CANCELLED')) recalcRow(newRow);
 
                         if (ledgerMap[claimKey]) {
-                            // Merge into existing row — overwrite all fields from old data
                             Object.assign(ledgerMap[claimKey], newRow);
                         } else {
                             rawData.push(newRow);
@@ -1987,18 +1993,18 @@
                         }
                     });
 
-                    // Sort by MRS ascending
+                    // Sort: Dividers stay in sequence because they have the first MRS number of their range as MRS
                     rawData.sort((a, b) => (parseInt(a['MRS']) || 0) - (parseInt(b['MRS']) || 0));
 
                     source3Data = null;
-                    document.getElementById('status-source3').innerText = 'Direct Append';
+                    document.getElementById('status-source3').innerText = 'Data Imported';
                     document.getElementById('status-source3').style.color = '';
                     document.getElementById('tile-source3').classList.remove('active');
                     saveLedger(); renderData(rawData);
-                    const skipMsg = skipped > 0 ? ` · ${skipped} skipped (no Claim No)` : '';
-                    showToast(`✓ ${appended} new added · existing updated${skipMsg} · Total: ${rawData.length}`, 'success');
+                    const divMsg = dividersAdded > 0 ? ` · ${dividersAdded} dividers` : '';
+                    showToast(`✓ ${appended} new added · existing updated${divMsg} · Total: ${rawData.length}`, 'success');
                 } catch (err) {
-                    showToast('Append error: ' + err.message, 'danger');
+                    showToast('Import error: ' + err.message, 'danger');
                 } finally { btn.innerHTML = orig; btn.classList.remove('loading'); }
                 return;
             }
@@ -2246,40 +2252,35 @@
             const end = Math.min(start + PAGE_SIZE, data.length);
             const pageRows = data.slice(start, end);
 
-            // ── MRS Range merged divider row ──
-            const rangeFrom = mrsRangeFrom;
-            const rangeTo   = mrsRangeTo;
-            let rangeInserted = false;
-
+            // ── Divider Rendering ──
             const rows = [];
             pageRows.forEach((row) => {
-                const ri = rawData.indexOf(row);
-                const mrsNum = parseInt(row['MRS']);
-                const mrsVal = (row['MRS'] !== undefined && row['MRS'] !== null && row['MRS'] !== '') ? row['MRS'] : '\u2014';
-
-                // Insert merged divider just before the exact rangeFrom MRS number row
-                if (!rangeInserted && rangeFrom !== null && mrsNum === rangeFrom) {
+                if (row.isDivider) {
                     rows.push(`<tr class="mrs-range-divider-row" style="pointer-events:none;">
                         <td colspan="${columns.length}" style="
-                            padding: 7px 14px;
-                            background: linear-gradient(90deg, rgba(42,181,165,0.13) 0%, rgba(77,207,195,0.06) 100%);
-                            border-top: 2px solid rgba(42,181,165,0.45);
-                            border-bottom: 2px solid rgba(42,181,165,0.45);
+                            padding: 11px 18px;
+                            background: linear-gradient(90deg, rgba(42,181,165,0.28) 0%, rgba(77,207,195,0.18) 100%);
+                            border-top: 2.5px solid #2ab5a5;
+                            border-bottom: 2.5px solid #2ab5a5;
                             color: var(--primary);
-                            font-size: 0.72rem;
-                            font-weight: 800;
-                            letter-spacing: 0.4px;
+                            font-size: 0.85rem;
+                            font-weight: 900;
+                            letter-spacing: 1px;
                             text-transform: uppercase;
                             white-space: nowrap;
+                            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05), inset 0 -2px 4px rgba(0,0,0,0.05);
                         ">
-                            <span style="display:inline-flex;align-items:center;gap:7px;">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                                MRS from ${rangeFrom} to ${rangeTo}
+                            <span style="display:inline-flex;align-items:center;gap:10px;">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                                ${row.dividerText}
                             </span>
                         </td>
                     </tr>`);
-                    rangeInserted = true;
+                    return;
                 }
+
+                const ri = rawData.indexOf(row);
+                const mrsVal = (row['MRS'] !== undefined && row['MRS'] !== null && row['MRS'] !== '') ? row['MRS'] : '\u2014';
 
                 const cells = columns.map(col => {
                     let val = (row[col] !== undefined && row[col] !== null && row[col] !== '') ? row[col] : '\u2014';
@@ -2731,6 +2732,9 @@
 
             const headerRow = printCols.map(c => `<th>${c}</th>`).join('');
             const bodyRows = sorted.map(row => {
+                if (row.isDivider) {
+                    return `<tr><td colspan="${printCols.length}" style="background:#e6fffa;color:#0d9488;font-weight:bold;text-align:center;padding:8px;font-size:11px;border-bottom:2px solid #2ab5a5;">\u25BC ${row.dividerText}</td></tr>`;
+                }
                 const isCancelled = String(row['REMARKS']).toUpperCase().startsWith('CANCELLED');
                 const rowStyle = isCancelled ? ' style="opacity:0.45;background:#fff5f5;"' : '';
                 const cells = printCols.map(col => {
@@ -2868,17 +2872,26 @@
             if (!fromVal || fromVal < 1) { showToast('Valid "From" MRS number daalo.', 'warn'); return; }
             if (!toVal || toVal < 1) { showToast('Valid "To" MRS number daalo.', 'warn'); return; }
             if (toVal < fromVal) { showToast('"To" number "From" se bada hona chahiye.', 'warn'); return; }
-            mrsRangeFrom = fromVal;
-            mrsRangeTo = toVal;
+            
+            const dividerText = `MRS BOOK (${fromVal}-${toVal})`;
+            // Remove same divider if exists to avoid duplicates
+            rawData = rawData.filter(r => !(r.isDivider && r.dividerText === dividerText));
+            rawData.push({ isDivider: true, dividerText: dividerText, MRS: fromVal });
+            
+            // Sort to place divider correctly
+            rawData.sort((a, b) => (parseInt(a['MRS']) || 0) - (parseInt(b['MRS']) || 0));
+            
+            saveLedger();
+            renderData(rawData);
             closeMRSRangeModal();
-            renderPage();
-            showToast(`MRS Range set: ${fromVal} → ${toVal}`, 'success');
+            showToast(`✓ MRS BOOK divider added for ${fromVal}-${toVal}`, 'success');
         }
         function clearMRSRange() {
-            mrsRangeFrom = null;
-            mrsRangeTo = null;
-            renderPage();
-            showToast('MRS Range cleared.', 'info');
+            // Remove all dividers added via this tool
+            rawData = rawData.filter(r => !r.isDivider);
+            saveLedger();
+            renderData(rawData);
+            showToast('All MRS dividers cleared.', 'info');
         }
         // Close range modal on backdrop click
         document.getElementById('mrsRangeModal').addEventListener('click', (e) => {
