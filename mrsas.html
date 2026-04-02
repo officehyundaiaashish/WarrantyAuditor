@@ -789,29 +789,53 @@
             background: rgba(42, 181, 165, 0.08);
         }
 
-        .badge-short {
-            background: #fef2f2;
-            color: #b91c1c;
-            border-color: #fecaca;
-        }
+        .badge-short { background: #fff7ed; color: #ea580c; border-color: #ffedd5; }
+        .badge-paid { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
+        .badge-cancel { background: #f3f4f6; color: #4b5563; border-color: #e5e7eb; }
+        
+        [data-theme="dark"] .badge-short { background: #451a03; color: #fbbf24; border-color: #78350f; }
+        [data-theme="dark"] .badge-paid { background: #064e3b; color: #6ee7b7; border-color: #065f46; }
+        [data-theme="dark"] .badge-cancel { background: #1f2937; color: #9ca3af; border-color: #374151; }
 
-        [data-theme="dark"] .badge-short {
-            background: #450a0a;
-            color: #fca5a5;
-            border-color: #7f1d1d;
+        /* Remark Picker Popover */
+        .mrs-status-popover {
+            position: fixed;
+            z-index: 10000;
+            background: rgba(var(--surface-rgb), 0.98);
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+            padding: 6px;
+            min-width: 170px;
+            backdrop-filter: blur(12px);
+            animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
+        @keyframes popIn { 
+            from { opacity: 0; transform: scale(0.9) translateY(4px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .status-option {
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s;
+            color: var(--text-main);
+        }
+        .status-option:hover {
+            background: rgba(42,181,165,0.1);
+            color: var(--primary);
+        }
+        .status-option.active {
+            background: var(--primary);
+            color: white;
+        }
+        .status-dot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); }
 
-        .badge-paid {
-            background: #f0fdf4;
-            color: #15803d;
-            border-color: #bbf7d0;
-        }
-
-        [data-theme="dark"] .badge-paid {
-            background: #064e3b;
-            color: #6ee7b7;
-            border-color: #065f46;
-        }
 
         .pending-badge-header {
             display: inline-flex;
@@ -1552,6 +1576,8 @@
                                 onclick="triggerUnmarkedFilter()" title="Click to filter claims without MRS">0 Unassigned</span>
                             <span id="mrs-header-cancelled" class="pending-badge-header" style="display:none;background:#fef2f2;color:#b91c1c;border-color:#fecaca;"
                                 onclick="triggerCancelledFilter()" title="Click to filter cancelled MRS">0 Cancelled</span>
+                            <span id="mrs-header-noremarks" class="pending-badge-header" style="display:none;background:#fffbeb;color:#92400e;border-color:#fef3c7;"
+                                onclick="triggerNoRemarksFilter()" title="Click to filter claims with no remarks">0 No Remarks</span>
                             <span id="mrs-header-total" class="stat-badge total-badge">Tot: —</span>
                             <span id="mrs-header-received" class="stat-badge received-badge">Rec: —</span>
                             <span id="mrs-header-diff" class="stat-badge diff-badge">Dif: —</span>
@@ -1564,7 +1590,7 @@
             </div>
 
             <div class="search-row">
-                <div class="search-bar">
+                <div class="search-bar" style="max-width:300px;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                         stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="8" />
@@ -1572,16 +1598,23 @@
                     </svg>
                     <input type="text" id="tableSearch" placeholder="Search by RO No..."
                         oninput="filterTable()">
-                    <button id="searchModeBtn" onclick="toggleSearchMode()" title="Toggle search mode" style="
-                        display:inline-flex;align-items:center;gap:4px;
-                        padding:3px 9px;border-radius:7px;border:1.5px solid var(--primary);
-                        background:rgba(42,181,165,0.10);color:var(--primary);
-                        font-size:0.68rem;font-weight:800;cursor:pointer;white-space:nowrap;
-                        letter-spacing:0.2px;flex-shrink:0;transition:all 0.18s ease;">
-                        RO No
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 16 12 21 17 16"/><polyline points="7 8 12 3 17 8"/></svg>
-                    </button>
                 </div>
+                <!-- MRS Book Filter -->
+                <div class="search-bar" style="max-width:260px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                    <select id="mrsBookFilter" onchange="filterByBook()" style="background:transparent;border:none;outline:none;color:inherit;font-size:0.75rem;font-weight:700;width:100%;cursor:pointer;">
+                        <option value="">Jump to MRS Book...</option>
+                    </select>
+                </div>
+                <button id="searchModeBtn" onclick="toggleSearchMode()" title="Toggle search mode" style="
+                    display:inline-flex;align-items:center;gap:4px;
+                    padding:3px 9px;border-radius:7px;border:1.5px solid var(--primary);
+                    background:rgba(42,181,165,0.10);color:var(--primary);
+                    font-size:0.68rem;font-weight:800;cursor:pointer;white-space:nowrap;
+                    letter-spacing:0.2px;flex-shrink:0;transition:all 0.18s ease;">
+                    RO No
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 16 12 21 17 16"/><polyline points="7 8 12 3 17 8"/></svg>
+                </button>
                 <button class="btn-premium btn-outline" onclick="openCancelMRSModal()" style="border-color:rgba(239,68,68,0.35);color:var(--danger);padding:7px 14px;font-size:0.78rem;">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
@@ -1838,7 +1871,7 @@
             "MRS", "VIN", "Claim No", "Claim Date", "Claim Type",
             "R/O No", "R/O Date", "Part Desc", "Total Amt", "Labour",
             "part", "Sublet", "IGST", "AMT RECEIVED", "DIFF AMT",
-            "Invoice No", "PAYMENT DATE", "AUTH. SIGN", "REMARKS"
+            "Invoice No", "PAYMENT DATE", "AUTH. SIGN", "REMARKS", " "
         ];
         // numeric columns that trigger recalculation
         const numericCols = new Set(["Total Amt", "Labour", "part", "Sublet", "IGST", "AMT RECEIVED"]);
@@ -2172,11 +2205,16 @@
             const diff = total - received;
             row['DIFF AMT'] = Math.round(diff);
 
-            // Updated status logic: 
-            // if diff > 0 -> PAYMENT SHORT
-            // if diff <= 0 -> PAID
-            if (diff > 0) row['REMARKS'] = 'PAYMENT SHORT';
-            else row['REMARKS'] = 'PAID';
+            // If absolutely no payment info or total, keep it blank for manual entry if requested
+            if (!total && !received) return;
+
+            // AUTO-STATUS: Only calculate status if it's one of the standard auto types
+            const cur = String(row['REMARKS'] || "").toUpperCase();
+            const autoTypes = ["", "PAID", "PAYMENT SHORT", "—", "BY HMI", "PENDING"];
+            if (autoTypes.some(t => cur === t || cur.includes("PAYMENT SHORT"))) {
+                if (diff > 0) row['REMARKS'] = 'PAYMENT SHORT';
+                else row['REMARKS'] = 'PAID';
+            }
         }
 
         // ── Clear Database ──
@@ -2217,15 +2255,52 @@
         // ── Pagination state ──
         const PAGE_SIZE = 100;
         let currentPage = 1;
-        let currentDataset = []; // the active filtered/full dataset
+        let currentDataset = []; 
+        let paginatedSlices = []; 
+
+        function updateBookFilter() {
+            const select = document.getElementById('mrsBookFilter');
+            const current = select.value;
+            select.innerHTML = '<option value="">All MRS Books...</option>';
+            const dividers = rawData.filter(r => r.isDivider).map(r => r.dividerText);
+            dividers.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d; opt.textContent = d;
+                if (d === current) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
 
         // ── Render Table (paginated) ──
         function renderData(data) {
             currentDataset = data;
-            currentPage = Math.min(currentPage, Math.max(1, Math.ceil(data.length / PAGE_SIZE)));
+            
+            // Calculate slices: Each slice starts with a divider (if any exist)
+            paginatedSlices = [];
+            let currentSlice = [];
+            data.forEach(row => {
+                if (row.isDivider) {
+                    if (currentSlice.length > 0) paginatedSlices.push(currentSlice);
+                    currentSlice = [row];
+                } else {
+                    if (currentSlice.length >= PAGE_SIZE && !data.some(r => r.isDivider)) {
+                        // Fallback to size-based if no dividers at all in dataset
+                        paginatedSlices.push(currentSlice);
+                        currentSlice = [row];
+                    } else {
+                        currentSlice.push(row);
+                    }
+                }
+            });
+            if (currentSlice.length > 0) paginatedSlices.push(currentSlice);
+
+            const totalPages = paginatedSlices.length || 1;
+            currentPage = Math.min(currentPage, totalPages);
+            if (currentPage < 1) currentPage = 1;
+
             renderPage();
 
-            // Real-time counter update for header
+            // Stats calculation... (rest of stats logic stays same)
             const stats = rawData.reduce((acc, r) => {
                 const total = parseFloat(String(r['Total Amt'] || "0").replace(/[^\d.-]/g, '')) || 0;
                 const recvd = parseFloat(String(r['AMT RECEIVED'] || "0").replace(/[^\d.-]/g, '')) || 0;
@@ -2235,7 +2310,8 @@
                 const isCancelled = String(r['REMARKS']).toUpperCase().startsWith('CANCELLED');
                 if (isCancelled) acc.cancelled++;
 
-                const isPending = !isCancelled &&
+                const isOther = String(r['REMARKS']).toUpperCase().includes('OTHER');
+                const isPending = !isCancelled && !isOther &&
                     (!r['AMT RECEIVED'] || r['AMT RECEIVED'] === 0) &&
                     (!r['PAYMENT DATE'] || r['PAYMENT DATE'] === '' || r['PAYMENT DATE'] === '—');
                 if (isPending) acc.pending++;
@@ -2243,8 +2319,11 @@
                 const isUnmarked = !isCancelled && (!r['MRS'] || r['MRS'] === '' || r['MRS'] === '—');
                 if (isUnmarked) acc.unmarked++;
 
+                const isNoRemarks = !r.isDivider && (!r['REMARKS'] || r['REMARKS'] === '' || r['REMARKS'] === '—' || r['REMARKS'] === 'BY HMI');
+                if (isNoRemarks) acc.noRemarks++;
+
                 return acc;
-            }, { total: 0, recvd: 0, pending: 0, unmarked: 0, cancelled: 0 });
+            }, { total: 0, recvd: 0, pending: 0, unmarked: 0, cancelled: 0, noRemarks: 0 });
 
             const hBadge = document.getElementById('mrs-header-pending');
             if (hBadge) {
@@ -2264,6 +2343,12 @@
                 cBadge.style.display = stats.cancelled > 0 ? 'inline-flex' : 'none';
             }
 
+            const nrBadge = document.getElementById('mrs-header-noremarks');
+            if (nrBadge) {
+                nrBadge.textContent = `${stats.noRemarks} No Remarks`;
+                nrBadge.style.display = stats.noRemarks > 0 ? 'inline-flex' : 'none';
+            }
+
             document.getElementById('mrs-header-count').textContent = `Claims: ${rawData.length}`;
             document.getElementById('mrs-header-total').textContent = `Tot: ₹${Math.round(stats.total).toLocaleString()}`;
             document.getElementById('mrs-header-received').textContent = `Rec: ₹${Math.round(stats.recvd).toLocaleString()}`;
@@ -2273,16 +2358,20 @@
             if (diff > 0) diffEl.style.color = '#b91c1c';
             else if (diff < 0) diffEl.style.color = 'var(--success)';
             else diffEl.style.color = '';
+
+            updateBookFilter();
         }
 
         // ── Render Page (paginated 50 per page) ──
         function renderPage() {
-            const data = currentDataset;
             const tbody = document.getElementById('tableBody');
             const noData = document.getElementById('noData');
             const pagBar = document.getElementById('paginationBar');
 
-            if (!data.length) {
+            const pageRows = paginatedSlices[currentPage - 1] || [];
+            const totalPages = paginatedSlices.length || 1;
+
+            if (!pageRows.length) {
                 tbody.innerHTML = '';
                 noData.style.display = 'flex';
                 pagBar.style.display = 'none';
@@ -2291,17 +2380,31 @@
             }
 
             noData.style.display = 'none';
-            const totalPages = Math.ceil(data.length / PAGE_SIZE);
-            const start = (currentPage - 1) * PAGE_SIZE;
-            const end = Math.min(start + PAGE_SIZE, data.length);
-            const pageRows = data.slice(start, end);
+            // Record count: total claims in current dataset
+            const count = currentDataset.filter(r => !r.isDivider).length;
+            document.getElementById('recordCount').innerText = `${count} Claims`;
 
-            // ── Divider Rendering ──
+            // Pagination UI
+            if (totalPages <= 1) {
+                pagBar.style.display = 'none';
+            } else {
+                pagBar.style.display = 'flex';
+                document.getElementById('mrs-page-indicator').textContent = `Book ${currentPage} of ${totalPages}`;
+                document.getElementById('mrs-btn-prev').disabled = (currentPage === 1);
+                document.getElementById('mrs-btn-next').disabled = (currentPage === totalPages);
+            }
+
+            // ── Rendering ──
             const rows = [];
             pageRows.forEach((row) => {
+                const ri = rawData.indexOf(row);
                 if (row.isDivider) {
-                    rows.push(`<tr class="mrs-range-divider-row" style="pointer-events:none;">
-                        <td colspan="${columns.length}" style="
+                    rows.push(`<tr class="mrs-range-divider-row">
+                        <td colspan="${columns.length}" 
+                            class="editable" 
+                            ondblclick="startEditDivider(event,this,${ri})"
+                            title="Double-click to rename"
+                            style="
                             padding: 11px 18px;
                             background: linear-gradient(90deg, rgba(42,181,165,0.28) 0%, rgba(77,207,195,0.18) 100%);
                             border-top: 2.5px solid #2ab5a5;
@@ -2313,6 +2416,7 @@
                             text-transform: uppercase;
                             white-space: nowrap;
                             box-shadow: inset 0 2px 4px rgba(0,0,0,0.05), inset 0 -2px 4px rgba(0,0,0,0.05);
+                            cursor: pointer;
                         ">
                             <span style="display:inline-flex;align-items:center;gap:10px;">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -2323,7 +2427,6 @@
                     return;
                 }
 
-                const ri = rawData.indexOf(row);
                 const mrsVal = (row['MRS'] !== undefined && row['MRS'] !== null && row['MRS'] !== '') ? row['MRS'] : '\u2014';
 
                 const cells = columns.map(col => {
@@ -2337,8 +2440,15 @@
                         return `<td><span class="${css}">${val}</span></td>`;
                     }
                     if (col === 'REMARKS') {
-                        const sClass = (val === 'PAYMENT SHORT') ? 'badge-short' : (val === 'PAID') ? 'badge-paid' : String(val).toUpperCase().startsWith('CANCELLED') ? 'badge-cancel' : '';
-                        return `<td><span class="badge ${sClass}">${val}</span></td>`;
+                        const sClass = (val === 'PAYMENT SHORT') ? 'badge-short' : (val === 'PAID') ? 'badge-paid' : (String(val).toUpperCase().includes('CANCEL') || String(val).toUpperCase().includes('OTHER')) ? 'badge-cancel' : '';
+                        return `<td><span class="badge ${sClass}" onclick="event.stopPropagation(); showRemarkPicker(event, ${ri})" title="Click to change remark">${val}</span></td>`;
+                    }
+                    if (col === ' ') {
+                        return `<td style="text-align:center;">
+                            <button onclick="event.stopPropagation(); deleteEntry(${ri})" title="Delete claim" style="background:transparent;border:none;color:var(--danger);cursor:pointer;opacity:0.6;transition:0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            </button>
+                        </td>`;
                     }
                     return `<td class="editable" ondblclick="startEdit(event,this,${ri},'${col}')" title="Double-click to edit">${val}</td>`;
                 }).join('');
@@ -2347,24 +2457,12 @@
             tbody.innerHTML = rows.join('');
 
             // Scroll table back to top on page change
-            document.querySelector('.table-wrap').scrollTop = 0;
-
-            // Record count
-            document.getElementById('recordCount').innerText = `${data.length} Record${data.length !== 1 ? 's' : ''}`;
-
-            // Pagination UI (Harmonized with main.html style)
-            if (totalPages <= 1) {
-                pagBar.style.display = 'none';
-            } else {
-                pagBar.style.display = 'flex';
-                document.getElementById('mrs-page-indicator').textContent = `Page ${currentPage} of ${totalPages}`;
-                document.getElementById('mrs-btn-prev').disabled = (currentPage === 1);
-                document.getElementById('mrs-btn-next').disabled = (currentPage === totalPages);
-            }
+            const wrap = document.querySelector('.table-wrap');
+            if (wrap) wrap.scrollTop = 0;
         }
 
         function goToPage(page) {
-            const totalPages = Math.ceil(currentDataset.length / PAGE_SIZE);
+            const totalPages = paginatedSlices.length || 1;
             if (page < 1 || page > totalPages) return;
             currentPage = page;
             renderPage();
@@ -2666,11 +2764,132 @@
             input.addEventListener('blur', commitEdit);
         }
 
+        // ── Feature: Delete Entry ──
+        function deleteEntry(idx) {
+            const entry = rawData[idx];
+            const name = entry.isDivider ? "Divider" : (entry['Claim No'] || 'Claim');
+            showConfirm(
+                `Delete this entry (${name})?`,
+                '🗑️',
+                () => {
+                    rawData.splice(idx, 1);
+                    saveLedger();
+                    renderData(rawData);
+                    showToast('Entry deleted.', 'success');
+                }
+            );
+        }
+
+        // ── Feature: Rename Divider ──
+        function startEditDivider(evt, td, rowIdx) {
+            if (evt) evt.stopPropagation();
+            if (td.classList.contains('editing')) return;
+            const row = rawData[rowIdx];
+            const currentVal = row.dividerText || '';
+            td.classList.add('editing');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentVal;
+            input.style.cssText = 'width:100%;background:rgba(255,255,255,0.4);border:none;outline:none;color:inherit;font-size:inherit;font-weight:inherit;font-family:inherit;padding:0 4px;';
+            td.innerHTML = '';
+            td.appendChild(input);
+            input.focus(); input.select();
+
+            function commit() {
+                const nv = input.value.trim();
+                td.classList.remove('editing');
+                if (nv && nv !== currentVal) {
+                    row.dividerText = nv;
+                    saveLedger();
+                }
+                renderData(rawData);
+            }
+            input.addEventListener('keydown', e => {
+                if (e.key === 'Enter') commit();
+                if (e.key === 'Escape') { td.classList.remove('editing'); renderData(rawData); }
+            });
+            input.addEventListener('blur', commit);
+        }
+
+        // ── Feature: Remark Picker Dropdown ──
+        let activePicker = null;
+        function showRemarkPicker(evt, idx) {
+            if (activePicker) { activePicker.remove(); }
+            
+            const row = rawData[idx];
+            const current = String(row['REMARKS']).toUpperCase();
+            
+            const picker = document.createElement('div');
+            picker.className = 'mrs-status-popover';
+            
+            const options = [
+                { label: 'PAID', value: 'PAID', color: '#16a34a' },
+                { label: 'PAYMENT SHORT', value: 'PAYMENT SHORT', color: '#ea580c' },
+                { label: 'CANCELLED', value: 'CANCELLED', color: '#6b7280' },
+                { label: 'MANUAL REMARK...', value: 'OTHER', color: '#0d9488' }
+            ];
+
+            options.forEach(opt => {
+                const div = document.createElement('div');
+                div.className = 'status-option' + (current === opt.value ? ' active' : '');
+                div.innerHTML = `<span class="status-dot" style="background:${opt.color}"></span> ${opt.label}`;
+                div.onclick = (e) => {
+                    e.stopPropagation();
+                    setRemark(idx, opt.value);
+                    picker.remove();
+                    activePicker = null;
+                };
+                picker.appendChild(div);
+            });
+
+            document.body.appendChild(picker);
+            
+            // Positioning near click
+            const rect = evt.target.getBoundingClientRect();
+            picker.style.top = `${rect.bottom + 8}px`;
+            picker.style.left = `${rect.left}px`;
+            
+            activePicker = picker;
+            
+            const closePicker = (e) => {
+                if (activePicker && !activePicker.contains(e.target)) {
+                    activePicker.remove();
+                    activePicker = null;
+                    window.removeEventListener('click', closePicker);
+                }
+            };
+            setTimeout(() => window.addEventListener('click', closePicker), 10);
+        }
+
+        function setRemark(idx, val) {
+            const row = rawData[idx];
+            if (val === 'OTHER') {
+                const custom = prompt("Enter custom remark:", "");
+                if (custom) row['REMARKS'] = custom;
+                else return;
+            } else {
+                row['REMARKS'] = val;
+            }
+            
+            saveLedger();
+            // Critical: Render with currentDataset (filters) instead of full rawData
+            // This prevents view reset
+            renderData(currentDataset);
+        }
+
         // ── Init ──
         function initTable() {
             updateTheme();
             document.getElementById('tableHeader').innerHTML = columns.map(c => `<th>${c}</th>`).join('');
             loadLedger();
+            
+            // Feature: Keyboard Arrows for Pagination
+            window.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+                if (e.key === 'ArrowLeft') goToPage(currentPage - 1);
+                if (e.key === 'ArrowRight') goToPage(currentPage + 1);
+            });
+
             // Focus search bar immediately on startup
             setTimeout(() => {
                 const sInput = document.getElementById('tableSearch');
@@ -2686,13 +2905,32 @@
             else document.documentElement.removeAttribute('data-theme');
             document.documentElement.style.setProperty('--surface-rgb', theme === 'dark' ? '31,41,55' : '255,255,255');
         }
+
+        // ── Feature: MRS Book Jump ──
+        function filterByBook() {
+            const bookName = document.getElementById('mrsBookFilter').value;
+            if (!bookName) {
+                renderData(rawData);
+                return;
+            }
+            // Find the slice index that matches the book
+            const foundIdx = paginatedSlices.findIndex(slice => slice.some(r => r.isDivider && r.dividerText === bookName));
+            if (foundIdx !== -1) {
+                currentPage = foundIdx + 1;
+                renderPage();
+                showToast(`Jumped to ${bookName}`, 'info');
+            }
+        }
         function triggerPendingFilter() {
-            const pending = rawData.filter(r =>
-                !r.isDivider &&
-                String(r['REMARKS']).toUpperCase() !== 'CANCELLED' &&
-                (!r['AMT RECEIVED'] || r['AMT RECEIVED'] === 0) &&
-                (!r['PAYMENT DATE'] || r['PAYMENT DATE'] === '' || r['PAYMENT DATE'] === '—')
-            );
+            const pending = rawData.filter(r => {
+                if (r.isDivider) return false;
+                const rem = String(r['REMARKS']).toUpperCase();
+                // Exclude Cancelled or Other manual statuses
+                if (rem.includes('CANCEL') || rem.includes('OTHER')) return false;
+
+                return (!r['AMT RECEIVED'] || r['AMT RECEIVED'] === 0) &&
+                       (!r['PAYMENT DATE'] || r['PAYMENT DATE'] === '' || r['PAYMENT DATE'] === '—');
+            });
 
             // Toggle Logic: If we are already exactly showing the pending list, show all
             const isCurrentlyShowingOnlyPending = (currentDataset.length === pending.length &&
@@ -2752,6 +2990,31 @@
                 const sInput = document.getElementById('tableSearch');
                 if (sInput) sInput.value = '';
                 showToast(`Showing ${cancelled.length} Cancelled MRS`, 'warn');
+            }
+        }
+
+        function triggerNoRemarksFilter() {
+            const blanks = rawData.filter(r => {
+                if (r.isDivider) return false;
+                const val = String(r['REMARKS'] || "").trim();
+                return val === '' || val === '—' || val === 'BY HMI';
+            });
+
+            const isCurrentlyShowingBlanks = (currentDataset.length === blanks.length &&
+                currentDataset.every((v, i) => v === blanks[i]));
+
+            if (isCurrentlyShowingBlanks) {
+                renderData(rawData);
+                showToast("Showing All Records", "info");
+            } else {
+                if (blanks.length === 0) {
+                    showToast("All claims have manual remarks!", "success");
+                    return;
+                }
+                renderData(blanks);
+                const sInput = document.getElementById('tableSearch');
+                if (sInput) sInput.value = '';
+                showToast(`Showing ${blanks.length} claims without Remarks`, 'warning');
             }
         }
 
@@ -2918,8 +3181,20 @@
             if (!toVal || toVal < 1) { showToast('Valid "To" MRS number daalo.', 'warn'); return; }
             if (toVal < fromVal) { showToast('"To" number "From" se bada hona chahiye.', 'warn'); return; }
             
+            // Check for existing claims or dividers in this range
+            const overlap = rawData.find(r => {
+                const m = parseInt(r['MRS']);
+                return !isNaN(m) && m >= fromVal && m <= toVal;
+            });
+            
+            if (overlap) {
+                const type = overlap.isDivider ? 'divider' : 'claim';
+                showToast(`Range Error: MRS ${overlap['MRS']} pe pehle se ही ek ${type} hai! Range empty honi chahiye.`, 'danger');
+                return;
+            }
+
             const dividerText = `MRS BOOK (${fromVal}-${toVal})`;
-            // Remove same divider if exists to avoid duplicates
+            // Remove same divider if exists (though overlap check above would catch it)
             rawData = rawData.filter(r => !(r.isDivider && r.dividerText === dividerText));
             rawData.push({ isDivider: true, dividerText: dividerText, MRS: fromVal });
             
