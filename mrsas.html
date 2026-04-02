@@ -2773,8 +2773,10 @@
                     rawData.sort((a, b) => {
                         const sA = (a.isDivider || (a['MRS'] && a['MRS'] !== '—')) ? 1 : 0;
                         const sB = (b.isDivider || (b['MRS'] && b['MRS'] !== '—')) ? 1 : 0;
+                        // Unassigned (sA=0) always before assigned/dividers (sB=1)
                         if (sA !== sB) return sA - sB;
-                        return (parseInt(a['MRS']) || 0) - (parseInt(b['MRS']) || 0);
+                        // For assigned/dividers, sort in DESCENDING order (Highest MRS first)
+                        return (parseInt(b['MRS']) || 0) - (parseInt(a['MRS']) || 0);
                     });
 
                     // Reset uploads after success
