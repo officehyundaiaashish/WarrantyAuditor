@@ -1784,6 +1784,12 @@
                     <!-- Feature #6: auto-focus on open, Enter to save -->
                     <input type="number" id="mrsNumberInput" class="mrs-number-input" placeholder="Enter MRS" min="1"
                         step="1"
+                        onkeydown="if(event.key==='Enter') document.getElementById('mrsDateInput').focus(); if(event.key==='Escape') closeMRSModal();">
+                </div>
+                <!-- Optional Payment Date -->
+                <label class="mrs-input-label">Payment Date (Optional)</label>
+                <div class="mrs-input-wrap" style="margin-bottom:12px;">
+                    <input type="text" id="mrsDateInput" class="mrs-number-input" placeholder="DD/MM/YYYY" style="font-size:0.95rem; letter-spacing:1px;"
                         onkeydown="if(event.key==='Enter') saveMRS(); if(event.key==='Escape') closeMRSModal();">
                 </div>
                 <!-- Apply to all same RO claims -->
@@ -2971,6 +2977,10 @@
 
             const inp = document.getElementById('mrsNumberInput');
             inp.value = (row['MRS'] && row['MRS'] !== '—') ? row['MRS'] : '';
+            
+            const dateInp = document.getElementById('mrsDateInput');
+            dateInp.value = (row['PAYMENT DATE'] && row['PAYMENT DATE'] !== '—') ? row['PAYMENT DATE'] : '';
+            dateInp.disabled = isRowLocked;
 
             // Check for sibling claims (same RO No)
             const roNo = String(row['R/O No'] || '').trim();
@@ -3016,6 +3026,8 @@
             const row = rawData[currentEditingRowIdx];
             if (row.isRowLocked) { showToast('🔒 Error: Individual MRS record is locked.', 'danger'); return; }
             const val = parseInt(document.getElementById('mrsNumberInput').value);
+            const dateVal = document.getElementById('mrsDateInput').value.trim();
+            
             if (!val || val < 1) { showToast('Please enter a valid MRS number.', 'warn'); return; }
 
             const applyAll = document.getElementById('mrsApplyAll').checked;
@@ -3027,14 +3039,22 @@
                 rawData.forEach(r => {
                     if (String(r['R/O No'] || '').trim() === roNo) {
                         r['MRS'] = val;
+                        if (dateVal) r['PAYMENT DATE'] = dateVal;
                         count++;
                     }
                 });
-                saveLedger(); filterTable(); closeMRSModal();
-                showToast(`✓ MRS ${val} — ${count} claims pe assign kiya (RO: ${roNo})`, 'success');
+                
+                saveLedger();
+                if (activeFilterFunc) activeFilterFunc(true); else filterTable();
+                closeMRSModal();
+                showToast(`✓ MRS ${val} — ${count} claims updated (RO: ${roNo})`, 'success');
             } else {
                 rawData[currentEditingRowIdx]['MRS'] = val;
-                saveLedger(); filterTable(); closeMRSModal();
+                if (dateVal) rawData[currentEditingRowIdx]['PAYMENT DATE'] = dateVal;
+                
+                saveLedger();
+                if (activeFilterFunc) activeFilterFunc(true); else filterTable();
+                closeMRSModal();
                 showToast(`✓ MRS ${val} saved.`, 'success');
             }
         }
