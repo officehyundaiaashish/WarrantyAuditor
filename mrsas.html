@@ -31,7 +31,6 @@
             --modal-overlay: rgba(0, 0, 0, 0.4);
             color-scheme: light;
             --surface-rgb: 255, 255, 255;
-            --notif-shimmer-bg: linear-gradient(90deg, transparent 20%, rgba(255, 255, 255, 0.35) 50%, transparent 80%);
         }
 
         [data-theme="dark"] {
@@ -51,7 +50,6 @@
             --modal-overlay: rgba(0, 0, 0, 0.7);
             color-scheme: dark;
             --surface-rgb: 31, 41, 55;
-            --notif-shimmer-bg: linear-gradient(90deg, transparent 20%, rgba(255, 255, 255, 0.04) 50%, transparent 80%);
         }
 
         /* ══════════════════════════════════════════
@@ -215,16 +213,6 @@
             }
         }
 
-        @keyframes shimmerLeft {
-            0% {
-                background-position: -600px 0;
-            }
-
-            100% {
-                background-position: 600px 0;
-            }
-        }
-
         @keyframes spin {
             to {
                 transform: rotate(360deg);
@@ -271,22 +259,6 @@
             transition: box-shadow 0.3s ease;
             position: relative;
             overflow: hidden;
-        }
-
-        .premium-card::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: var(--notif-shimmer-bg);
-            background-size: 600px 100%;
-            animation: shimmerLeft 7s ease-in-out infinite;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        .premium-card>* {
-            position: relative;
-            z-index: 1;
         }
 
         /* ══════════════════════════════════════════
@@ -1219,6 +1191,212 @@
             transform: translateX(-50%) translateY(0);
             opacity: 1;
         }
+
+        /* ══════════════════════════════════════════
+           §17 — MOBILE RESPONSIVE
+           ══════════════════════════════════════════ */
+        @media (max-width: 640px) {
+
+            /* Body font scale down */
+            body {
+                font-size: 13px;
+            }
+
+            /* Header — tighter on mobile */
+            .page-header {
+                padding: 10px 12px;
+            }
+
+            .header-title-text {
+                font-size: 1.05rem;
+            }
+
+            .header-subtitle {
+                font-size: 0.62rem;
+            }
+
+            /* Hide "Main Menu" text, show only icon on very small screens */
+            .btn-main-menu span.btn-label {
+                display: none;
+            }
+
+            .btn-main-menu {
+                padding: 0 10px;
+                gap: 0;
+            }
+
+            /* Content wrap — tighter padding */
+            .content-wrap {
+                padding: 10px;
+                gap: 12px;
+            }
+
+            /* Cards — tighter padding */
+            .premium-card {
+                padding: 14px 12px;
+                border-radius: 14px;
+            }
+
+            /* Upload tile grid — 1 column on mobile */
+            .tile-grid {
+                grid-template-columns: 1fr !important;
+                gap: 8px;
+            }
+
+            /* Feed button — full width */
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .btn-premium {
+                width: 100%;
+                justify-content: center;
+                padding: 12px 16px;
+            }
+
+            /* Section header — allow text wrapping */
+            .section-header {
+                gap: 10px;
+                margin-bottom: 14px;
+                padding-bottom: 12px;
+                flex-wrap: wrap;
+            }
+
+            .section-title {
+                font-size: 0.88rem;
+            }
+
+            /* Stats badges — wrap into rows */
+            .header-stats-wrap {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px;
+                margin-left: 0;
+                margin-top: 6px;
+                width: 100%;
+            }
+
+            .stat-badge {
+                font-size: 0.65rem;
+                padding: 2px 8px;
+            }
+
+            .pending-badge-header {
+                font-size: 0.65rem;
+                padding: 2px 8px;
+            }
+
+            /* Section header text block takes full width so badges go below */
+            .section-header > div:last-child {
+                width: 100%;
+            }
+
+            /* Search row — stack vertically */
+            .search-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+
+            .search-bar {
+                max-width: 100%;
+                width: 100%;
+            }
+
+            .search-bar input::placeholder {
+                font-size: 0.75rem;
+            }
+
+            .btn-clear-all,
+            .record-count {
+                align-self: flex-end;
+            }
+
+            /* Table wrap — allow horizontal scroll, reduce height */
+            .table-wrap {
+                max-height: 55vh;
+                min-height: 200px;
+                border-radius: 10px;
+            }
+
+            table {
+                font-size: 0.65rem;
+            }
+
+            th {
+                padding: 7px 8px;
+                font-size: 0.6rem;
+            }
+
+            td {
+                padding: 7px 8px;
+            }
+
+            /* Pagination — tighter */
+            .pagination {
+                margin-top: 12px;
+                gap: 8px;
+            }
+
+            .pagination .btn {
+                padding: 7px 12px;
+                font-size: 0.75rem;
+            }
+
+            .page-indicator {
+                font-size: 0.75rem;
+            }
+
+            /* Modal — full width on mobile */
+            .modal-dialog {
+                max-width: 100%;
+                margin: 10px;
+                border-radius: 16px;
+            }
+
+            .confirm-box {
+                max-width: 100%;
+                margin: 10px;
+                padding: 24px 16px;
+                border-radius: 16px;
+            }
+
+            /* Toast — full width */
+            #toast {
+                left: 12px;
+                right: 12px;
+                width: auto;
+                transform: translateX(0) translateY(80px);
+                border-radius: 12px;
+                font-size: 0.78rem;
+                white-space: normal;
+                text-align: center;
+            }
+
+            #toast.show {
+                transform: translateX(0) translateY(0);
+            }
+        }
+
+        /* Medium screens — tablet tweaks */
+        @media (max-width: 900px) and (min-width: 641px) {
+            .content-wrap {
+                padding: 14px;
+            }
+
+            .tile-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+
+            .header-stats-wrap {
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+
+            .table-wrap {
+                max-height: 60vh;
+            }
+        }
     </style>
 </head>
 
@@ -1240,7 +1418,7 @@
                 <line x1="3" y1="12" x2="21" y2="12" />
                 <line x1="3" y1="18" x2="21" y2="18" />
             </svg>
-            Main Menu
+            <span class="btn-label">Main Menu</span>
         </button>
     </header>
 
@@ -1506,7 +1684,7 @@
         // numeric columns that trigger recalculation
         const numericCols = new Set(["Total Amt", "Labour", "part", "Sublet", "IGST", "AMT RECEIVED"]);
 
-        let source1Data = null, source2Data = null;
+        let source1Data = null, source2Data = null, source3Data = null;
         let currentEditingRowIdx = null; // for MRS modal
 
         // ── File Select ──
@@ -1522,7 +1700,8 @@
                 const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
                 const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
                 if (type === 'source1') source1Data = data;
-                else source2Data = data;
+                else if (type === 'source2') source2Data = data;
+                else if (type === 'source3') source3Data = data;
                 status.innerText = '✓ ' + file.name; status.style.color = 'var(--primary)';
                 tile.classList.add('active');
             };
@@ -1531,8 +1710,53 @@
 
         // ── Feed ──
         async function feedToTable() {
-            if (!source1Data || !source2Data) {
-                showToast('Please upload both Source 1 and Source 2 files first.', 'warn'); return;
+            // Nothing uploaded at all
+            if (!source1Data && !source2Data && !source3Data) {
+                showToast('Please upload source files first.', 'warn'); return;
+            }
+
+            // ── Source 3 is FULLY STANDALONE — runs independently, ignores source1/2 ──
+            if (source3Data) {
+                const btn = document.querySelector('.btn-feed');
+                const orig = btn.innerHTML;
+                btn.innerHTML = '<span class="loading-spinner"></span> Appending...';
+                btn.classList.add('loading');
+                await new Promise(r => setTimeout(r, 100));
+                try {
+                    let appended = 0, skipped = 0;
+                    const ledgerMap = {};
+                    rawData.forEach(r => { if (r['Claim No']) ledgerMap[String(r['Claim No']).trim()] = r; });
+                    source3Data.forEach(row => {
+                        const claimKey = String(row['Claim No'] || row['Clm No'] || row['Claim Number'] || '').trim();
+                        if (!claimKey) { skipped++; return; }
+                        if (ledgerMap[claimKey]) { skipped++; return; }
+                        const newRow = {};
+                        columns.forEach(col => { newRow[col] = (row[col] !== undefined && row[col] !== null) ? row[col] : ''; });
+                        newRow['Claim No'] = claimKey;
+                        if (!newRow['MRS']) newRow['MRS'] = '';
+                        recalcRow(newRow);
+                        rawData.push(newRow);
+                        ledgerMap[claimKey] = newRow;
+                        appended++;
+                    });
+                    source3Data = null;
+                    document.getElementById('status-source3').innerText = 'Direct Append';
+                    document.getElementById('status-source3').style.color = '';
+                    document.getElementById('tile-source3').classList.remove('active');
+                    saveLedger(); renderData(rawData);
+                    showToast(`✓ Appended ${appended} rows. ${skipped} duplicates skipped. Total: ${rawData.length}`, 'success');
+                } catch (err) {
+                    showToast('Append error: ' + err.message, 'danger');
+                } finally { btn.innerHTML = orig; btn.classList.remove('loading'); }
+                return; // ← always stop here, never fall into source1/2 flow
+            }
+
+            // ── Source 1 + 2 flow ──
+            if (!source1Data) {
+                showToast('Please upload Source 1 (Main Claims) file.', 'warn'); return;
+            }
+            if (!source2Data) {
+                showToast('Please upload Source 2 (Payments) file.', 'warn'); return;
             }
             const btn = document.querySelector('.btn-feed');
             const orig = btn.innerHTML;
@@ -1630,9 +1854,10 @@
                     }
                     recalcRow(target);
                 });
-                const filteredCount = (originalCount - rawData.length);
+
+                const filteredCount = (originalCount - rawData.length + newlyAdded);
                 saveLedger(); renderData(rawData);
-                showToast(`✓ Feed processed! New: ${newlyAdded} | Purged/Skipped: ${filteredCount} | Total: ${rawData.length}`);
+                showToast(`✓ Feed processed! New: ${newlyAdded} | Total: ${rawData.length}`);
             } catch (err) {
                 console.error(err); showToast('Error during mapping: ' + err.message, 'danger');
             } finally { btn.innerHTML = orig; btn.classList.remove('loading'); }
