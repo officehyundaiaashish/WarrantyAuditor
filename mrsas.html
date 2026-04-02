@@ -1156,6 +1156,84 @@
             text-overflow: ellipsis;
         }
 
+        /* ── Custom Date Picker (Calendar) ── */
+        .calendar-dropdown {
+            position: fixed;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            padding: 12px;
+            z-index: 10000;
+            width: 280px;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            animation: modalIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            user-select: none;
+            backdrop-filter: blur(8px);
+        }
+        .calendar-dropdown.active { display: flex; }
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+        .calendar-header select {
+            background: var(--bg-base);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 4px 6px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-main);
+            outline: none;
+        }
+        .calendar-header button {
+            background: var(--bg-base);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+        .calendar-header button:hover { background: var(--primary); color: #fff; }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+        }
+        .calendar-day-head {
+            font-size: 0.65rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-align: center;
+            padding: 4px 0;
+            text-transform: uppercase;
+        }
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s;
+            color: var(--text-main);
+        }
+        .calendar-day:hover { background: rgba(42, 181, 165, 0.15); color: var(--primary); }
+        .calendar-day.today { color: var(--primary); border: 1.5px solid var(--primary); }
+        .calendar-day.selected { background: var(--primary); color: #fff; }
+        .calendar-day.other-month { opacity: 0.25; }
+
         .modal-btn-row {
             display: flex;
             gap: 10px;
@@ -1790,7 +1868,9 @@
                 <!-- Optional Payment Date -->
                 <label class="mrs-input-label">Payment Date (Optional)</label>
                 <div class="mrs-input-wrap" style="margin-bottom:10px;">
-                    <input type="date" id="mrsDateInput" class="mrs-number-input" style="font-size:0.95rem; letter-spacing:0px; text-transform:uppercase;"
+                    <input type="text" id="mrsDateInput" class="mrs-number-input" placeholder="Select Date" readonly
+                        style="font-size:0.95rem; letter-spacing:1px; cursor:pointer;"
+                        onclick="toggleCalendar(event)"
                         onkeydown="if(event.key==='Enter') saveMRS(); if(event.key==='Escape') closeMRSModal();">
                 </div>
                 <!-- Apply to all same RO claims -->
@@ -2168,6 +2248,107 @@
             'source2': 'Remittance Details',
             'source3': 'Append Old Records'
         };
+
+        // ── Custom Calendar Picker ──
+        let calendarDate = new Date();
+        function toggleCalendar(e) {
+            e.stopPropagation();
+            const picker = document.getElementById('calendarDropdown');
+            if (picker.dataset.active === 'true') { picker.style.display = 'none'; picker.dataset.active = 'false'; return; }
+            
+            const rect = e.target.getBoundingClientRect();
+            picker.style.top = (rect.bottom + 8) + 'px';
+            picker.style.left = rect.left + 'px';
+            picker.style.display = 'flex';
+            picker.dataset.active = 'true';
+            
+            // Try to set current date from input
+            const curVal = e.target.value;
+            if (curVal && curVal.includes('/')) {
+                const [d, m, y] = curVal.split('/');
+                calendarDate = new Date(y, m-1, d);
+            } else {
+                calendarDate = new Date();
+            }
+            renderCalendar();
+            
+            window.addEventListener('click', closeCalendarMaybe);
+        }
+
+        function closeCalendarMaybe(e) {
+            const p = document.getElementById('calendarDropdown');
+            if (p.dataset.active === 'true' && !p.contains(e.target) && e.target.id !== 'mrsDateInput') {
+                p.style.display = 'none';
+                p.dataset.active = 'false';
+                window.removeEventListener('click', closeCalendarMaybe);
+            }
+        }
+
+        function renderCalendar() {
+            const picker = document.getElementById('calendarDropdown');
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            
+            picker.innerHTML = `
+                <div class="calendar-header">
+                    <button onclick="changeMonth(-1)">◀</button>
+                    <div style="display:flex; gap:4px">
+                        <select id="calMonth" onchange="jumpMonth(this.value)">
+                            ${monthNames.map((n, i) => `<option value="${i}" ${calendarDate.getMonth()===i?'selected':''}>${n}</option>`).join('')}
+                        </select>
+                        <select id="calYear" onchange="jumpYear(this.value)">
+                            ${Array.from({length:31}, (_, i) => 2015 + i).map(y => `<option value="${y}" ${calendarDate.getFullYear()===y?'selected':''}>${y}</option>`).join('')}
+                        </select>
+                    </div>
+                    <button onclick="changeMonth(1)">▶</button>
+                </div>
+                <div class="calendar-grid">
+                    ${['M','T','W','T','F','S','S'].map(d => `<div class="calendar-day-head">${d}</div>`).join('')}
+                    <div id="calendarDays" style="display:contents"></div>
+                </div>
+            `;
+            
+            const daysContainer = document.getElementById('calendarDays');
+            const year = calendarDate.getFullYear();
+            const month = calendarDate.getMonth();
+            const firstDay = new Date(year, month, 1).getDay(); // 0 is Sun
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const prevMonthDays = new Date(year, month, 0).getDate();
+            
+            // Adjust firstDay (if 0/Sun, make it 6 for indexing 0-6 as M-S)
+            // But common grid starts Monday.
+            let startOffset = firstDay === 0 ? 6 : firstDay - 1;
+            
+            let html = '';
+            // Prev month
+            for(let i=startOffset; i>0; i--) {
+                html += `<div class="calendar-day other-month">${prevMonthDays - i + 1}</div>`;
+            }
+            // Current month
+            const today = new Date();
+            const inputVal = document.getElementById('mrsDateInput').value;
+            for(let i=1; i<=daysInMonth; i++) {
+                const isSelected = inputVal === `${String(i).padStart(2,'0')}/${String(month+1).padStart(2,'0')}/${year}`;
+                const isToday = today.getDate()===i && today.getMonth()===month && today.getFullYear()===year;
+                html += `<div class="calendar-day ${isSelected?'selected':''} ${isToday?'today':''}" onclick="selectDate(${i}, ${month}, ${year})">${i}</div>`;
+            }
+            daysContainer.innerHTML = html;
+        }
+
+        function changeMonth(n) {
+            calendarDate.setMonth(calendarDate.getMonth() + n);
+            renderCalendar();
+        }
+        function jumpMonth(m) { calendarDate.setMonth(m); renderCalendar(); }
+        function jumpYear(y) { calendarDate.setFullYear(y); renderCalendar(); }
+        function selectDate(d, m, y) {
+            const di = document.getElementById('mrsDateInput');
+            di.value = `${String(d).padStart(2,'0')}/${String(m+1).padStart(2,'0')}/${y}`;
+            const p = document.getElementById('calendarDropdown');
+            p.style.display = 'none';
+            p.dataset.active = 'false';
+            window.removeEventListener('click', closeCalendarMaybe);
+            di.focus();
+        }
 
         // ── Feed ──
         async function feedToTable() {
@@ -2980,14 +3161,10 @@
             inp.value = (row['MRS'] && row['MRS'] !== '—') ? row['MRS'] : '';
             inp.disabled = isRowLocked;
             
+            inp.disabled = isRowLocked;
+            
             const dateInp = document.getElementById('mrsDateInput');
-            const rawDate = row['PAYMENT DATE'] || '';
-            if (rawDate && rawDate !== '—' && rawDate.includes('/')) {
-                const [d, m, y] = rawDate.split('/');
-                dateInp.value = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-            } else {
-                dateInp.value = '';
-            }
+            dateInp.value = (row['PAYMENT DATE'] && row['PAYMENT DATE'] !== '—') ? row['PAYMENT DATE'] : '';
             dateInp.disabled = isRowLocked;
 
             // Check for sibling claims (same RO No)
@@ -3036,11 +3213,8 @@
             if (currentEditingRowIdx === null) return;
             const row = rawData[currentEditingRowIdx];
             if (row.isRowLocked) { showToast('🔒 Error: Individual MRS record is locked.', 'danger'); return; }
-            let dateVal = document.getElementById('mrsDateInput').value; // YYYY-MM-DD
-            if (dateVal) {
-                const [y, m, d] = dateVal.split('-');
-                dateVal = `${d}/${m}/${y}`;
-            }
+            const val = parseInt(document.getElementById('mrsNumberInput').value);
+            const dateVal = document.getElementById('mrsDateInput').value.trim();
             
             if (!val || val < 1) { showToast('Please enter a valid MRS number.', 'warn'); return; }
 
@@ -3653,7 +3827,7 @@
   <span>Audit-it — MRS Warranty Tracking System</span>
   <span>Generated: ${dateStr} ${timeStr}</span>
 </div>
-<script>window.onload = () => { window.print(); }<\/script>
+<script>            window.onload = () => { window.print(); }<\/script>
 </body></html>`;
 
             const blob = new Blob([html], { type: 'text/html' });
@@ -3765,6 +3939,7 @@
             if (e.target === e.currentTarget) closeMRSRangeModal();
         });
     </script>
+    <div id="calendarDropdown" class="calendar-dropdown" aria-hidden="true" data-active="false"></div>
 </body>
 
 </html>
