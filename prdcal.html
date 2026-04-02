@@ -837,19 +837,23 @@
         .status-dot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); }
 
 
-        /* MRS Book Picker Popover (Solid) */
+        /* MRS Book Picker Popover (Semi-Transparent Solid) */
         .mrs-book-popover {
             position: fixed;
             z-index: 11000;
-            background: var(--bg-surface);
+            background: rgba(var(--surface-rgb), 0.95); /* Semi-transparent solid */
             border: 1.5px solid var(--border);
             border-radius: 10px;
             box-shadow: 0 12px 30px rgba(0,0,0,0.15);
             padding: 5px;
-            max-height: 350px;
+            max-height: 220px; /* Shows ~5 books at a time */
             overflow-y: auto;
             animation: popIn 0.15s ease-out;
         }
+        /* Custom scrollbar for dropdown */
+        .mrs-book-popover::-webkit-scrollbar { width: 5px; }
+        .mrs-book-popover::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+        
         .book-option {
             padding: 10px 14px;
             border-radius: 7px;
