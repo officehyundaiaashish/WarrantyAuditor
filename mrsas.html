@@ -1403,6 +1403,32 @@
                 max-height: 60vh;
             }
         }
+
+        /* ══ MRS Range Sub-header Bar ══ */
+        .mrs-range-bar {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, rgba(42,181,165,0.10) 0%, rgba(77,207,195,0.07) 100%);
+            border: 1.5px solid rgba(42,181,165,0.28);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: 0.2px;
+            animation: fadeInUp 0.25s ease-out;
+        }
+        .mrs-range-bar.active { display: flex; }
+        .mrs-range-bar .range-label { flex: 1; }
+        .mrs-range-bar .range-clear {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 10px; border-radius: 8px; border: 1px solid rgba(42,181,165,0.35);
+            background: transparent; color: var(--primary); font-size: 0.72rem; font-weight: 700;
+            cursor: pointer; transition: all 0.18s ease;
+        }
+        .mrs-range-bar .range-clear:hover { background: var(--primary); color: #fff; }
     </style>
 </head>
 
@@ -1539,6 +1565,12 @@
                     </svg>
                     Cancelled MRS
                 </button>
+                <button class="btn-premium btn-outline" onclick="openMRSRangeModal()" style="padding:7px 14px;font-size:0.78rem;" title="Set MRS range sub-header">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+                    </svg>
+                    MRS Range
+                </button>
                 <button class="btn-premium btn-outline" onclick="printLedger()" style="padding:7px 14px;font-size:0.78rem;">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
@@ -1553,6 +1585,18 @@
                     Clear All
                 </button>
                 <div class="record-count" id="recordCount">0 Records</div>
+            </div>
+
+            <!-- MRS Range Sub-header Bar -->
+            <div class="mrs-range-bar" id="mrsRangeBar">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+                <span class="range-label" id="mrsRangeLabel">MRS from — to —</span>
+                <button class="range-clear" onclick="clearMRSRange()">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    Clear
+                </button>
             </div>
 
             <!-- HARMONIZED: table-wrap exactly matches main.html container style -->
@@ -1671,6 +1715,35 @@
 
     <!-- Toast -->
     <div id="toast"></div>
+
+    <!-- MRS Range Modal -->
+    <div class="modal-backdrop" id="mrsRangeModal">
+        <div class="modal-dialog" style="max-width:380px;">
+            <div class="modal-header">
+                <h3>Set MRS Range</h3>
+                <p>Ek sub-header ban jaayega table ke upar</p>
+            </div>
+            <div class="modal-body">
+                <label class="mrs-input-label">From MRS Number</label>
+                <div class="mrs-input-wrap" style="margin-bottom:14px;">
+                    <input type="number" id="mrsRangeFrom" class="mrs-number-input" placeholder="e.g. 1500" min="1" step="1"
+                        onkeydown="if(event.key==='Enter') document.getElementById('mrsRangeTo').focus(); if(event.key==='Escape') closeMRSRangeModal();">
+                </div>
+                <label class="mrs-input-label">To MRS Number</label>
+                <div class="mrs-input-wrap">
+                    <input type="number" id="mrsRangeTo" class="mrs-number-input" placeholder="e.g. 1550" min="1" step="1"
+                        onkeydown="if(event.key==='Enter') saveMRSRange(); if(event.key==='Escape') closeMRSRangeModal();">
+                </div>
+                <div class="modal-btn-row" style="margin-top:18px;">
+                    <button class="modal-btn-confirm" onclick="saveMRSRange()">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:6px;"><polyline points="20 6 9 17 4 12"/></svg>
+                        Set Range
+                    </button>
+                    <button class="modal-btn-cancel" onclick="closeMRSRangeModal()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Cancelled MRS Modal -->
     <div class="modal-backdrop" id="cancelMRSModal">
@@ -2526,6 +2599,51 @@
             if (e.target === e.currentTarget) {
                 document.getElementById('confirmDialog').classList.remove('active');
             }
+        });
+
+        // ── MRS Range Sub-header ──
+        function openMRSRangeModal() {
+            const bar = document.getElementById('mrsRangeBar');
+            if (bar.classList.contains('active')) {
+                // Pre-fill current values if already set
+                const from = bar.dataset.from || '';
+                const to = bar.dataset.to || '';
+                document.getElementById('mrsRangeFrom').value = from;
+                document.getElementById('mrsRangeTo').value = to;
+            } else {
+                document.getElementById('mrsRangeFrom').value = '';
+                document.getElementById('mrsRangeTo').value = '';
+            }
+            document.getElementById('mrsRangeModal').classList.add('active');
+            setTimeout(() => document.getElementById('mrsRangeFrom').focus(), 280);
+        }
+        function closeMRSRangeModal() {
+            document.getElementById('mrsRangeModal').classList.remove('active');
+        }
+        function saveMRSRange() {
+            const fromVal = parseInt(document.getElementById('mrsRangeFrom').value);
+            const toVal = parseInt(document.getElementById('mrsRangeTo').value);
+            if (!fromVal || fromVal < 1) { showToast('Valid "From" MRS number daalo.', 'warn'); return; }
+            if (!toVal || toVal < 1) { showToast('Valid "To" MRS number daalo.', 'warn'); return; }
+            if (toVal < fromVal) { showToast('"To" number "From" se bada hona chahiye.', 'warn'); return; }
+            const bar = document.getElementById('mrsRangeBar');
+            bar.dataset.from = fromVal;
+            bar.dataset.to = toVal;
+            document.getElementById('mrsRangeLabel').textContent = `MRS from ${fromVal} to ${toVal}`;
+            bar.classList.add('active');
+            closeMRSRangeModal();
+            showToast(`MRS Range set: ${fromVal} → ${toVal}`, 'success');
+        }
+        function clearMRSRange() {
+            const bar = document.getElementById('mrsRangeBar');
+            bar.classList.remove('active');
+            delete bar.dataset.from;
+            delete bar.dataset.to;
+            showToast('MRS Range cleared.', 'info');
+        }
+        // Close range modal on backdrop click
+        document.getElementById('mrsRangeModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeMRSRangeModal();
         });
     </script>
 </body>
