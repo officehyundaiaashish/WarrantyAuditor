@@ -3512,6 +3512,12 @@
                         const sClass = (val === 'PAYMENT SHORT') ? 'badge-short' : (val === 'PAID') ? 'badge-paid' : (String(val).toUpperCase().includes('CANCEL') || String(val).toUpperCase().includes('OTHER')) ? 'badge-cancel' : '';
                         return `<td><span class="badge ${sClass}" onclick="event.stopPropagation(); showRemarkPicker(event, ${ri})" title="Click to change remark">${val}</span></td>`;
                     }
+                    if (col === 'VIN') {
+                        const strVal = String(val);
+                        // User requested to only display the last 6 digits of VIN
+                        const displayedVin = (strVal.length > 6) ? `...${strVal.slice(-6)}` : strVal;
+                        return `<td class="editable" ondblclick="startEdit(event,this,${ri},'${col}')" title="Full VIN: ${strVal}">${displayedVin}</td>`;
+                    }
                     if (col === ' ') {
                         return `<td style="text-align:center;">
                             <button onclick="event.stopPropagation(); deleteEntry(${ri})" title="Delete claim" style="background:transparent;border:none;color:var(--danger);cursor:pointer;opacity:0.6;transition:0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">
@@ -3577,7 +3583,7 @@
                     return mrs.includes(query);
                 } else if (searchMode === 'vin') {
                     const vin = String(row['VIN'] || '').toLowerCase();
-                    return vin.includes(query);
+                    return (query.length <= 6) ? vin.endsWith(query) : vin.includes(query);
                 } else {
                     const ro = String(row['R/O No'] || '').toLowerCase();
                     const roSuffix = ro.replace(/^[^0-9]*/, '');
