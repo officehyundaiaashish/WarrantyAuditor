@@ -366,6 +366,36 @@
             cursor: pointer;
             width: 100%;
             height: 100%;
+            z-index: 1;
+        }
+
+        .btn-clear-upload {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--danger);
+            color: white;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.2s;
+            font-weight: bold;
+            font-size: 10px;
+        }
+
+        .upload-tile.active .btn-clear-upload {
+            display: flex;
+        }
+
+        .btn-clear-upload:hover {
+            transform: scale(1.1);
+            background: #b91c1c;
         }
 
         /* ══════════════════════════════════════════
@@ -1560,6 +1590,7 @@
             </div>
             <div class="tile-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 10px;">
                 <div class="upload-tile" id="tile-source1">
+                    <button class="btn-clear-upload" onclick="event.stopPropagation(); clearUpload('source1')">×</button>
                     <div class="tile-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
                     <div>
                         <span>Claims Report</span>
@@ -1568,6 +1599,7 @@
                     <input type="file" id="file-source1" accept=".xlsx,.xls,.csv" onchange="handleFileSelect('source1')">
                 </div>
                 <div class="upload-tile" id="tile-source2">
+                    <button class="btn-clear-upload" onclick="event.stopPropagation(); clearUpload('source2')">×</button>
                     <div class="tile-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
                     <div>
                         <span>Payment Report</span>
@@ -1576,6 +1608,7 @@
                     <input type="file" id="file-source2" accept=".xlsx,.xls,.csv" onchange="handleFileSelect('source2')">
                 </div>
                 <div class="upload-tile" id="tile-source3">
+                    <button class="btn-clear-upload" onclick="event.stopPropagation(); clearUpload('source3')">×</button>
                     <div class="tile-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 21V3"/><path d="M18 15L12 21L6 15"/></svg></div>
                     <div>
                         <span>Previous Ledger</span>
@@ -1898,6 +1931,7 @@
         const LOCK_KEY   = 'mrs_is_locked';
         let rawData = [];
         let isLocked = false;
+        let activeFilterFunc = null; // Track currently active filter function
 
         async function loadLedger() {
             try {
@@ -2106,6 +2140,28 @@
             reader.readAsArrayBuffer(file);
         }
 
+        function clearUpload(type) {
+            const input = document.getElementById(`file-${type}`);
+            const status = document.getElementById(`status-${statusMap[type] ? type : type}`); // Fix potential undefined
+            const tile = document.getElementById(`tile-${type}`);
+            
+            input.value = "";
+            const defaultText = type === 'source1' ? 'RO + Claim Details' : type === 'source2' ? 'Remittance Details' : 'Append Old Records';
+            document.getElementById(`status-${type}`).innerText = defaultText;
+            document.getElementById(`status-${type}`).style.color = '';
+            tile.classList.remove('active');
+            
+            if (type === 'source1') source1Data = null;
+            else if (type === 'source2') source2Data = null;
+            else if (type === 'source3') source3Data = null;
+        }
+
+        const statusMap = {
+            'source1': 'RO + Claim Details',
+            'source2': 'Remittance Details',
+            'source3': 'Append Old Records'
+        };
+
         // ── Feed ──
         async function feedToTable() {
             // Nothing uploaded at all
@@ -2201,10 +2257,9 @@
                     // Sort: Dividers stay in sequence because they have the first MRS number of their range as MRS
                     rawData.sort((a, b) => (parseInt(a['MRS']) || 0) - (parseInt(b['MRS']) || 0));
 
-                    source3Data = null;
-                    document.getElementById('status-source3').innerText = 'Data Imported';
-                    document.getElementById('status-source3').style.color = '';
-                    document.getElementById('tile-source3').classList.remove('active');
+                    // Reset uploads after success
+                    ['source1', 'source2', 'source3'].forEach(t => clearUpload(t));
+
                     saveLedger(); renderData(rawData);
                     const divMsg = dividersAdded > 0 ? ` · ${dividersAdded} dividers` : '';
                     showToast(`✓ ${appended} new added · existing updated${divMsg} · Total: ${rawData.length}`, 'success');
@@ -2269,6 +2324,10 @@
                             if (needsUpdate) updated++;
                         }
                     });
+                    
+                    // Reset uploads after success
+                    ['source1', 'source2', 'source3'].forEach(t => clearUpload(t));
+
                     saveLedger(); renderData(rawData);
                     showToast(`✓ Sync Complete: ${updated} claims updated with payment data.`, 'success');
                 } catch(err) {
@@ -3257,9 +3316,12 @@
             }
             
             saveLedger();
-            // Critical: Render with currentDataset (filters) instead of full rawData
-            // This prevents view reset
-            renderData(currentDataset);
+            // Re-apply filter if active to update real-time
+            if (activeFilterFunc) {
+                activeFilterFunc(true); // pass true to skip the "Toggle Off" logic
+            } else {
+                renderData(currentDataset);
+            }
         }
 
         // ── Init ──
@@ -3295,7 +3357,7 @@
         function filterByBook() {
             // Custom dropdown handles this via selectMRSBook
         }
-        function triggerPendingFilter() {
+        function triggerPendingFilter(skipToggle = false) {
             const pending = rawData.filter(r => {
                 if (r.isDivider) return false;
                 const rem = String(r['REMARKS'] || "").toUpperCase();
@@ -3310,10 +3372,12 @@
             const isCurrentlyShowingOnlyPending = (currentDataset.length === pending.length &&
                 currentDataset.every((v, i) => v === pending[i]));
 
-            if (isCurrentlyShowingOnlyPending) {
+            if (isCurrentlyShowingOnlyPending && !skipToggle) {
+                activeFilterFunc = null;
                 renderData(rawData);
                 showToast("Showing All Records", "info");
             } else {
+                activeFilterFunc = triggerPendingFilter;
                 if (pending.length === 0) {
                     showToast("No pending payments found.", "info");
                     return;
@@ -3325,16 +3389,18 @@
             }
         }
 
-        function triggerUnmarkedFilter() {
+        function triggerUnmarkedFilter(skipToggle = false) {
             const unmarked = rawData.filter(r => !r['MRS'] || r['MRS'] === '' || r['MRS'] === '—');
 
             const isCurrentlyShowingUnmarked = (currentDataset.length === unmarked.length &&
                 currentDataset.every((v, i) => v === unmarked[i]));
 
-            if (isCurrentlyShowingUnmarked) {
+            if (isCurrentlyShowingUnmarked && !skipToggle) {
+                activeFilterFunc = null;
                 renderData(rawData);
                 showToast("Showing All Records", "info");
             } else {
+                activeFilterFunc = triggerUnmarkedFilter;
                 if (unmarked.length === 0) {
                     showToast("All claims have MRS numbers!", "success");
                     return;
@@ -3346,7 +3412,7 @@
             }
         }
 
-        function triggerCancelledFilter() {
+        function triggerCancelledFilter(skipToggle = false) {
             const cancelled = rawData.filter(r => {
                 if (r.isDivider) return false;
                 const rem = String(r['REMARKS'] || "").toUpperCase();
@@ -3358,10 +3424,12 @@
             const isCurrentlyShowingCancelled = (currentDataset.length === cancelled.length &&
                 currentDataset.every((v, i) => v === cancelled[i]));
 
-            if (isCurrentlyShowingCancelled) {
+            if (isCurrentlyShowingCancelled && !skipToggle) {
+                activeFilterFunc = null;
                 renderData(rawData);
                 showToast("Showing All Records", "info");
             } else {
+                activeFilterFunc = triggerCancelledFilter;
                 if (cancelled.length === 0) {
                     showToast("No cancelled MRS found.", "info");
                     return;
@@ -3373,7 +3441,7 @@
             }
         }
 
-        function triggerNoRemarksFilter() {
+        function triggerNoRemarksFilter(skipToggle = false) {
             const blanks = rawData.filter(r => {
                 if (r.isDivider) return false;
                 const val = String(r['REMARKS'] || "").trim();
@@ -3383,10 +3451,12 @@
             const isCurrentlyShowingBlanks = (currentDataset.length === blanks.length &&
                 currentDataset.every((v, i) => v === blanks[i]));
 
-            if (isCurrentlyShowingBlanks) {
+            if (isCurrentlyShowingBlanks && !skipToggle) {
+                activeFilterFunc = null;
                 renderData(rawData);
                 showToast("Showing All Records", "info");
             } else {
+                activeFilterFunc = triggerNoRemarksFilter;
                 if (blanks.length === 0) {
                     showToast("All claims have manual remarks!", "success");
                     return;
@@ -3398,13 +3468,15 @@
             }
         }
 
-        function triggerShortFilter() {
+        function triggerShortFilter(skipToggle = false) {
             const short = rawData.filter(r => !r.isDivider && String(r['REMARKS'] || "").toUpperCase().includes('SHORT'));
             const isCurrentlyShowingShort = (currentDataset.length === short.length && currentDataset.every((v, i) => v === short[i]));
-            if (isCurrentlyShowingShort) {
+            if (isCurrentlyShowingShort && !skipToggle) {
+                activeFilterFunc = null;
                 renderData(rawData);
                 showToast("Showing All Records", "info");
             } else {
+                activeFilterFunc = triggerShortFilter;
                 if (short.length === 0) { showToast("No short payments found.", "info"); return; }
                 renderData(short);
                 const sInput = document.getElementById('tableSearch');
@@ -3413,13 +3485,15 @@
             }
         }
 
-        function triggerPaidFilter() {
+        function triggerPaidFilter(skipToggle = false) {
             const paid = rawData.filter(r => !r.isDivider && String(r['REMARKS'] || "").toUpperCase() === 'PAID');
             const isCurrentlyShowingPaid = (currentDataset.length === paid.length && currentDataset.every((v, i) => v === paid[i]));
-            if (isCurrentlyShowingPaid) {
+            if (isCurrentlyShowingPaid && !skipToggle) {
+                activeFilterFunc = null;
                 renderData(rawData);
                 showToast("Showing All Records", "info");
             } else {
+                activeFilterFunc = triggerPaidFilter;
                 if (paid.length === 0) { showToast("No paid claims found.", "info"); return; }
                 renderData(paid);
                 const sInput = document.getElementById('tableSearch');
