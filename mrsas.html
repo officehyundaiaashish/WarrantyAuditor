@@ -1911,8 +1911,8 @@
                             row['Claim No'] || row['Clm No'] || row['Claim Number'] || row['Claim#'] || ''
                         ).trim();
                         if (!claimKey) { skipped++; return; }
-                        if (ledgerMap[claimKey]) { skipped++; return; }
 
+                        // Build normalized row from old data
                         const newRow = {};
                         columns.forEach(col => {
                             if (col === 'AUTH. SIGN') { newRow[col] = ''; return; } // always blank
@@ -1924,29 +1924,27 @@
                         const mrsRaw = parseInt(newRow['MRS']);
                         newRow['MRS'] = (!isNaN(mrsRaw) && mrsRaw > 0) ? mrsRaw : '';
 
-                        // REMARKS: if CANCELLED variant keep it, else recalc will set it
-                        const existingRemark = String(newRow['REMARKS']).toUpperCase();
-                        if (existingRemark.startsWith('CANCELLED')) {
-                            // keep as-is
-                        } else {
-                            newRow['REMARKS'] = ''; // recalcRow will set PAID / PAYMENT SHORT
-                        }
-
                         // Normalize numeric fields
                         ['Total Amt','Labour','part','Sublet','IGST','AMT RECEIVED','DIFF AMT'].forEach(f => {
                             const v = parseFloat(String(newRow[f] || '').replace(/[^\d.-]/g, ''));
                             newRow[f] = isNaN(v) ? '' : v;
                         });
 
-                        // Recalculate DIFF AMT and REMARKS (unless cancelled)
-                        if (!existingRemark.startsWith('CANCELLED')) recalcRow(newRow);
+                        // REMARKS: if CANCELLED keep, else recalcRow sets PAID / PAYMENT SHORT
+                        const remarkRaw = String(newRow['REMARKS']).toUpperCase();
+                        if (!remarkRaw.startsWith('CANCELLED')) recalcRow(newRow);
 
-                        rawData.push(newRow);
-                        ledgerMap[claimKey] = newRow;
-                        appended++;
+                        if (ledgerMap[claimKey]) {
+                            // Merge into existing row — overwrite all fields from old data
+                            Object.assign(ledgerMap[claimKey], newRow);
+                        } else {
+                            rawData.push(newRow);
+                            ledgerMap[claimKey] = newRow;
+                            appended++;
+                        }
                     });
 
-                    // Sort by MRS ascending after append
+                    // Sort by MRS ascending
                     rawData.sort((a, b) => (parseInt(a['MRS']) || 0) - (parseInt(b['MRS']) || 0));
 
                     source3Data = null;
@@ -1954,7 +1952,8 @@
                     document.getElementById('status-source3').style.color = '';
                     document.getElementById('tile-source3').classList.remove('active');
                     saveLedger(); renderData(rawData);
-                    showToast(`✓ Appended ${appended} rows. ${skipped} duplicates skipped. Total: ${rawData.length}`, 'success');
+                    const skipMsg = skipped > 0 ? ` · ${skipped} skipped (no Claim No)` : '';
+                    showToast(`✓ ${appended} new added · existing updated${skipMsg} · Total: ${rawData.length}`, 'success');
                 } catch (err) {
                     showToast('Append error: ' + err.message, 'danger');
                 } finally { btn.innerHTML = orig; btn.classList.remove('loading'); }
