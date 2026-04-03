@@ -575,10 +575,12 @@
             background: var(--surface);
             width: 100%;
             box-shadow: var(--shadow);
-            max-height: 800px;
-            /* Force a taller height if screen allows */
+            height: calc(100vh - 320px);
             min-height: 400px;
+            max-height: none;
             position: relative;
+            contain: strict;
+            will-change: scroll-position;
         }
 
         table {
@@ -587,6 +589,7 @@
             font-size: 0.72rem;
             table-layout: auto;
         }
+        tr.vs-spacer td { background: transparent !important; pointer-events: none; }
 
         thead {
             position: sticky;
@@ -2121,7 +2124,7 @@
             </div>
 
             <!-- HARMONIZED: table-wrap exactly matches main.html container style -->
-            <div class="table-wrap">
+            <div class="table-wrap" id="vsTableWrap">
                 <table>
                     <thead>
                         <tr id="tableHeader"></tr>
@@ -3316,10 +3319,11 @@
 
         function selectMRSBook(bookName) {
             document.getElementById('mrsBookLabel').textContent = bookName;
-            const foundIdx = paginatedSlices.findIndex(slice => slice.some(r => r.isDivider && r.dividerText === bookName));
-            if (foundIdx !== -1) {
-                currentPage = foundIdx + 1;
-                renderPage();
+            // Find the divider row in vsData and scroll to it
+            const idx = vsData.findIndex(r => r.isDivider && r.dividerText === bookName);
+            if (idx !== -1 && vsOffsets[idx] !== undefined) {
+                const wrap = document.getElementById('vsTableWrap');
+                if (wrap) { wrap.scrollTop = vsOffsets[idx]; vsScheduleRender(); }
                 showToast(`Jumped to ${bookName}`, 'info');
             }
         }
@@ -3446,140 +3450,167 @@
             updateBookFilter();
         }
 
-        // ── Render Page (paginated 50 per page) ──
-        function renderPage() {
+        // ══════════════════════════════════════════
+        // VIRTUAL SCROLL ENGINE
+        // Only renders rows visible in viewport — DOM always has ~30-40 rows max
+        // regardless of 2000 or 20000 total claims. Zero lag on any dataset size.
+        // ══════════════════════════════════════════
+        const VS_ROW_H = 28;        // px — estimated row height (normal data row)
+        const VS_DIV_H = 44;        // px — divider row height
+        const VS_OVERSCAN = 10;     // extra rows above/below viewport to pre-render
+        let vsData = [];            // flat ordered array of rows being displayed
+        let vsScrollTop = 0;
+        let vsRafPending = false;
+        let vsOffsets = [];         // cumulative top offset for each row (px)
+        let vsTotalH = 0;           // total virtual height of all rows
+
+        // Precompute row offsets once when dataset changes
+        function vsComputeOffsets(data) {
+            vsData = data;
+            vsOffsets = new Array(data.length);
+            let y = 0;
+            for (let i = 0; i < data.length; i++) {
+                vsOffsets[i] = y;
+                y += data[i].isDivider ? VS_DIV_H : VS_ROW_H;
+            }
+            vsTotalH = y;
+        }
+
+        function buildRowHTML(row, ri) {
+            if (row.isDivider) {
+                const isRowLocked = !!row.isRowLocked;
+                return `<tr class="mrs-range-divider-row ${isRowLocked ? 'row-locked' : ''}" style="height:${VS_DIV_H}px">
+                    <td style="text-align:center;background:rgba(77,207,195,0.18);border-top:2.5px solid #2ab5a5;border-bottom:2.5px solid #2ab5a5;width:50px;box-shadow:inset 0 2px 4px rgba(0,0,0,0.05);border-right:1.5px solid rgba(42,181,165,0.3);">
+                        <button onclick="event.stopPropagation();toggleRowLock(${ri})" title="${isRowLocked?'Unlock book':'Lock book'}" style="background:transparent;border:none;color:${isRowLocked?'var(--danger)':'var(--success)'};cursor:pointer;opacity:0.6;transition:0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">
+                            ${isRowLocked?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>':'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>'}
+                        </button>
+                    </td>
+                    <td colspan="${columns.length-1}" class="editable" ondblclick="startEditDivider(event,this,${ri})" title="${isRowLocked?'Locked Divider':'Double-click to rename'}" style="padding:11px 18px;background:linear-gradient(90deg,rgba(42,181,165,0.28) 0%,rgba(77,207,195,0.18) 100%);border-top:2.5px solid #2ab5a5;border-bottom:2.5px solid #2ab5a5;color:var(--primary);font-size:0.85rem;font-weight:900;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;cursor:pointer;">
+                        <span style="display:inline-flex;align-items:center;gap:10px;">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                            ${row.dividerText}
+                        </span>
+                    </td>
+                </tr>`;
+            }
+
+            const mrsVal = (row['MRS'] !== undefined && row['MRS'] !== null && row['MRS'] !== '') ? row['MRS'] : '\u2014';
+            const cells = columns.map(col => {
+                let val = (row[col] !== undefined && row[col] !== null && row[col] !== '') ? row[col] : '\u2014';
+                if (col === '') {
+                    const rl = !!row.isRowLocked;
+                    return `<td style="text-align:center;width:44px;background:rgba(0,0,0,0.012);border-right:1px solid var(--border);">
+                        <button onclick="event.stopPropagation();toggleRowLock(${ri})" title="${rl?'Unlock row':'Lock row'}" style="background:transparent;border:none;color:${rl?'var(--danger)':'var(--success)'};cursor:pointer;opacity:0.6;transition:0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">
+                            ${rl?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>':'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>'}
+                        </button></td>`;
+                }
+                if (col === 'MRS') return `<td><span class="badge badge-mrs" title="Click row to assign MRS">${val} <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5;vertical-align:middle;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span></td>`;
+                if (col === 'R/O No') { const css = /^CANC/i.test(String(val)) ? 'badge badge-cancel' : 'badge badge-ro'; return `<td><span class="${css}">${val}</span></td>`; }
+                if (col === 'REMARKS') {
+                    const sClass = val==='PAYMENT SHORT'?'badge-short':val==='PAID'?'badge-paid':(String(val).toUpperCase().includes('CANCEL')||String(val).toUpperCase().includes('OTHER'))?'badge-cancel':'';
+                    return `<td><span class="badge ${sClass}" onclick="event.stopPropagation();showRemarkPicker(event,${ri})" title="Click to change remark">${val}</span></td>`;
+                }
+                if (col === ' ') return `<td style="text-align:center;"><button onclick="event.stopPropagation();deleteEntry(${ri})" title="Delete claim" style="background:transparent;border:none;color:var(--danger);cursor:pointer;opacity:0.6;transition:0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td>`;
+                return `<td class="editable" ondblclick="startEdit(event,this,${ri},'${col}')" title="Double-click to edit">${val}</td>`;
+            }).join('');
+            const isCancelled = String(row['REMARKS']).toUpperCase().startsWith('CANCELLED');
+            const isRowLocked = !!row.isRowLocked;
+            const isUnassigned = !row['MRS'] || row['MRS'] === '' || row['MRS'] === '—';
+            const rowClasses = ['row-clickable', isCancelled?'row-cancelled':'', isRowLocked?'row-locked':'', isUnassigned?'row-unassigned':''].filter(Boolean).join(' ');
+            return `<tr class="${rowClasses}" style="height:${VS_ROW_H}px" tabindex="0" onkeydown="handleRowKey(event,${ri})" onclick="openMRSModal(${ri})" title="${isRowLocked?'Locked - Click to view':isUnassigned?'Click to assign MRS':'Click to view MRS #'+mrsVal}">${cells}</tr>`;
+        }
+
+        // Binary search: find first row index whose bottom edge > scrollTop
+        function vsFindStartIdx(scrollTop) {
+            let lo = 0, hi = vsData.length - 1;
+            while (lo < hi) {
+                const mid = (lo + hi) >> 1;
+                const rowH = vsData[mid].isDivider ? VS_DIV_H : VS_ROW_H;
+                if (vsOffsets[mid] + rowH <= scrollTop) lo = mid + 1;
+                else hi = mid;
+            }
+            return lo;
+        }
+
+        function vsRender() {
+            vsRafPending = false;
+            const wrap = document.getElementById('vsTableWrap');
             const tbody = document.getElementById('tableBody');
             const noData = document.getElementById('noData');
-            const pagBar = document.getElementById('paginationBar');
+            if (!wrap || !tbody) return;
 
-            const pageRows = paginatedSlices[currentPage - 1] || [];
-            const totalPages = paginatedSlices.length || 1;
-
-            if (!pageRows.length) {
+            if (!vsData.length) {
                 tbody.innerHTML = '';
                 noData.style.display = 'flex';
-                pagBar.style.display = 'none';
                 document.getElementById('recordCount').innerText = '0 Records';
                 return;
             }
-
             noData.style.display = 'none';
-            // Record count: total claims in current dataset
+
+            const viewH = wrap.clientHeight || 600;
+            const scrollTop = wrap.scrollTop;
+            let startIdx = Math.max(0, vsFindStartIdx(scrollTop) - VS_OVERSCAN);
+            // find end: keep adding rows until we exceed viewport bottom
+            let endIdx = startIdx;
+            const viewBottom = scrollTop + viewH + VS_OVERSCAN * VS_ROW_H;
+            while (endIdx < vsData.length && vsOffsets[endIdx] < viewBottom) endIdx++;
+            endIdx = Math.min(vsData.length - 1, endIdx + VS_OVERSCAN);
+
+            const topPad = vsOffsets[startIdx] || 0;
+            const bottomPad = Math.max(0, vsTotalH - (vsOffsets[endIdx] !== undefined ? vsOffsets[endIdx] + (vsData[endIdx]?.isDivider ? VS_DIV_H : VS_ROW_H) : vsTotalH));
+
+            const html = [];
+            // Top spacer
+            if (topPad > 0) html.push(`<tr class="vs-spacer"><td colspan="${columns.length}" style="height:${topPad}px;padding:0;border:none;"></td></tr>`);
+            // Visible rows
+            for (let i = startIdx; i <= endIdx; i++) {
+                const row = vsData[i];
+                const ri = rowIndexMap.get(row) ?? rawData.indexOf(row);
+                html.push(buildRowHTML(row, ri));
+            }
+            // Bottom spacer
+            if (bottomPad > 0) html.push(`<tr class="vs-spacer"><td colspan="${columns.length}" style="height:${bottomPad}px;padding:0;border:none;"></td></tr>`);
+
+            tbody.innerHTML = html.join('');
+
             const count = currentDataset.filter(r => !r.isDivider).length;
             document.getElementById('recordCount').innerText = `${count} Claims`;
+        }
 
-            // Pagination UI
-            if (totalPages <= 1) {
-                pagBar.style.display = 'none';
-            } else {
-                pagBar.style.display = 'flex';
-                document.getElementById('mrs-page-indicator').textContent = `Book ${currentPage} of ${totalPages}`;
-                document.getElementById('mrs-btn-prev').disabled = (currentPage === 1);
-                document.getElementById('mrs-btn-next').disabled = (currentPage === totalPages);
-            }
+        function vsScheduleRender() {
+            if (vsRafPending) return;
+            vsRafPending = true;
+            requestAnimationFrame(vsRender);
+        }
 
-            // ── Rendering ──
-            const rows = [];
-            pageRows.forEach((row) => {
-                const ri = rowIndexMap.get(row) ?? rawData.indexOf(row);
-                if (row.isDivider) {
-                    const isRowLocked = !!row.isRowLocked;
-                    rows.push(`<tr class="mrs-range-divider-row ${isRowLocked ? 'row-locked' : ''}">
-                        <td style="text-align:center; background:rgba(77,207,195,0.18); border-top: 2.5px solid #2ab5a5; border-bottom: 2.5px solid #2ab5a5; width: 50px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); border-right: 1.5px solid rgba(42,181,165,0.3);">
-                            <button onclick="event.stopPropagation(); toggleRowLock(${ri})" title="${isRowLocked ? 'Unlock book' : 'Lock book'}" style="background:transparent;border:none;color:${isRowLocked ? 'var(--danger)' : 'var(--success)'};cursor:pointer;opacity:0.6;transition:0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">
-                                ${isRowLocked ?
-                            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' :
-                            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>'
-                        }
-                            </button>
-                        </td>
-                        <td colspan="${columns.length - 1}" 
-                            class="editable" 
-                            ondblclick="startEditDivider(event,this,${ri})"
-                            title="${isRowLocked ? 'Locked Divider' : 'Double-click to rename'}"
-                            style="
-                            padding: 11px 18px;
-                            background: linear-gradient(90deg, rgba(42,181,165,0.28) 0%, rgba(77,207,195,0.18) 100%);
-                            border-top: 2.5px solid #2ab5a5;
-                            border-bottom: 2.5px solid #2ab5a5;
-                            color: var(--primary);
-                            font-size: 0.85rem;
-                            font-weight: 900;
-                            letter-spacing: 1px;
-                            text-transform: uppercase;
-                            white-space: nowrap;
-                            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05), inset 0 -2px 4px rgba(0,0,0,0.05);
-                            cursor: pointer;
-                        ">
-                            <span style="display:inline-flex;align-items:center;gap:10px;">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                                ${row.dividerText}
-                            </span>
-                        </td>
-                    </tr>`);
-                    return;
-                }
-
-                const mrsVal = (row['MRS'] !== undefined && row['MRS'] !== null && row['MRS'] !== '') ? row['MRS'] : '\u2014';
-
-                const cells = columns.map(col => {
-                    let val = (row[col] !== undefined && row[col] !== null && row[col] !== '') ? row[col] : '\u2014';
-                    if (col === '') {
-                        const isRowLocked = !!row.isRowLocked;
-                        return `<td style="text-align:center; width: 44px; background:rgba(0,0,0,0.012); border-right:1px solid var(--border);">
-                            <button onclick="event.stopPropagation(); toggleRowLock(${ri})" title="${isRowLocked ? 'Unlock row' : 'Lock row'}" style="background:transparent;border:none;color:${isRowLocked ? 'var(--danger)' : 'var(--success)'};cursor:pointer;opacity:0.6;transition:0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">
-                                ${isRowLocked ?
-                                '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' :
-                                '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>'
-                            }
-                            </button>
-                        </td>`;
-                    }
-                    if (col === 'MRS') {
-                        return `<td><span class="badge badge-mrs" title="Click row to assign MRS">${val} <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5;vertical-align:middle;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span></td>`;
-                    }
-                    if (col === 'R/O No') {
-                        let css = 'badge badge-ro';
-                        if (/^CANC/i.test(String(val))) css = 'badge badge-cancel';
-                        return `<td><span class="${css}">${val}</span></td>`;
-                    }
-                    if (col === 'REMARKS') {
-                        const sClass = (val === 'PAYMENT SHORT') ? 'badge-short' : (val === 'PAID') ? 'badge-paid' : (String(val).toUpperCase().includes('CANCEL') || String(val).toUpperCase().includes('OTHER')) ? 'badge-cancel' : '';
-                        return `<td><span class="badge ${sClass}" onclick="event.stopPropagation(); showRemarkPicker(event, ${ri})" title="Click to change remark">${val}</span></td>`;
-                    }
-                    if (col === ' ') {
-                        return `<td style="text-align:center;">
-                            <button onclick="event.stopPropagation(); deleteEntry(${ri})" title="Delete claim" style="background:transparent;border:none;color:var(--danger);cursor:pointer;opacity:0.6;transition:0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                            </button>
-                        </td>`;
-                    }
-                    return `<td class="editable" ondblclick="startEdit(event,this,${ri},'${col}')" title="Double-click to edit">${val}</td>`;
-                }).join('');
-                const isCancelled = String(row['REMARKS']).toUpperCase().startsWith('CANCELLED');
-                const isRowLocked = !!row.isRowLocked;
-                const isUnassigned = !row.isDivider && (!row['MRS'] || row['MRS'] === '' || row['MRS'] === '—');
-                const rowClasses = [
-                    'row-clickable',
-                    isCancelled ? 'row-cancelled' : '',
-                    isRowLocked ? 'row-locked' : '',
-                    isUnassigned ? 'row-unassigned' : ''
-                ].filter(Boolean).join(' ');
-
-                rows.push(`<tr class="${rowClasses}" tabindex="0" onkeydown="handleRowKey(event, ${ri})" onclick="openMRSModal(${ri})" title="${isRowLocked ? 'Locked - Click to view' : isUnassigned ? 'Click to assign MRS' : 'Click to view MRS #' + mrsVal}">${cells}</tr>`);
-            });
-            tbody.innerHTML = rows.join('');
-
-            // Scroll table back to top on page change
-            const wrap = document.querySelector('.table-wrap');
+        // ── renderPage now just kicks virtual scroll ──
+        function renderPage() {
+            // Flatten paginatedSlices into single ordered array for virtual scroll
+            // (paginatedSlices used only for MRS Book jump — virtual scroll renders all at once)
+            vsComputeOffsets(currentDataset);
+            const wrap = document.getElementById('vsTableWrap');
             if (wrap) wrap.scrollTop = 0;
+            vsScrollTop = 0;
+            vsScheduleRender();
+            // Hide old pagination bar — virtual scroll replaces it
+            const pagBar = document.getElementById('paginationBar');
+            if (pagBar) pagBar.style.display = 'none';
         }
 
         function goToPage(page) {
+            // Jump to MRS Book — scroll to that divider's position in virtual scroll
             const totalPages = paginatedSlices.length || 1;
             if (page < 1 || page > totalPages) return;
             currentPage = page;
-            renderPage();
+            // Find the divider row for this page and scroll to it
+            const targetSlice = paginatedSlices[page - 1];
+            if (!targetSlice || !targetSlice.length) return;
+            const firstRow = targetSlice[0];
+            const idx = vsData.indexOf(firstRow);
+            if (idx !== -1 && vsOffsets[idx] !== undefined) {
+                const wrap = document.getElementById('vsTableWrap');
+                if (wrap) wrap.scrollTop = vsOffsets[idx];
+            }
         }
 
         // ── Search Mode Toggle ──
@@ -4141,12 +4172,11 @@
             document.getElementById('tableHeader').innerHTML = columns.map(c => `<th>${c}</th>`).join('');
             loadLedger();
 
-            // Feature: Keyboard Arrows for Pagination
-            window.addEventListener('keydown', (e) => {
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
-                if (e.key === 'ArrowLeft') goToPage(currentPage - 1);
-                if (e.key === 'ArrowRight') goToPage(currentPage + 1);
-            });
+            // Wire virtual scroll listener
+            const vsWrap = document.getElementById('vsTableWrap');
+            if (vsWrap) {
+                vsWrap.addEventListener('scroll', vsScheduleRender, { passive: true });
+            }
 
             // Focus search bar immediately on startup
             setTimeout(() => {
