@@ -2197,7 +2197,7 @@
             </div>
             
             <!-- Floating Counter exactly as requested in bottom right corner of the card -->
-            <div class="record-count" id="recordCount" style="position: absolute; bottom: -28px; right: 66px; margin: 0; font-size: 0.70rem; font-weight: 800; color: var(--text-muted); opacity: 0.8; z-index: 5;">0 Records</div>
+            <div class="record-count" id="recordCount" style="position: absolute; bottom: -28px; right: 12px; margin: 0; font-size: 0.70rem; font-weight: 800; color: var(--text-muted); opacity: 0.8; z-index: 5;">0 Records</div>
         </div>
     </div>
 
@@ -3319,14 +3319,35 @@
                     currentGroup = { divider: r, claims: [] };
                     groups.push(currentGroup);
                 } else {
-                    if (currentGroup) {
+                    const claimMrs = parseInt(r['MRS']) || 0;
+                    let belongsInGroup = false;
+
+                    if (currentGroup && currentGroup.divider) {
+                        // Smart Boundary Detection: Check if the claim exceeds the divider's mathematical range
+                        const match = currentGroup.divider.dividerText.match(/(\d+)\s*-\s*(\d+)/);
+                        if (match) {
+                            const min = parseInt(match[1]);
+                            const max = parseInt(match[2]);
+                            if (claimMrs >= min && claimMrs <= max) {
+                                belongsInGroup = true;
+                            }
+                        } else {
+                            // Non-standard text, fallback to simple inclusion
+                            belongsInGroup = true;
+                        }
+                    }
+
+                    if (belongsInGroup) {
                         currentGroup.claims.push(r);
                     } else {
-                        // Claims with no divider — put in a virtual group
-                        if (!groups.length || groups[0].divider !== null) {
-                            groups.unshift({ divider: null, claims: [] });
+                        // ORPHAN CLAIM: It has no matching mathematical book (newly assigned from Working Mode).
+                        // Route it directly to a dynamic floating group which gets sorted to the absolute top.
+                        let orphanGroup = groups.find(g => g.divider === null);
+                        if (!orphanGroup) {
+                            orphanGroup = { divider: null, claims: [] };
+                            groups.push(orphanGroup);
                         }
-                        groups[0].claims.push(r);
+                        orphanGroup.claims.push(r);
                     }
                 }
             });
