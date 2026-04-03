@@ -2556,6 +2556,12 @@
             const inp = document.getElementById('authInput');
             inp.value = '';
             mod.dataset.targetState = targetState;
+            
+            const authBtn = document.getElementById('authActionBtn');
+            if (authBtn) {
+                authBtn.innerText = targetState ? 'Lock System' : 'Unlock System';
+            }
+            
             mod.classList.add('active');
             toggleBodyScroll(true);
             setTimeout(() => inp.focus(), 300);
@@ -5109,7 +5115,7 @@
                         style="width:100%; text-align:center; padding:12px; font-size:1.8rem; letter-spacing:8px; border-radius:12px; border:2px solid var(--border); background:rgba(0,0,0,0.02); outline:none; font-family:monospace; transition:all 0.3s; color:var(--primary);">
                 </div>
                 <div class="modal-btn-row">
-                    <button class="modal-btn-confirm" onclick="verifyAuth()"
+                    <button class="modal-btn-confirm" id="authActionBtn" onclick="verifyAuth()"
                         style="width:100%; justify-content:center;">Unlock System</button>
                 </div>
                 <button onclick="closeAuthModal()"
