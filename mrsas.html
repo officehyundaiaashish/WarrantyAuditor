@@ -3310,52 +3310,74 @@
                 return 0;
             });
 
-            // Group claims under their MRS Book dividers, then sort descending
-            const groups = []; // [{divider, claims}]
-            let currentGroup = null;
-
+            // Build a lookup of all book ranges from dividers
+            const bookRanges = [];
             assigned.forEach(r => {
-                if (r.isDivider) {
-                    currentGroup = { divider: r, claims: [] };
-                    groups.push(currentGroup);
-                } else {
-                    const claimMrs = parseInt(r['MRS']) || 0;
-                    let belongsInGroup = false;
-
-                    if (currentGroup && currentGroup.divider) {
-                        // Smart Boundary Detection: Check if the claim exceeds the divider's mathematical range
-                        const match = currentGroup.divider.dividerText.match(/(\d+)\s*-\s*(\d+)/);
-                        if (match) {
-                            const min = parseInt(match[1]);
-                            const max = parseInt(match[2]);
-                            if (claimMrs >= min && claimMrs <= max) {
-                                belongsInGroup = true;
-                            }
-                        } else {
-                            // Non-standard text, fallback to simple inclusion
-                            belongsInGroup = true;
-                        }
-                    }
-
-                    if (belongsInGroup) {
-                        currentGroup.claims.push(r);
-                    } else {
-                        // ORPHAN CLAIM: It has no matching mathematical book (newly assigned from Working Mode).
-                        // Route it directly to a dynamic floating group which gets sorted to the absolute top.
-                        let orphanGroup = groups.find(g => g.divider === null);
-                        if (!orphanGroup) {
-                            orphanGroup = { divider: null, claims: [] };
-                            groups.push(orphanGroup);
-                        }
-                        orphanGroup.claims.push(r);
+                if (r.isDivider && r.dividerText) {
+                    const match = r.dividerText.match(/(\d+)\s*-\s*(\d+)/);
+                    if (match) {
+                        bookRanges.push({ divider: r, min: parseInt(match[1]), max: parseInt(match[2]) });
                     }
                 }
             });
 
-            // Sort groups descending by divider MRS number
+            // Group claims under their MRS Book dividers, then sort descending
+            const groups = []; // [{divider, claims}]
+            const dividerGroupMap = new Map(); // divider row → group object
+
+            // First pass: create a group for every divider
+            assigned.forEach(r => {
+                if (r.isDivider) {
+                    const g = { divider: r, claims: [] };
+                    groups.push(g);
+                    dividerGroupMap.set(r, g);
+                }
+            });
+
+            // Second pass: route each claim to the correct book by range, or to orphan/untitled
+            assigned.forEach(r => {
+                if (r.isDivider) return;
+                const claimMrs = parseInt(r['MRS']) || 0;
+
+                // Find a book whose range contains this claim's MRS number
+                const matchingBook = bookRanges.find(b => claimMrs >= b.min && claimMrs <= b.max);
+
+                if (matchingBook) {
+                    // Claim belongs inside this book — add it there
+                    dividerGroupMap.get(matchingBook.divider).claims.push(r);
+                } else {
+                    // SMART ORPHAN ROUTING:
+                    // Claim is outside all existing book ranges.
+                    // Check if there is an "Untitled Book" divider already in rawData.
+                    // If yes, route into it. If no, create one dynamically for display only.
+                    let untitledGroup = groups.find(g => g.divider && g.divider.dividerText === 'MRS BOOK (Untitled)');
+                    if (!untitledGroup) {
+                        // Check if a real untitled divider exists in rawData
+                        let untitledDivider = rawData.find(r => r.isDivider && r.dividerText === 'MRS BOOK (Untitled)');
+                        if (!untitledDivider) {
+                            // Create a temporary display-only divider (not saved to rawData yet)
+                            // It will be saved only when user renames it via the MRS Range tool
+                            untitledDivider = { isDivider: true, dividerText: 'MRS BOOK (Untitled)', MRS: claimMrs, _isTemporary: true };
+                        }
+                        untitledGroup = { divider: untitledDivider, claims: [] };
+                        groups.push(untitledGroup);
+                        dividerGroupMap.set(untitledDivider, untitledGroup);
+                    }
+                    untitledGroup.claims.push(r);
+                }
+            });
+
+            // Sort groups descending by divider MRS number.
+            // Untitled (orphan) group always floats to the TOP (highest position).
             groups.sort((a, b) => {
-                const aNum = a.divider ? (parseInt(a.divider['MRS']) || 0) : Number.MAX_SAFE_INTEGER;
-                const bNum = b.divider ? (parseInt(b.divider['MRS']) || 0) : Number.MAX_SAFE_INTEGER;
+                const aIsUntitled = a.divider && a.divider.dividerText === 'MRS BOOK (Untitled)';
+                const bIsUntitled = b.divider && b.divider.dividerText === 'MRS BOOK (Untitled)';
+                // Untitled group always comes first (top)
+                if (aIsUntitled && !bIsUntitled) return -1;
+                if (!aIsUntitled && bIsUntitled) return 1;
+                // Both normal: sort descending by MRS number
+                const aNum = a.divider ? (parseInt(a.divider['MRS']) || 0) : 0;
+                const bNum = b.divider ? (parseInt(b.divider['MRS']) || 0) : 0;
                 return bNum - aNum;
             });
 
