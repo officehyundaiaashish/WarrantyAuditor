@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MRS Assigner — Audit-it</title>
+    <title>Warranty Payment Ledger — Audit-it</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
@@ -1844,10 +1844,10 @@
     <header class="page-header">
         <div class="header-left">
             <div>
-                <div class="header-title-text">MRS Assigner <span id="header-claims-badge" class="stat-badge"
+                <div class="header-title-text">Warranty Payment Ledger <span id="header-claims-badge" class="stat-badge"
                         style="font-size:0.6rem;padding:2px 6px;margin-left:6px;vertical-align:middle;">0 Claims</span>
                 </div>
-                <div class="header-subtitle">Record Ledger · Audit-it</div>
+                <div class="header-subtitle">Warranty Tracking · Audit-it</div>
             </div>
         </div>
         <!-- Feature #1: Main Menu button -->
@@ -2390,7 +2390,7 @@
                     });
                     rawData = saved;
                     buildSearchCache();
-                    renderDataFast(rawData);
+                    renderLedgerMode(); // default: ledger mode = assigned only
                 }
             } catch (e) {
                 console.error('Load ledger:', e);
@@ -3192,6 +3192,12 @@
         let currentPage = 1;
         let currentDataset = [];
 
+        // ── Helper: render only assigned rows (ledger mode) ──
+        function renderLedgerMode() {
+            const assigned = rawData.filter(r => r.isDivider || (r['MRS'] && r['MRS'] !== '' && r['MRS'] !== '—'));
+            renderDataFast(assigned);
+        }
+
         // ── Feature: Working Mode Toggle ──
         let isWorkingMode = false;
         function toggleWorkingMode() {
@@ -3214,11 +3220,10 @@
                 label.textContent = 'LEDGER MODE';
                 // Show import card in ledger mode
                 if (importCard) importCard.style.display = '';
-                // Ledger mode = only assigned rows (MRS is filled)
-                const assigned = rawData.filter(r => r.isDivider || (r['MRS'] && r['MRS'] !== '' && r['MRS'] !== '—'));
+                // Ledger mode = only assigned MRS
                 currentPage = 1;
-                renderDataFast(assigned);
-                showToast('Ledger Mode: Only Assigned MRS shown', 'info');
+                renderLedgerMode();
+                showToast('Ledger Mode: Assigned Claims shown', 'info');
             }
         }
 
@@ -4522,8 +4527,8 @@
 </style></head><body>
 <div class="print-header">
   <div>
-    <div class="print-title">MRS Warranty Ledger</div>
-    <div class="print-subtitle">Audit-it · MRS Assigner — ${subtitleSuffix}</div>
+    <div class="print-title">Warranty Payment Ledger</div>
+    <div class="print-subtitle">Audit-it · Warranty Payment Ledger — ${subtitleSuffix}</div>
   </div>
   <div class="print-meta">
     Printed: ${dateStr} at ${timeStr}<br>
@@ -4541,7 +4546,7 @@
   <tbody>${bodyRows}</tbody>
 </table>
 <div class="print-footer">
-  <span>Audit-it — MRS Warranty Tracking System</span>
+  <span>Audit-it — Warranty Payment Ledger</span>
   <span>Generated: ${dateStr} ${timeStr}</span>
 </div>
 <script>            window.onload = () => { window.print(); }<\/script>
