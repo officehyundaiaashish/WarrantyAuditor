@@ -574,12 +574,14 @@
         /* Modal background lock */
         body.modal-open {
             overflow: hidden !important;
-            padding-right: 0px !important; /* Prevent layout shift if scrollbar disappears */
+            padding-right: 0px !important;
+            /* Prevent layout shift if scrollbar disappears */
         }
 
         .modal-body {
             overflow: visible;
         }
+
         .table-wrap {
             overflow: auto;
             border: 1px solid var(--border);
@@ -1656,13 +1658,13 @@
             }
 
             /* Section header action groups — wrap and go full width */
-            .section-header > div:not(.tile-icon) {
+            .section-header>div:not(.tile-icon) {
                 min-width: 0;
                 flex: 1 1 100%;
             }
 
             /* Working mode + lock buttons row on mobile */
-            .section-header > div:last-child {
+            .section-header>div:last-child {
                 flex-wrap: wrap;
                 gap: 8px;
             }
@@ -1811,9 +1813,11 @@
             border: 1.5px solid var(--border);
             border-radius: 10px;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-            z-index: 2000; /* High enough to be above modal dialog elements */
+            z-index: 2000;
+            /* High enough to be above modal dialog elements */
             overflow-y: auto;
-            max-height: 132px; /* Showing exactly 3 items at a time (3 * ~42px + padding) */
+            max-height: 132px;
+            /* Showing exactly 3 items at a time (3 * ~42px + padding) */
             list-style: none;
             padding: 4px;
         }
@@ -1942,8 +1946,7 @@
             <div class="tile-grid"
                 style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 10px;">
                 <div class="upload-tile" id="tile-source1">
-                    <button class="btn-clear-upload"
-                        onclick="clearUpload('source1')">×</button>
+                    <button class="btn-clear-upload" onclick="clearUpload('source1')">×</button>
                     <div class="tile-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2.2">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -1957,8 +1960,7 @@
                         onchange="handleFileSelect('source1')">
                 </div>
                 <div class="upload-tile" id="tile-source2">
-                    <button class="btn-clear-upload"
-                        onclick="clearUpload('source2')">×</button>
+                    <button class="btn-clear-upload" onclick="clearUpload('source2')">×</button>
                     <div class="tile-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2.2">
                             <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
@@ -1972,8 +1974,7 @@
                         onchange="handleFileSelect('source2')">
                 </div>
                 <div class="upload-tile" id="tile-source3">
-                    <button class="btn-clear-upload"
-                        onclick="clearUpload('source3')">×</button>
+                    <button class="btn-clear-upload" onclick="clearUpload('source3')">×</button>
                     <div class="tile-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2.2">
                             <path d="M12 21V3" />
@@ -2149,81 +2150,81 @@
                             </svg></button>
                         <!-- Safety Backup removed as per request -->
                     </div>
-                    </div>
-                </div>
-
-                <!-- Group 3: Status & Info -->
-                <div style="display:flex; align-items:center; gap:10px; flex-shrink:0;">
-                    <button id="workingModeBtn" onclick="toggleWorkingMode()" class="btn-working-mode inactive"
-                        title="Show only unassigned claims">
-                        <span id="workingIcon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
-                                style="vertical-align:middle;">
-                                <circle cx="12" cy="12" r="10" />
-                                <circle cx="12" cy="12" r="6" />
-                                <circle cx="12" cy="12" r="2" />
-                            </svg></span> <span id="workingLabel">LEDGER MODE</span>
-                    </button>
-                    <button id="lockStatusBtn" onclick="toggleGlobalLock()" class="btn-premium btn-outline"
-                        style="padding:7px 12px; font-size:0.68rem; font-weight:800; border-color:var(--border); display:inline-flex; align-items:center; gap:6px; min-width:105px;">
-                        <span id="lockIcon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
-                                style="vertical-align:middle;">
-                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                                <path d="M7 11V7a5 5 0 0 1 9.9-1" />
-                            </svg></span> <span id="lockLabel">ACTIVE</span>
-                    </button>
-                    <div style="display:flex; flex-direction:column; align-items:flex-end; justify-content:center;">
-                        <div id="saveStatus"
-                            style="font-size:0.65rem; font-weight:800; color:var(--success); opacity:0; transition:opacity 0.3s; pointer-events:none;">
-                            SAVED ✓</div>
-                    </div>
                 </div>
             </div>
 
-            <!-- HARMONIZED: pagination matching main.html Prev / Indicator / Next (Moved to TOP) -->
-            <div class="pagination" id="paginationBar"
-                style="display:none; margin: 12px 0; padding: 10px; background: rgba(0,0,0,0.02); border-radius: 12px; border: 1px solid var(--border);">
-                <button class="btn" id="mrs-btn-prev" onclick="goToPage(currentPage - 1)">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="15 18 9 12 15 6" />
-                    </svg> Previous
+            <!-- Group 3: Status & Info -->
+            <div style="display:flex; align-items:center; gap:10px; flex-shrink:0;">
+                <button id="workingModeBtn" onclick="toggleWorkingMode()" class="btn-working-mode inactive"
+                    title="Show only unassigned claims">
+                    <span id="workingIcon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                            style="vertical-align:middle;">
+                            <circle cx="12" cy="12" r="10" />
+                            <circle cx="12" cy="12" r="6" />
+                            <circle cx="12" cy="12" r="2" />
+                        </svg></span> <span id="workingLabel">LEDGER MODE</span>
                 </button>
-                <span class="page-indicator" id="mrs-page-indicator" style="font-weight:800; color:var(--primary);">Page
-                    1</span>
-                <button class="btn" id="mrs-btn-next" onclick="goToPage(currentPage + 1)">
-                    Next <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="9 18 15 12 9 6" />
-                    </svg>
+                <button id="lockStatusBtn" onclick="toggleGlobalLock()" class="btn-premium btn-outline"
+                    style="padding:7px 12px; font-size:0.68rem; font-weight:800; border-color:var(--border); display:inline-flex; align-items:center; gap:6px; min-width:105px;">
+                    <span id="lockIcon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                            style="vertical-align:middle;">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                            <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+                        </svg></span> <span id="lockLabel">ACTIVE</span>
                 </button>
-            </div>
-
-            <!-- HARMONIZED: table-wrap exactly matches main.html container style -->
-            <div class="table-wrap" id="vsTableWrap">
-                <table>
-                    <thead>
-                        <tr id="tableHeader"></tr>
-                    </thead>
-                    <tbody id="tableBody"></tbody>
-                </table>
-                <div id="noData" class="empty-view" style="display:flex;">
-                    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        <line x1="16" y1="13" x2="8" y2="13" />
-                        <line x1="16" y1="17" x2="8" y2="17" />
-                        <line x1="10" y1="9" x2="8" y2="9" />
-                    <p>No active ledger found.<br>Import source files to begin.</p>
+                <div style="display:flex; flex-direction:column; align-items:flex-end; justify-content:center;">
+                    <div id="saveStatus"
+                        style="font-size:0.65rem; font-weight:800; color:var(--success); opacity:0; transition:opacity 0.3s; pointer-events:none;">
+                        SAVED ✓</div>
                 </div>
-            </div>
-            
-            <!-- Record count — properly placed below table, right-aligned -->
-            <div style="display:flex; justify-content:flex-end; margin-top:10px;">
-                <div class="record-count" id="recordCount">0 Records</div>
             </div>
         </div>
+
+        <!-- HARMONIZED: pagination matching main.html Prev / Indicator / Next (Moved to TOP) -->
+        <div class="pagination" id="paginationBar"
+            style="display:none; margin: 12px 0; padding: 10px; background: rgba(0,0,0,0.02); border-radius: 12px; border: 1px solid var(--border);">
+            <button class="btn" id="mrs-btn-prev" onclick="goToPage(currentPage - 1)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6" />
+                </svg> Previous
+            </button>
+            <span class="page-indicator" id="mrs-page-indicator" style="font-weight:800; color:var(--primary);">Page
+                1</span>
+            <button class="btn" id="mrs-btn-next" onclick="goToPage(currentPage + 1)">
+                Next <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- HARMONIZED: table-wrap exactly matches main.html container style -->
+        <div class="table-wrap" id="vsTableWrap">
+            <table>
+                <thead>
+                    <tr id="tableHeader"></tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+            <div id="noData" class="empty-view" style="display:flex;">
+                <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                    <line x1="10" y1="9" x2="8" y2="9" />
+                    <p>No active ledger found.<br>Import source files to begin.</p>
+            </div>
+        </div>
+
+        <!-- Record count — properly placed below table, right-aligned -->
+        <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+            <div class="record-count" id="recordCount">0 Records</div>
+        </div>
+    </div>
     </div>
 
     <!-- ══════════════════════════
@@ -3728,6 +3729,34 @@
         function buildRowHTML(row, ri) {
             if (row.isDivider) {
                 const isRowLocked = !!row.isRowLocked;
+                let missingInfo = '';
+                if (row.dividerText && row.dividerText.includes('(') && row.dividerText.includes('-') && row.dividerText.includes(')')) {
+                    const match = row.dividerText.match(/\((\d+)-(\d+)\)/);
+                    if (match) {
+                        const fromNum = parseInt(match[1]);
+                        const toNum = parseInt(match[2]);
+                        if (!isNaN(fromNum) && !isNaN(toNum) && toNum >= fromNum) {
+                            const existing = new Set();
+                            rawData.forEach(r => {
+                                if (!r.isDivider && r['MRS']) {
+                                    const m = parseInt(r['MRS']);
+                                    if (!isNaN(m) && m >= fromNum && m <= toNum) existing.add(m);
+                                }
+                            });
+                            const missing = [];
+                            for (let n = fromNum; n <= toNum; n++) {
+                                if (!existing.has(n)) missing.push(n);
+                            }
+                            if (missing.length > 0) {
+                                let missingText = missing.join(', ');
+                                if (missingText.length > 40) missingText = missingText.substring(0, 37) + '...';
+                                missingInfo = `<span style="margin-left: 10px; font-size: 0.70rem; font-weight: 700; color: var(--danger); background: rgba(239, 68, 68, 0.1); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(239,68,68,0.2);">Missing (${missing.length}): ${missingText}</span>`;
+                            } else {
+                                missingInfo = `<span style="margin-left: 10px; font-size: 0.70rem; font-weight: 700; color: var(--success); background: rgba(16, 185, 129, 0.1); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.2);">Complete</span>`;
+                            }
+                        }
+                    }
+                }
                 return `<tr class="mrs-range-divider-row ${isRowLocked ? 'row-locked' : ''}" style="height:${VS_DIV_H}px">
                     <td style="text-align:center;background:rgba(77,207,195,0.18);border-top:2.5px solid #2ab5a5;border-bottom:2.5px solid #2ab5a5;width:50px;box-shadow:inset 0 2px 4px rgba(0,0,0,0.05);border-right:1.5px solid rgba(42,181,165,0.3);">
                         <button onclick="event.stopPropagation();toggleRowLock(${ri})" title="${isRowLocked ? 'Unlock book' : 'Lock book'}" style="background:transparent;border:none;color:${isRowLocked ? 'var(--danger)' : 'var(--success)'};cursor:pointer;opacity:0.6;transition:0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">
@@ -3736,8 +3765,10 @@
                     </td>
                     <td colspan="${columns.length - 1}" class="editable" ondblclick="startEditDivider(event,this,${ri})" title="${isRowLocked ? 'Locked Divider' : 'Double-click to rename'}" style="padding:11px 18px;background:linear-gradient(90deg,rgba(42,181,165,0.28) 0%,rgba(77,207,195,0.18) 100%);border-top:2.5px solid #2ab5a5;border-bottom:2.5px solid #2ab5a5;color:var(--primary);font-size:0.85rem;font-weight:900;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;cursor:pointer;">
                         <span style="display:inline-flex;align-items:center;gap:10px;">
+                            <span onclick="event.stopPropagation();startEditDivider(event, this.closest('td'), ${ri})" title="Rename Book" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:rgba(42,181,165,0.15);cursor:pointer;transition:all 0.2s;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span>
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                             ${row.dividerText}
+                            ${missingInfo}
                         </span>
                     </td>
                 </tr>`;
@@ -4248,6 +4279,12 @@
 
                 saveLedger();
                 buildSearchCache();
+
+                if (isWorkingMode) {
+                    const searchInp = document.getElementById('tableSearch');
+                    if (searchInp) searchInp.value = '';
+                }
+
                 if (activeFilterFunc) activeFilterFunc(true);
                 else if (isWorkingMode) renderDataFast(rawData.filter(r => !r.isDivider && (!r['MRS'] || r['MRS'] === '' || r['MRS'] === '—')));
                 else renderLedgerMode();
@@ -4259,6 +4296,12 @@
 
                 saveLedger();
                 buildSearchCache();
+
+                if (isWorkingMode) {
+                    const searchInp = document.getElementById('tableSearch');
+                    if (searchInp) searchInp.value = '';
+                }
+
                 if (activeFilterFunc) activeFilterFunc(true);
                 else if (isWorkingMode) renderDataFast(rawData.filter(r => !r.isDivider && (!r['MRS'] || r['MRS'] === '' || r['MRS'] === '—')));
                 else renderLedgerMode();
@@ -4791,7 +4834,7 @@
                         selectedBookData.push(r);
                     }
                 }
-                
+
                 targetData = selectedBookData.length > 0 ? selectedBookData : currentDataset;
             } else if (currentDataset.length > 0 && currentDataset.length !== rawData.length) {
                 targetData = currentDataset;
