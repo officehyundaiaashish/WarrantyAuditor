@@ -2386,7 +2386,7 @@
                         }
                     });
                     rawData = saved;
-                    renderData(rawData);
+                    renderDataFast(rawData);
                 }
             } catch (e) {
                 console.error('Load ledger:', e);
@@ -2832,7 +2832,7 @@
                     // Reset uploads after success
                     ['source1', 'source2', 'source3'].forEach(t => clearUpload(t));
 
-                    saveLedger(); renderData(rawData);
+                    saveLedger(); renderDataFast(rawData);
                     const divMsg = dividersAdded > 0 ? ` · ${dividersAdded} dividers` : '';
                     showToast(`✓ ${appended} new added · existing updated${divMsg} · Total: ${rawData.length}`, 'success');
                 } catch (err) {
@@ -2936,7 +2936,7 @@
                     // Reset uploads after success
                     ['source1', 'source2', 'source3'].forEach(t => clearUpload(t));
 
-                    saveLedger(); renderData(rawData);
+                    saveLedger(); renderDataFast(rawData);
                     showToast(`✓ Sync Complete: ${updated} claims updated with payment data.`, 'success');
                 } catch (err) {
                     showToast('Sync error: ' + err.message, 'danger');
@@ -3111,7 +3111,7 @@
                 }
 
                 const filteredCount = (originalCount - rawData.length + newlyAdded);
-                saveLedger(); renderData(rawData);
+                saveLedger(); renderDataFast(rawData);
                 showToast(`✓ Feed processed! New: ${newlyAdded} | Total: ${rawData.length}`);
             } catch (err) {
                 console.error(err); showToast('Error during mapping: ' + err.message, 'danger');
@@ -3170,7 +3170,7 @@
                 'Clear entire database? This cannot be undone.',
                 '⚠️ CRITICAL',
                 () => {
-                    rawData.length = 0; saveLedger(); renderData(rawData);
+                    rawData.length = 0; saveLedger(); renderDataFast(rawData);
                     showToast('✓ Ledger database has been reset.', 'success');
                 }
             );
@@ -3193,22 +3193,20 @@
         function toggleWorkingMode() {
             isWorkingMode = !isWorkingMode;
             const btn = document.getElementById('workingModeBtn');
-            const icon = document.getElementById('workingIcon');
             const label = document.getElementById('workingLabel');
 
             if (isWorkingMode) {
                 btn.classList.replace('inactive', 'active');
                 label.textContent = 'WORKING MODE';
-                // Filter rawData for only unassigned
                 const filtered = rawData.filter(r => !r.isDivider && (!r['MRS'] || r['MRS'] === '' || r['MRS'] === '—'));
                 currentPage = 1;
-                renderData(filtered);
+                renderDataFast(filtered);
                 showToast('🎯 Working Mode: Only Unassigned Claims shown', 'success');
             } else {
                 btn.classList.replace('active', 'inactive');
                 label.textContent = 'ALL MODE';
                 currentPage = 1;
-                renderData(rawData);
+                renderDataFast(rawData);
                 showToast('📊 Showing all records', 'info');
             }
         }
@@ -3264,7 +3262,7 @@
             allOpt.onclick = () => {
                 document.getElementById('mrsBookLabel').textContent = "Jump to MRS Book...";
                 currentPage = 1;
-                renderData(rawData);
+                renderDataFast(rawData);
                 picker.remove();
                 activeBookPicker = null;
             };
@@ -3313,12 +3311,8 @@
             }
         });
 
-        window.addEventListener('scroll', (e) => {
-            if (activeBookPicker) {
-                activeBookPicker.remove();
-                activeBookPicker = null;
-            }
-        }, true);
+        // Scroll on table-wrap should NOT close book picker — only outside-click closes it
+        // (scroll listener removed — was causing picker to collapse on table scroll)
 
         function selectMRSBook(bookName) {
             document.getElementById('mrsBookLabel').textContent = bookName;
@@ -3339,6 +3333,83 @@
         }
 
         // ── Render Table (paginated) ──
+        // renderDataFast: renders table immediately, defers heavy stats calc via rAF
+        function renderDataFast(data) {
+            currentDataset = data;
+            rowIndexMap = new Map();
+            rawData.forEach((row, idx) => rowIndexMap.set(row, idx));
+
+            paginatedSlices = [];
+            let currentSlice = [];
+            const hasDividers = data.some(r => r.isDivider);
+            data.forEach(row => {
+                if (row.isDivider) {
+                    if (currentSlice.length > 0) paginatedSlices.push(currentSlice);
+                    currentSlice = [row];
+                } else {
+                    if (currentSlice.length >= PAGE_SIZE && !hasDividers) {
+                        paginatedSlices.push(currentSlice);
+                        currentSlice = [row];
+                    } else {
+                        currentSlice.push(row);
+                    }
+                }
+            });
+            if (currentSlice.length > 0) paginatedSlices.push(currentSlice);
+
+            const totalPages = paginatedSlices.length || 1;
+            currentPage = Math.min(currentPage, totalPages);
+            if (currentPage < 1) currentPage = 1;
+
+            renderPage();
+            // Defer stats so table paints first (lag-free feel)
+            requestAnimationFrame(() => updateStats());
+            updateBookFilter();
+        }
+
+        function updateStats() {
+            const stats = rawData.reduce((acc, r) => {
+                if (r.isDivider) return acc;
+                const total = parseFloat(String(r['Total Amt'] || "0").replace(/[^\d.-]/g, '')) || 0;
+                const recvd = parseFloat(String(r['AMT RECEIVED'] || "0").replace(/[^\d.-]/g, '')) || 0;
+                acc.total += total;
+                acc.recvd += recvd;
+                const rem = String(r['REMARKS'] || "").toUpperCase();
+                const cNo = String(r['Claim No'] || "");
+                const isCancelled = !cNo || !cNo.toUpperCase().startsWith("W0") ||
+                    rem.includes('CANCEL') || rem.includes('DUPLICATE') || total === 0;
+                if (isCancelled) { acc.cancelled++; return acc; }
+                if (!r['PAYMENT DATE'] || r['PAYMENT DATE'] === '' || r['PAYMENT DATE'] === '—') acc.pending++;
+                if (!r['MRS'] || r['MRS'] === '' || r['MRS'] === '—') acc.unmarked++;
+                if (rem === '' || rem === '—' || rem === 'BY HMI') acc.noRemarks++;
+                if (rem.includes('SHORT')) acc.short++;
+                if (rem === 'PAID') acc.paid++;
+                return acc;
+            }, { total: 0, recvd: 0, pending: 0, unmarked: 0, cancelled: 0, noRemarks: 0, short: 0, paid: 0 });
+
+            const hBadge = document.getElementById('mrs-header-pending');
+            if (hBadge) { hBadge.textContent = `${stats.pending} Pending`; hBadge.style.display = stats.pending > 0 ? 'inline-flex' : 'none'; }
+            const uBadge = document.getElementById('mrs-header-unmarked');
+            if (uBadge) { uBadge.textContent = `${stats.unmarked} No MRS`; uBadge.style.display = stats.unmarked > 0 ? 'inline-flex' : 'none'; }
+            const cBadge = document.getElementById('mrs-header-cancelled');
+            if (cBadge) { cBadge.textContent = `${stats.cancelled} Cancelled`; cBadge.style.display = stats.cancelled > 0 ? 'inline-flex' : 'none'; }
+            const nrBadge = document.getElementById('mrs-header-noremarks');
+            if (nrBadge) { nrBadge.textContent = `${stats.noRemarks} No Remarks`; nrBadge.style.display = stats.noRemarks > 0 ? 'inline-flex' : 'none'; }
+            const sBadge = document.getElementById('mrs-header-short');
+            if (sBadge) { sBadge.textContent = `${stats.short} Short`; sBadge.style.display = stats.short > 0 ? 'inline-flex' : 'none'; }
+            const pBadge = document.getElementById('mrs-header-paid');
+            if (pBadge) { pBadge.textContent = `${stats.paid} Paid`; pBadge.style.display = stats.paid > 0 ? 'inline-flex' : 'none'; }
+            document.getElementById('mrs-header-count').textContent = `Claims: ${rawData.length}`;
+            document.getElementById('mrs-header-total').textContent = `Tot: ₹${Math.round(stats.total).toLocaleString()}`;
+            document.getElementById('mrs-header-received').textContent = `Rec: ₹${Math.round(stats.recvd).toLocaleString()}`;
+            const diff = stats.total - stats.recvd;
+            const diffEl = document.getElementById('mrs-header-diff');
+            diffEl.textContent = `Dif: ₹${Math.round(diff).toLocaleString()}`;
+            if (diff > 0) diffEl.style.color = '#b91c1c';
+            else if (diff < 0) diffEl.style.color = 'var(--success)';
+            else diffEl.style.color = '';
+        }
+
         function renderData(data) {
             currentDataset = data;
             // Precompute index map — avoids O(n) indexOf in renderPage (perf fix for large DB)
@@ -3348,12 +3419,13 @@
             // Calculate slices: Each slice starts with a divider (if any exist)
             paginatedSlices = [];
             let currentSlice = [];
+            const hasDividers = data.some(r => r.isDivider);
             data.forEach(row => {
                 if (row.isDivider) {
                     if (currentSlice.length > 0) paginatedSlices.push(currentSlice);
                     currentSlice = [row];
                 } else {
-                    if (currentSlice.length >= PAGE_SIZE && !data.some(r => r.isDivider)) {
+                    if (currentSlice.length >= PAGE_SIZE && !hasDividers) {
                         // Fallback to size-based if no dividers at all in dataset
                         paginatedSlices.push(currentSlice);
                         currentSlice = [row];
@@ -3369,88 +3441,8 @@
             if (currentPage < 1) currentPage = 1;
 
             renderPage();
-
-            // Stats calculation... (rest of stats logic stays same)
-            const stats = rawData.reduce((acc, r) => {
-                const total = parseFloat(String(r['Total Amt'] || "0").replace(/[^\d.-]/g, '')) || 0;
-                const recvd = parseFloat(String(r['AMT RECEIVED'] || "0").replace(/[^\d.-]/g, '')) || 0;
-                acc.total += total;
-                acc.recvd += recvd;
-
-                const rem = String(r['REMARKS'] || "").toUpperCase();
-
-                const cNo = String(r['Claim No'] || "");
-                const isCancelled = !r.isDivider && (
-                    !cNo || !cNo.toUpperCase().startsWith("W0") ||
-                    rem.includes('CANCEL') || rem.includes('DUPLICATE') || total === 0
-                );
-
-                if (isCancelled) acc.cancelled++;
-
-                const isPending = !r.isDivider && !isCancelled && (
-                    !r['PAYMENT DATE'] || r['PAYMENT DATE'] === '' || r['PAYMENT DATE'] === '—'
-                );
-
-                if (isPending) acc.pending++;
-
-                const isUnmarked = !r.isDivider && !isCancelled && (!r['MRS'] || r['MRS'] === '' || r['MRS'] === '—');
-                if (isUnmarked) acc.unmarked++;
-
-                const isNoRemarks = !r.isDivider && (rem === '' || rem === '—' || rem === 'BY HMI');
-                if (isNoRemarks) acc.noRemarks++;
-
-                if (!r.isDivider && rem.includes('SHORT')) acc.short++;
-                if (!r.isDivider && rem === 'PAID') acc.paid++;
-
-                return acc;
-            }, { total: 0, recvd: 0, pending: 0, unmarked: 0, cancelled: 0, noRemarks: 0, short: 0, paid: 0 });
-
-            const hBadge = document.getElementById('mrs-header-pending');
-            if (hBadge) {
-                hBadge.textContent = `${stats.pending} Pending`;
-                hBadge.style.display = stats.pending > 0 ? 'inline-flex' : 'none';
-            }
-
-            const uBadge = document.getElementById('mrs-header-unmarked');
-            if (uBadge) {
-                uBadge.textContent = `${stats.unmarked} No MRS`;
-                uBadge.style.display = stats.unmarked > 0 ? 'inline-flex' : 'none';
-            }
-
-            const cBadge = document.getElementById('mrs-header-cancelled');
-            if (cBadge) {
-                cBadge.textContent = `${stats.cancelled} Cancelled`;
-                cBadge.style.display = stats.cancelled > 0 ? 'inline-flex' : 'none';
-            }
-
-            const nrBadge = document.getElementById('mrs-header-noremarks');
-            if (nrBadge) {
-                nrBadge.textContent = `${stats.noRemarks} No Remarks`;
-                nrBadge.style.display = stats.noRemarks > 0 ? 'inline-flex' : 'none';
-            }
-
-            const sBadge = document.getElementById('mrs-header-short');
-            if (sBadge) {
-                sBadge.textContent = `${stats.short} Short`;
-                sBadge.style.display = stats.short > 0 ? 'inline-flex' : 'none';
-            }
-
-            const pBadge = document.getElementById('mrs-header-paid');
-            if (pBadge) {
-                pBadge.textContent = `${stats.paid} Paid`;
-                pBadge.style.display = stats.paid > 0 ? 'inline-flex' : 'none';
-            }
-
-            document.getElementById('mrs-header-count').textContent = `Claims: ${rawData.length}`;
-            document.getElementById('mrs-header-total').textContent = `Tot: ₹${Math.round(stats.total).toLocaleString()}`;
-            document.getElementById('mrs-header-received').textContent = `Rec: ₹${Math.round(stats.recvd).toLocaleString()}`;
-            const diff = stats.total - stats.recvd;
-            const diffEl = document.getElementById('mrs-header-diff');
-            diffEl.textContent = `Dif: ₹${Math.round(diff).toLocaleString()}`;
-            if (diff > 0) diffEl.style.color = '#b91c1c';
-            else if (diff < 0) diffEl.style.color = 'var(--success)';
-            else diffEl.style.color = '';
-
+            // Defer stats so table paints first
+            requestAnimationFrame(() => updateStats());
             updateBookFilter();
         }
 
@@ -3608,7 +3600,7 @@
                 inp.placeholder = 'Search by RO No...';
             }
             inp.value = '';
-            renderData(rawData);
+            renderDataFast(rawData);
             inp.focus();
         }
 
@@ -3616,14 +3608,13 @@
         function filterTable() {
             currentPage = 1;
             const query = document.getElementById('tableSearch').value.trim().toLowerCase();
-            if (!query) { renderData(rawData); return; }
+            if (!query) { renderDataFast(rawData); return; }
             const filtered = rawData.filter(row => {
                 if (searchMode === 'mrs') {
                     const mrs = String(row['MRS'] || '').toLowerCase();
                     return mrs.includes(query);
                 } else if (searchMode === 'vin') {
                     const vin = String(row['VIN'] || '').toLowerCase();
-                    // Suffix matching for last-six digits
                     return vin.includes(query) || vin.endsWith(query);
                 } else if (searchMode === 'part') {
                     const part = String(row['Part Desc'] || '').toLowerCase();
@@ -3640,7 +3631,7 @@
                     return ro.includes(query) || roSuffix.endsWith(query);
                 }
             });
-            renderData(filtered);
+            renderDataFast(filtered);
         }
 
         // ── Animated Search Mode Dropdown ──
@@ -3652,15 +3643,12 @@
             searchMode = mode;
             document.getElementById('searchModeDisplay').textContent = label;
             document.getElementById('searchModeDrop').classList.remove('open');
-            
             const inp = document.getElementById('tableSearch');
             inp.placeholder = `Search by ${label}...`;
             inp.value = '';
-            
             document.querySelectorAll('#searchModeList li').forEach(li => li.classList.remove('selected'));
             event.currentTarget.classList.add('selected');
-            
-            renderData(rawData);
+            renderDataFast(rawData);
             inp.focus();
         }
 
@@ -3726,7 +3714,7 @@
                     row['MRS'] = '';
                     row['PAYMENT DATE'] = '—';
                     saveLedger();
-                    renderData(rawData);
+                    renderDataFast(rawData);
                     showToast('Assigned MRS Cleared.', 'info');
                     // Refocus the same row if possible
                     setTimeout(() => {
@@ -3921,7 +3909,7 @@
                 if (sA !== sB) return sA - sB;
                 return (parseInt(b['MRS']) || 0) - (parseInt(a['MRS']) || 0);
             });
-            saveLedger(); renderData(rawData); closeCancelMRSModal();
+            saveLedger(); renderDataFast(rawData); closeCancelMRSModal();
             const skipMsg = skipped ? ` · ${skipped} already exist` : '';
             showToast(`✓ ${added} Cancelled MRS added${skipMsg}.`, 'success');
         }
@@ -4016,7 +4004,7 @@
                 () => {
                     rawData.splice(idx, 1);
                     saveLedger();
-                    renderData(rawData);
+                    renderDataFast(rawData);
                     showToast('Entry deleted.', 'success');
                 }
             );
@@ -4037,7 +4025,7 @@
             }
 
             saveLedger();
-            renderData(currentDataset);
+            renderDataFast(currentDataset);
             const msg = row.isRowLocked ? (row.isDivider ? '🔒 Entire Book Locked' : '🔒 Row Locked') : (row.isDivider ? '🔓 Entire Book Unlocked' : '🔓 Row Unlocked');
             showToast(msg, row.isRowLocked ? 'warn' : 'success');
         }
@@ -4066,11 +4054,11 @@
                     row.dividerText = nv;
                     saveLedger();
                 }
-                renderData(rawData);
+                renderDataFast(rawData);
             }
             input.addEventListener('keydown', e => {
                 if (e.key === 'Enter') commit();
-                if (e.key === 'Escape') { td.classList.remove('editing'); renderData(rawData); }
+                if (e.key === 'Escape') { td.classList.remove('editing'); renderDataFast(rawData); }
             });
             input.addEventListener('blur', commit);
         }
@@ -4143,7 +4131,7 @@
             if (activeFilterFunc) {
                 activeFilterFunc(true); // pass true to skip the "Toggle Off" logic
             } else {
-                renderData(currentDataset);
+                renderDataFast(currentDataset);
             }
         }
 
@@ -4197,7 +4185,7 @@
 
             if (isCurrentlyShowingOnlyPending && !skipToggle) {
                 activeFilterFunc = null;
-                renderData(rawData);
+                renderDataFast(rawData);
                 showToast("Showing All Records", "info");
             } else {
                 activeFilterFunc = triggerPendingFilter;
@@ -4205,7 +4193,7 @@
                     showToast("No pending payments found.", "info");
                     return;
                 }
-                renderData(pending);
+                renderDataFast(pending);
                 const sInput = document.getElementById('tableSearch');
                 if (sInput) sInput.value = '';
                 showToast(`Showing ${pending.length} Pending Collections`, 'success');
@@ -4220,7 +4208,7 @@
 
             if (isCurrentlyShowingUnmarked && !skipToggle) {
                 activeFilterFunc = null;
-                renderData(rawData);
+                renderDataFast(rawData);
                 showToast("Showing All Records", "info");
             } else {
                 activeFilterFunc = triggerUnmarkedFilter;
@@ -4228,7 +4216,7 @@
                     showToast("All claims have MRS numbers!", "success");
                     return;
                 }
-                renderData(unmarked);
+                renderDataFast(unmarked);
                 const sInput = document.getElementById('tableSearch');
                 if (sInput) sInput.value = '';
                 showToast(`Showing ${unmarked.length} claims without MRS`, 'warn');
@@ -4249,7 +4237,7 @@
 
             if (isCurrentlyShowingCancelled && !skipToggle) {
                 activeFilterFunc = null;
-                renderData(rawData);
+                renderDataFast(rawData);
                 showToast("Showing All Records", "info");
             } else {
                 activeFilterFunc = triggerCancelledFilter;
@@ -4257,7 +4245,7 @@
                     showToast("No cancelled MRS found.", "info");
                     return;
                 }
-                renderData(cancelled);
+                renderDataFast(cancelled);
                 const sInput = document.getElementById('tableSearch');
                 if (sInput) sInput.value = '';
                 showToast(`Showing ${cancelled.length} Cancelled MRS`, 'warn');
@@ -4276,7 +4264,7 @@
 
             if (isCurrentlyShowingBlanks && !skipToggle) {
                 activeFilterFunc = null;
-                renderData(rawData);
+                renderDataFast(rawData);
                 showToast("Showing All Records", "info");
             } else {
                 activeFilterFunc = triggerNoRemarksFilter;
@@ -4284,7 +4272,7 @@
                     showToast("All claims have manual remarks!", "success");
                     return;
                 }
-                renderData(blanks);
+                renderDataFast(blanks);
                 const sInput = document.getElementById('tableSearch');
                 if (sInput) sInput.value = '';
                 showToast(`Showing ${blanks.length} claims without Remarks`, 'warning');
@@ -4296,12 +4284,12 @@
             const isCurrentlyShowingShort = (currentDataset.length === short.length && currentDataset.every((v, i) => v === short[i]));
             if (isCurrentlyShowingShort && !skipToggle) {
                 activeFilterFunc = null;
-                renderData(rawData);
+                renderDataFast(rawData);
                 showToast("Showing All Records", "info");
             } else {
                 activeFilterFunc = triggerShortFilter;
                 if (short.length === 0) { showToast("No short payments found.", "info"); return; }
-                renderData(short);
+                renderDataFast(short);
                 const sInput = document.getElementById('tableSearch');
                 if (sInput) sInput.value = '';
                 showToast(`Showing ${short.length} Short Payments`, 'success');
@@ -4313,12 +4301,12 @@
             const isCurrentlyShowingPaid = (currentDataset.length === paid.length && currentDataset.every((v, i) => v === paid[i]));
             if (isCurrentlyShowingPaid && !skipToggle) {
                 activeFilterFunc = null;
-                renderData(rawData);
+                renderDataFast(rawData);
                 showToast("Showing All Records", "info");
             } else {
                 activeFilterFunc = triggerPaidFilter;
                 if (paid.length === 0) { showToast("No paid claims found.", "info"); return; }
-                renderData(paid);
+                renderDataFast(paid);
                 const sInput = document.getElementById('tableSearch');
                 if (sInput) sInput.value = '';
                 showToast(`Showing ${paid.length} Paid Records`, 'success');
@@ -4543,7 +4531,7 @@
             });
 
             saveLedger();
-            renderData(rawData);
+            renderDataFast(rawData);
             closeMRSRangeModal();
             showToast(`${ICONS.CHECK} MRS BOOK divider added for ${fromVal}-${toVal}`, 'success');
         }
@@ -4551,7 +4539,7 @@
             // Remove all dividers added via this tool
             rawData = rawData.filter(r => !r.isDivider);
             saveLedger();
-            renderData(rawData);
+            renderDataFast(rawData);
             showToast('All MRS dividers cleared.', 'info');
         }
         // Close range modal on backdrop click
