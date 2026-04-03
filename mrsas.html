@@ -258,7 +258,7 @@
             padding: 24px;
             transition: box-shadow 0.3s ease;
             position: relative;
-            overflow: hidden;
+            overflow: visible;
         }
 
         /* ══════════════════════════════════════════
@@ -568,6 +568,15 @@
         /* ══════════════════════════════════════════
            §11 — TABLE (MAIN.HTML HARMONIZED)
            ══════════════════════════════════════════ */
+        /* Modal background lock */
+        body.modal-open {
+            overflow: hidden !important;
+            padding-right: 0px !important; /* Prevent layout shift if scrollbar disappears */
+        }
+
+        .modal-body {
+            overflow: visible;
+        }
         .table-wrap {
             overflow: auto;
             border: 1px solid var(--border);
@@ -589,7 +598,11 @@
             font-size: 0.72rem;
             table-layout: auto;
         }
-        tr.vs-spacer td { background: transparent !important; pointer-events: none; }
+
+        tr.vs-spacer td {
+            background: transparent !important;
+            pointer-events: none;
+        }
 
         thead {
             position: sticky;
@@ -620,18 +633,26 @@
         }
 
         /* Allow Multi-line wrapping for compact A4 fit */
-        td:nth-child(2) /* VIN */,
-        td:nth-child(8) /* Part Desc */,
-        td:nth-child(16) /* Invoice No */ {
+        td:nth-child(2)
+        /* VIN */
+        ,
+        td:nth-child(8)
+        /* Part Desc */
+        ,
+        td:nth-child(16)
+
+        /* Invoice No */
+            {
             white-space: normal;
-            word-break: break-word; /* Allows breaking WIN... long strings */
+            word-break: break-word;
+            /* Allows breaking WIN... long strings */
             line-height: 1.25;
             min-width: 80px;
             max-width: 130px;
         }
-        
-        td:nth-child(8) { 
-            max-width: 180px; 
+
+        td:nth-child(8) {
+            max-width: 180px;
             min-width: 120px;
         }
 
@@ -1162,7 +1183,7 @@
 
         .modal-body {
             padding: 10px 16px 12px;
-            overflow-y: visible;
+            overflow: visible;
             flex: 1;
         }
 
@@ -1608,8 +1629,9 @@
                 gap: 12px;
             }
 
-            .search-row > div {
-                min-width: 0 !important; /* Override desktop min-widths */
+            .search-row>div {
+                min-width: 0 !important;
+                /* Override desktop min-widths */
                 flex-wrap: wrap;
                 justify-content: center;
             }
@@ -1766,9 +1788,9 @@
             border: 1.5px solid var(--border);
             border-radius: 10px;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-            z-index: 200;
+            z-index: 2000; /* High enough to be above modal dialog elements */
             overflow-y: auto;
-            max-height: 220px;
+            max-height: 132px; /* Showing exactly 3 items at a time (3 * ~42px + padding) */
             list-style: none;
             padding: 4px;
         }
@@ -1776,6 +1798,12 @@
         .c-drop.open .c-drop-list {
             display: block;
             animation: fadeInUp 0.15s ease;
+        }
+
+        /* Specific override to open cancel dropdown UPWARDS */
+        #cancelReasonList {
+            top: auto;
+            bottom: calc(100% + 6px);
         }
 
         .c-drop-list li {
@@ -1802,19 +1830,22 @@
         .row-unassigned {
             background: rgba(16, 185, 129, 0.04) !important;
         }
+
         .row-unassigned:hover {
             background: rgba(16, 185, 129, 0.08) !important;
         }
+
         .row-unassigned td {
             color: var(--primary) !important;
             font-weight: 500;
         }
+
         .row-unassigned .badge-mrs {
             background: rgba(16, 185, 129, 0.1);
             color: var(--primary);
             border: 1px dashed var(--primary);
         }
-        
+
         /* Working Mode Toggle Style */
         .btn-working-mode {
             padding: 7px 12px;
@@ -1827,11 +1858,13 @@
             gap: 6px;
             cursor: pointer;
         }
+
         .btn-working-mode.inactive {
-            background: rgba(0,0,0,0.04);
+            background: rgba(0, 0, 0, 0.04);
             border: 1.5px solid var(--border);
             color: var(--text-muted);
         }
+
         .btn-working-mode.active {
             background: rgba(16, 185, 129, 0.1);
             border: 1.5px solid var(--primary);
@@ -1887,7 +1920,7 @@
                 style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 10px;">
                 <div class="upload-tile" id="tile-source1">
                     <button class="btn-clear-upload"
-                        onclick="event.stopPropagation(); clearUpload('source1')">×</button>
+                        onclick="clearUpload('source1')">×</button>
                     <div class="tile-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2.2">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -1902,7 +1935,7 @@
                 </div>
                 <div class="upload-tile" id="tile-source2">
                     <button class="btn-clear-upload"
-                        onclick="event.stopPropagation(); clearUpload('source2')">×</button>
+                        onclick="clearUpload('source2')">×</button>
                     <div class="tile-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2.2">
                             <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
@@ -1917,7 +1950,7 @@
                 </div>
                 <div class="upload-tile" id="tile-source3">
                     <button class="btn-clear-upload"
-                        onclick="event.stopPropagation(); clearUpload('source3')">×</button>
+                        onclick="clearUpload('source3')">×</button>
                     <div class="tile-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2.2">
                             <path d="M12 21V3" />
@@ -1999,7 +2032,16 @@
                         </div>
                     </div>
                     <p style="font-size:0.75rem;color:var(--text-muted);margin:2px 0 0 0;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:4px; opacity:0.7;"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg> Click any row to assign its MRS number &nbsp;·&nbsp; Double-click a cell to edit it directly
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                            style="vertical-align:middle; margin-right:4px; opacity:0.7;">
+                            <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+                            <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+                            <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+                            <path
+                                d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
+                        </svg> Click any row to assign its MRS number &nbsp;·&nbsp; Double-click a cell to edit it
+                        directly
                     </p>
                 </div>
             </div>
@@ -2013,17 +2055,22 @@
                             <circle cx="11" cy="11" r="8" />
                             <line x1="21" y1="21" x2="16.65" y2="16.65" />
                         </svg>
-                        <input type="text" id="tableSearch" placeholder="Search RO No..." oninput="filterTable()" style="flex:1; min-width:0; order:2;">
-                        
+                        <input type="text" id="tableSearch" placeholder="Search RO No..." oninput="filterTable()"
+                            style="flex:1; min-width:0; order:2;">
+
                         <!-- Search Mode Custom Dropdown inside input wrap -->
-                        <div class="c-drop" id="searchModeDrop" style="width: auto; margin-left:auto; flex-shrink:0; order:3;">
-                            <button type="button" class="c-drop-trigger" onclick="toggleSearchDrop(event)" style="padding:4px 8px; font-size:0.65rem; background:rgba(42,181,165,0.1); border:1px solid var(--primary); color:var(--primary); border-radius:6px; font-weight:800; display:flex; align-items:center; gap:4px; transform:translateY(-1px); width: auto; border-color: var(--primary) !important;">
+                        <div class="c-drop" id="searchModeDrop"
+                            style="width: auto; margin-left:auto; flex-shrink:0; order:3;">
+                            <button type="button" class="c-drop-trigger" onclick="toggleSearchDrop(event)"
+                                style="padding:4px 8px; font-size:0.65rem; background:rgba(42,181,165,0.1); border:1px solid var(--primary); color:var(--primary); border-radius:6px; font-weight:800; display:flex; align-items:center; gap:4px; transform:translateY(-1px); width: auto; border-color: var(--primary) !important;">
                                 <span id="searchModeDisplay">RO No</span>
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="6 9 12 15 18 9"/>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9" />
                                 </svg>
                             </button>
-                            <ul class="c-drop-list" id="searchModeList" style="width:110px; right:0; left:auto; top:calc(100% + 4px); max-height: 152px; overflow-y: auto;">
+                            <ul class="c-drop-list" id="searchModeList"
+                                style="width:110px; right:0; left:auto; top:calc(100% + 4px); max-height: 178px; overflow-y: auto;">
                                 <li onclick="selectSearchMode('ro', 'RO No')" class="selected">RO No</li>
                                 <li onclick="selectSearchMode('mrs', 'MRS No')">MRS No</li>
                                 <li onclick="selectSearchMode('vin', 'VIN No')">VIN No</li>
@@ -2077,25 +2124,31 @@
                                 <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
                                 <rect x="6" y="14" width="12" height="8" />
                             </svg></button>
-                        <button class="btn-premium btn-outline" onclick="backupLedger()"
-                            style="padding:6px 10px; border:none; color:var(--success);" title="Safety Backup"><svg
-                                width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                <polyline points="7 10 12 15 17 10" />
-                                <line x1="12" y1="15" x2="12" y2="3" />
-                            </svg></button>
+                        <!-- Safety Backup removed as per request -->
+                    </div>
                     </div>
                 </div>
 
                 <!-- Group 3: Status & Info -->
                 <div style="display:flex; align-items:center; gap:10px; flex-shrink:0;">
-                    <button id="workingModeBtn" onclick="toggleWorkingMode()" class="btn-working-mode inactive" title="Show only unassigned claims">
-                        <span id="workingIcon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> <span id="workingLabel">LEDGER MODE</span>
+                    <button id="workingModeBtn" onclick="toggleWorkingMode()" class="btn-working-mode inactive"
+                        title="Show only unassigned claims">
+                        <span id="workingIcon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                                style="vertical-align:middle;">
+                                <circle cx="12" cy="12" r="10" />
+                                <circle cx="12" cy="12" r="6" />
+                                <circle cx="12" cy="12" r="2" />
+                            </svg></span> <span id="workingLabel">LEDGER MODE</span>
                     </button>
                     <button id="lockStatusBtn" onclick="toggleGlobalLock()" class="btn-premium btn-outline"
                         style="padding:7px 12px; font-size:0.68rem; font-weight:800; border-color:var(--border); display:inline-flex; align-items:center; gap:6px; min-width:105px;">
-                        <span id="lockIcon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg></span> <span id="lockLabel">ACTIVE</span>
+                        <span id="lockIcon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                                style="vertical-align:middle;">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+                            </svg></span> <span id="lockLabel">ACTIVE</span>
                     </button>
                     <div style="display:flex; flex-direction:column; align-items:flex-end;">
                         <div id="saveStatus"
@@ -2160,7 +2213,11 @@
             <div class="modal-body">
                 <div id="mrsModalLockedNotice"
                     style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(239,68,68,0.1);border:1.5px solid rgba(239,68,68,0.25);border-radius:10px;font-size:0.75rem;font-weight:800;color:var(--danger);text-align:center;text-transform:uppercase;letter-spacing:0.5px;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> This row is LOCKED! Changes disabled.
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                        stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg> This row is LOCKED! Changes disabled.
                 </div>
                 <div class="claim-info-box" id="mrsClaimInfo">
                     <div><span>R/O No</span><strong id="mrsInfoRO">—</strong></div>
@@ -2171,10 +2228,14 @@
                     <div><span>Received Amt</span><strong id="mrsInfoReceived">—</strong></div>
                     <div><span>Difference</span><strong id="mrsInfoDiff">—</strong></div>
                     <div><span>Status</span><strong id="mrsInfoStatus">—</strong></div>
-                    <div style="grid-column:1/-1"><span>Part Desc</span><strong id="mrsInfoPartDesc" style="white-space:normal;word-break:break-word;">—</strong></div>
+                    <div style="grid-column:1/-1"><span>Part Desc</span><strong id="mrsInfoPartDesc"
+                            style="white-space:normal;word-break:break-word;">—</strong></div>
                     <div id="mrsInfoSiblingsWrap" style="display:none;grid-column:1/-1;margin-top:2px;">
-                        <span style="font-size:0.65rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;">Related Parts (Same RO)</span>
-                        <div id="mrsInfoSiblingsList" style="margin-top:4px;display:flex;flex-direction:column;gap:3px;"></div>
+                        <span
+                            style="font-size:0.65rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;">Related
+                            Parts (Same RO)</span>
+                        <div id="mrsInfoSiblingsList"
+                            style="margin-top:4px;display:flex;flex-direction:column;gap:3px;"></div>
                     </div>
                 </div>
                 <label class="mrs-input-label">MRS Number</label>
@@ -2223,10 +2284,18 @@
                     <button class="modal-btn-cancel" onclick="closeMRSModal()">Cancel</button>
                 </div>
                 <div id="clearMRSWrap" style="margin-top:8px;display:none;">
-                    <button onclick="clearMRSEntry()" style="width:100%;padding:8px;border-radius:10px;border:1.5px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.05);color:var(--danger);font-size:0.75rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease;font-family:inherit;"
+                    <button onclick="clearMRSEntry()"
+                        style="width:100%;padding:8px;border-radius:10px;border:1.5px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.05);color:var(--danger);font-size:0.75rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease;font-family:inherit;"
                         onmouseover="this.style.background='var(--danger)';this.style.color='#fff';"
                         onmouseout="this.style.background='rgba(239,68,68,0.05)';this.style.color='var(--danger)';">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6l-1 14H6L5 6" />
+                            <path d="M10 11v6" />
+                            <path d="M14 11v6" />
+                            <path d="M9 6V4h6v2" />
+                        </svg>
                         Clear MRS Assignment
                     </button>
                 </div>
@@ -2347,9 +2416,10 @@
                     style="display:none;margin-top:8px;width:100%;padding:9px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg-base);color:var(--text-main);font-size:0.85rem;font-weight:600;font-family:inherit;outline:none;transition:all 0.25s ease;"
                     onfocus="this.style.borderColor='var(--danger)';" onblur="this.style.borderColor='';">
                 <div id="cancelDuplicateMRSWrap" style="display:none;margin-top:8px;">
-                    <label class="mrs-input-label">Duplicate of MRS No. <span style="color:var(--text-muted);font-weight:500;">(optional)</span></label>
-                    <input type="number" id="cancelDuplicateMRSInput" placeholder="Enter original MRS number..."
-                        min="1" step="1"
+                    <label class="mrs-input-label">Duplicate of MRS No. <span
+                            style="color:var(--text-muted);font-weight:500;">(optional)</span></label>
+                    <input type="number" id="cancelDuplicateMRSInput" placeholder="Enter original MRS number..." min="1"
+                        step="1"
                         style="width:100%;padding:9px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg-base);color:var(--primary);font-size:0.95rem;font-weight:700;font-family:inherit;outline:none;transition:all 0.25s ease;letter-spacing:1px;"
                         onfocus="this.style.borderColor='var(--danger)';" onblur="this.style.borderColor='';">
                 </div>
@@ -2390,6 +2460,11 @@
         let rawData = [];
         let isLocked = false;
         let activeFilterFunc = null; // Track currently active filter function
+
+        function toggleBodyScroll(lock) {
+            if (lock) document.body.classList.add('modal-open');
+            else document.body.classList.remove('modal-open');
+        }
 
         async function loadLedger() {
             try {
@@ -2456,10 +2531,12 @@
             inp.value = '';
             mod.dataset.targetState = targetState;
             mod.classList.add('active');
+            toggleBodyScroll(true);
             setTimeout(() => inp.focus(), 300);
         }
         function closeAuthModal() {
             document.getElementById('authModal').classList.remove('active');
+            toggleBodyScroll(false);
         }
         async function verifyAuth() {
             const val = document.getElementById('authInput').value.trim();
@@ -2562,8 +2639,8 @@
                         // Special keywords check for specific sources
                         const rowStr = row.join(' ').toLowerCase();
                         const isMatch = (type === 'source1' && (rowStr.includes('claim no') || rowStr.includes('r/o no'))) ||
-                                        (type === 'source2' && (rowStr.includes('claim no') || rowStr.includes('gross amount'))) ||
-                                        (type === 'source3' && (nonEmpty > 4));
+                            (type === 'source2' && (rowStr.includes('claim no') || rowStr.includes('gross amount'))) ||
+                            (type === 'source3' && (nonEmpty > 4));
                         if (isMatch || nonEmpty > 6) { headerRowIdx = i; break; }
                     }
 
@@ -2583,7 +2660,7 @@
                                 obj[h] = val;
                             }
                         });
-                        
+
                         // Handle dividers specifically for source3
                         if (type === 'source3') {
                             const firstCell = String(rowArr[0] || '').trim();
@@ -2931,7 +3008,7 @@
                                     rowWasUpdated = true;
                                 }
                             }
-                                    
+
                             // 3. Auto-populate missing structural data from Source 2 if empty or < 2
                             const updateIfEmpty = (f, terms) => {
                                 const curVal = parseFloat(String(target[f] || "0").replace(/[^\d.-]/g, '')) || 0;
@@ -2954,7 +3031,7 @@
                             updateIfEmpty('Sublet', ["Sublet Amt", "Sublet"]);
                             updateIfEmpty('IGST', ["Total Approved Tax Amt", "GST", "IGST", "Tax"]);
                             updateIfEmpty('Invoice No', ["Invoice Number", "Invoice No", "Inv No"]);
-                            
+
                             recalcRow(target);
                             if (rowWasUpdated) updated++;
                         }
@@ -3082,7 +3159,7 @@
                                 target['PAYMENT DATE'] = newDate;
                             }
                         }
-                                
+
                         // 3. Fill in holes for claim details using Source 2 (Remittance) if Source 1 was missing them
                         const fillHole = (f, terms) => {
                             const v = parseFloat(String(target[f] || "0").replace(/[^\d.-]/g, '')) || 0;
@@ -3180,6 +3257,7 @@
         function closeAdminModal() {
             document.getElementById('adminPassModal').classList.remove('active');
             document.getElementById('adminPassInput').value = '';
+            toggleBodyScroll(false);
         }
 
         function confirmAdminPass() {
@@ -3192,6 +3270,7 @@
             }
 
             closeAdminModal();
+            toggleBodyScroll(false);
             // Proceed to final confirmation
             showConfirm(
                 'Clear entire database? This cannot be undone.',
@@ -3207,6 +3286,7 @@
             if (!rawData.length) { showToast('Ledger is already empty.', 'warn'); return; }
             // Open custom password modal
             document.getElementById('adminPassModal').classList.add('active');
+            toggleBodyScroll(true);
             setTimeout(() => document.getElementById('adminPassInput').focus(), 300);
         }
 
@@ -3242,8 +3322,8 @@
 
             // Sort groups descending by divider MRS number
             groups.sort((a, b) => {
-                const aNum = a.divider ? (parseInt(a.divider['MRS']) || 0) : -1;
-                const bNum = b.divider ? (parseInt(b.divider['MRS']) || 0) : -1;
+                const aNum = a.divider ? (parseInt(a.divider['MRS']) || 0) : Number.MAX_SAFE_INTEGER;
+                const bNum = b.divider ? (parseInt(b.divider['MRS']) || 0) : Number.MAX_SAFE_INTEGER;
                 return bNum - aNum;
             });
 
@@ -3296,10 +3376,13 @@
 
         function togglemrsBookPicker(evt) {
             evt.stopPropagation();
-            if (activeBookPicker) { 
-                activeBookPicker.remove(); 
-                activeBookPicker = null; 
-                return; 
+            // Prevent closing the dropdown if the user interacts with the popover itself (like clicking the scrollbar)
+            if (evt.target.closest('.mrs-book-popover')) return;
+
+            if (activeBookPicker) {
+                activeBookPicker.remove();
+                activeBookPicker = null;
+                return;
             }
 
             const books = [];
@@ -3318,35 +3401,7 @@
             const picker = document.createElement('div');
             picker.className = 'mrs-book-popover';
 
-            // "Lock/Unlock" toggle inside dropdown
-            const lockSection = document.createElement('div');
-            lockSection.className = 'book-option';
-            lockSection.style.borderBottom = '1px solid var(--border)';
-            lockSection.style.marginBottom = '5px';
-            lockSection.style.paddingBottom = '8px';
-            lockSection.style.color = isLocked ? 'var(--danger)' : 'var(--success)';
-            lockSection.innerHTML = `<span>${isLocked ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'}</span> ${isLocked ? 'Unlock for Changes' : 'Lock Ledger Permanently'}`;
-            lockSection.onclick = (e) => {
-                e.stopPropagation();
-                toggleGlobalLock();
-                picker.remove();
-                activeBookPicker = null;
-            };
-            picker.appendChild(lockSection);
-
-            // "Show All" option
-            const allOpt = document.createElement('div');
-
-            allOpt.className = 'book-option';
-            allOpt.innerHTML = `<span style="font-size:10px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span> Show All Data`;
-            allOpt.onclick = () => {
-                document.getElementById('mrsBookLabel').textContent = "Jump to MRS Book...";
-                currentPage = 1;
-                renderDataFast(rawData);
-                picker.remove();
-                activeBookPicker = null;
-            };
-            picker.appendChild(allOpt);
+            // Lock and Show All options removed as per request
 
             books.forEach(b => {
                 const div = document.createElement('div');
@@ -3369,7 +3424,7 @@
             picker.style.left = '0';
             picker.style.right = '0';
             picker.style.minWidth = '220px';
-            picker.style.maxHeight = '300px';
+            picker.style.maxHeight = '145px'; /* Safely limits view precisely to 5 items before scrolling */
             picker.style.overflowY = 'auto';
 
             activeBookPicker = picker;
@@ -3482,10 +3537,10 @@
             if (isWorkingMode) {
                 // WORKING MODE — unassigned claims only
                 // Hide ledger-specific badges
-                ['mrs-header-pending','mrs-header-cancelled','mrs-header-noremarks',
-                 'mrs-header-short','mrs-header-paid'].forEach(id => {
-                    const el = document.getElementById(id); if (el) el.style.display = 'none';
-                });
+                ['mrs-header-pending', 'mrs-header-cancelled', 'mrs-header-noremarks',
+                    'mrs-header-short', 'mrs-header-paid'].forEach(id => {
+                        const el = document.getElementById(id); if (el) el.style.display = 'none';
+                    });
                 // Show unassigned count
                 const uBadge = document.getElementById('mrs-header-unmarked');
                 if (uBadge) { uBadge.textContent = `${stats.claims} Unassigned`; uBadge.style.display = stats.claims > 0 ? 'inline-flex' : 'none'; }
@@ -3587,11 +3642,11 @@
                 const isRowLocked = !!row.isRowLocked;
                 return `<tr class="mrs-range-divider-row ${isRowLocked ? 'row-locked' : ''}" style="height:${VS_DIV_H}px">
                     <td style="text-align:center;background:rgba(77,207,195,0.18);border-top:2.5px solid #2ab5a5;border-bottom:2.5px solid #2ab5a5;width:50px;box-shadow:inset 0 2px 4px rgba(0,0,0,0.05);border-right:1.5px solid rgba(42,181,165,0.3);">
-                        <button onclick="event.stopPropagation();toggleRowLock(${ri})" title="${isRowLocked?'Unlock book':'Lock book'}" style="background:transparent;border:none;color:${isRowLocked?'var(--danger)':'var(--success)'};cursor:pointer;opacity:0.6;transition:0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">
-                            ${isRowLocked?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>':'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>'}
+                        <button onclick="event.stopPropagation();toggleRowLock(${ri})" title="${isRowLocked ? 'Unlock book' : 'Lock book'}" style="background:transparent;border:none;color:${isRowLocked ? 'var(--danger)' : 'var(--success)'};cursor:pointer;opacity:0.6;transition:0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">
+                            ${isRowLocked ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>'}
                         </button>
                     </td>
-                    <td colspan="${columns.length-1}" class="editable" ondblclick="startEditDivider(event,this,${ri})" title="${isRowLocked?'Locked Divider':'Double-click to rename'}" style="padding:11px 18px;background:linear-gradient(90deg,rgba(42,181,165,0.28) 0%,rgba(77,207,195,0.18) 100%);border-top:2.5px solid #2ab5a5;border-bottom:2.5px solid #2ab5a5;color:var(--primary);font-size:0.85rem;font-weight:900;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;cursor:pointer;">
+                    <td colspan="${columns.length - 1}" class="editable" ondblclick="startEditDivider(event,this,${ri})" title="${isRowLocked ? 'Locked Divider' : 'Double-click to rename'}" style="padding:11px 18px;background:linear-gradient(90deg,rgba(42,181,165,0.28) 0%,rgba(77,207,195,0.18) 100%);border-top:2.5px solid #2ab5a5;border-bottom:2.5px solid #2ab5a5;color:var(--primary);font-size:0.85rem;font-weight:900;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;cursor:pointer;">
                         <span style="display:inline-flex;align-items:center;gap:10px;">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                             ${row.dividerText}
@@ -3606,14 +3661,14 @@
                 if (col === '') {
                     const rl = !!row.isRowLocked;
                     return `<td style="text-align:center;width:44px;background:rgba(0,0,0,0.012);border-right:1px solid var(--border);">
-                        <button onclick="event.stopPropagation();toggleRowLock(${ri})" title="${rl?'Unlock row':'Lock row'}" style="background:transparent;border:none;color:${rl?'var(--danger)':'var(--success)'};cursor:pointer;opacity:0.6;transition:0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">
-                            ${rl?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>':'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>'}
+                        <button onclick="event.stopPropagation();toggleRowLock(${ri})" title="${rl ? 'Unlock row' : 'Lock row'}" style="background:transparent;border:none;color:${rl ? 'var(--danger)' : 'var(--success)'};cursor:pointer;opacity:0.6;transition:0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">
+                            ${rl ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>'}
                         </button></td>`;
                 }
                 if (col === 'MRS') return `<td><span class="badge badge-mrs" title="Click row to assign MRS">${val} <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5;vertical-align:middle;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span></td>`;
                 if (col === 'R/O No') { const css = /^CANC/i.test(String(val)) ? 'badge badge-cancel' : 'badge badge-ro'; return `<td><span class="${css}">${val}</span></td>`; }
                 if (col === 'REMARKS') {
-                    const sClass = val==='PAYMENT SHORT'?'badge-short':val==='PAID'?'badge-paid':(String(val).toUpperCase().includes('CANCEL')||String(val).toUpperCase().includes('OTHER'))?'badge-cancel':'';
+                    const sClass = val === 'PAYMENT SHORT' ? 'badge-short' : val === 'PAID' ? 'badge-paid' : (String(val).toUpperCase().includes('CANCEL') || String(val).toUpperCase().includes('OTHER')) ? 'badge-cancel' : '';
                     return `<td><span class="badge ${sClass}" onclick="event.stopPropagation();showRemarkPicker(event,${ri})" title="Click to change remark">${val}</span></td>`;
                 }
                 if (col === ' ') return `<td style="text-align:center;"><button onclick="event.stopPropagation();deleteEntry(${ri})" title="Delete claim" style="background:transparent;border:none;color:var(--danger);cursor:pointer;opacity:0.6;transition:0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></td>`;
@@ -3622,8 +3677,8 @@
             const isCancelled = String(row['REMARKS']).toUpperCase().startsWith('CANCELLED');
             const isRowLocked = !!row.isRowLocked;
             const isUnassigned = !row['MRS'] || row['MRS'] === '' || row['MRS'] === '—';
-            const rowClasses = ['row-clickable', isCancelled?'row-cancelled':'', isRowLocked?'row-locked':'', isUnassigned?'row-unassigned':''].filter(Boolean).join(' ');
-            return `<tr class="${rowClasses}" style="height:${VS_ROW_H}px" tabindex="0" onkeydown="handleRowKey(event,${ri})" onclick="openMRSModal(${ri})" title="${isRowLocked?'Locked - Click to view':isUnassigned?'Click to assign MRS':'Click to view MRS #'+mrsVal}">${cells}</tr>`;
+            const rowClasses = ['row-clickable', isCancelled ? 'row-cancelled' : '', isRowLocked ? 'row-locked' : '', isUnassigned ? 'row-unassigned' : ''].filter(Boolean).join(' ');
+            return `<tr class="${rowClasses}" style="height:${VS_ROW_H}px" tabindex="0" onkeydown="handleRowKey(event,${ri})" onclick="openMRSModal(${ri})" title="${isRowLocked ? 'Locked - Click to view' : isUnassigned ? 'Click to assign MRS' : 'Click to view MRS #' + mrsVal}">${cells}</tr>`;
         }
 
         // Binary search: find first row index whose bottom edge > scrollTop
@@ -3752,11 +3807,11 @@
                 return {
                     ro,
                     roSuffix: ro.replace(/^[^0-9]*/, ''),
-                    mrs:     String(r['MRS'] || '').toLowerCase(),
-                    vin:     String(r['VIN'] || '').toLowerCase(),
-                    part:    String(r['Part Desc'] || '').toLowerCase(),
+                    mrs: String(r['MRS'] || '').toLowerCase(),
+                    vin: String(r['VIN'] || '').toLowerCase(),
+                    part: String(r['Part Desc'] || '').toLowerCase(),
                     invoice: String(r['Invoice No'] || '').toLowerCase(),
-                    date:    String(r['PAYMENT DATE'] || '').toLowerCase(),
+                    date: String(r['PAYMENT DATE'] || '').toLowerCase(),
                 };
             });
         }
@@ -3791,11 +3846,11 @@
                 if (row.isDivider) return false;
                 const c = searchCache[i];
                 if (!c) return false;
-                if (searchMode === 'mrs')     return c.mrs.includes(query);
-                if (searchMode === 'vin')     return c.vin.includes(query) || c.vin.endsWith(query);
-                if (searchMode === 'part')    return c.part.includes(query);
+                if (searchMode === 'mrs') return c.mrs.includes(query);
+                if (searchMode === 'vin') return c.vin.includes(query) || c.vin.endsWith(query);
+                if (searchMode === 'part') return c.part.includes(query);
                 if (searchMode === 'invoice') return c.invoice.includes(query);
-                if (searchMode === 'date')    return c.date.includes(query);
+                if (searchMode === 'date') return c.date.includes(query);
                 // default: ro mode
                 return c.ro.includes(query) || c.roSuffix.endsWith(query);
             });
@@ -3860,7 +3915,7 @@
 
             // ── Ctrl+Key shortcuts: switch search mode ──
             if (e.ctrlKey && !e.shiftKey && !e.altKey) {
-                const shortcuts = { r: ['ro','RO No'], b: ['vin','VIN No'], m: ['mrs','MRS No'], p: ['part','Part Desc'], i: ['invoice','Invoice No'] };
+                const shortcuts = { r: ['ro', 'RO No'], b: ['vin', 'VIN No'], m: ['mrs', 'MRS No'], p: ['part', 'Part Desc'], i: ['invoice', 'Invoice No'] };
                 const hit = shortcuts[e.key.toLowerCase()];
                 if (hit) {
                     e.preventDefault();
@@ -3978,6 +4033,7 @@
             }
 
             document.getElementById('mrsModal').classList.add('active');
+            toggleBodyScroll(true);
 
             // Handle row lock state in modal
             document.getElementById('mrsModalLockedNotice').style.display = isRowLocked ? 'block' : 'none';
@@ -4019,6 +4075,7 @@
 
         function closeMRSModal() {
             document.getElementById('mrsModal').classList.remove('active');
+            toggleBodyScroll(false);
             currentEditingRowIdx = null;
             setTimeout(() => {
                 const searchInput = document.getElementById('tableSearch');
@@ -4051,7 +4108,7 @@
                     // All 100 numbers in range are filled
                     const dividerText = `MRS BOOK (${data.start}-${data.end})`;
                     const alreadyExists = rawData.some(r => r.isDivider && r.dividerText === dividerText);
-                    
+
                     if (!alreadyExists) {
                         rawData.push({ isDivider: true, dividerText: dividerText, MRS: data.start });
                         dividerAdded = true;
@@ -4134,10 +4191,12 @@
             document.getElementById('cancelReasonDrop').classList.remove('open');
             document.querySelectorAll('#cancelReasonList li').forEach(li => li.classList.remove('selected'));
             document.getElementById('cancelMRSModal').classList.add('active');
+            toggleBodyScroll(true);
             setTimeout(() => document.getElementById('cancelMRSInput').focus(), 280);
         }
         function closeCancelMRSModal() {
             document.getElementById('cancelMRSModal').classList.remove('active');
+            toggleBodyScroll(false);
         }
         function saveCancelledMRS() {
             if (isLocked) { showToast('Locked: Bulk actions disabled.', 'danger'); return; }
@@ -4200,33 +4259,18 @@
             e.stopPropagation();
             const drop = document.getElementById('cancelReasonDrop');
             const list = document.getElementById('cancelReasonList');
-            const trigger = e.currentTarget;
-            const isOpen = drop.classList.contains('open');
-            if (isOpen) { drop.classList.remove('open'); return; }
-
-            // Apply fixed positioning BEFORE opening so it doesn't get clipped by modal
-            const rect = trigger.getBoundingClientRect();
-            list.style.position = 'fixed';
-            list.style.left = rect.left + 'px';
-            list.style.width = rect.width + 'px';
-            list.style.zIndex = '99999';
-            list.style.maxHeight = '220px';
-            list.style.overflowY = 'auto';
-            // Temporarily make visible off-screen to measure height
-            list.style.top = '-9999px';
-            list.style.display = 'block';
-            const listH = Math.min(220, list.offsetHeight + 4);
+            // Remove lingering inline styles from earlier buggy implementations
+            list.style.position = '';
+            list.style.top = '';
+            list.style.bottom = '';
+            list.style.overflowY = '';
+            list.style.maxHeight = '';
+            list.style.width = '';
+            list.style.zIndex = '';
+            list.style.left = '';
             list.style.display = '';
 
-            const spaceBelow = window.innerHeight - rect.bottom;
-            if (spaceBelow < listH + 10) {
-                list.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
-                list.style.top = 'auto';
-            } else {
-                list.style.top = (rect.bottom + 4) + 'px';
-                list.style.bottom = 'auto';
-            }
-            drop.classList.add('open');
+            drop.classList.toggle('open');
         }
         function selectCancelReason(val, label) {
             document.getElementById('cancelReasonSelect').value = val;
@@ -4779,8 +4823,10 @@
             msgEl.textContent = msg;
             iconEl.innerHTML = iconEmoji ? `<span style="font-size:2.5rem;line-height:1;">${iconEmoji}</span>` : '';
             dlg.classList.add('active');
+            toggleBodyScroll(true);
             function cleanup() {
                 dlg.classList.remove('active'); yesBtn.onclick = null; noBtn.onclick = null;
+                toggleBodyScroll(false);
                 setTimeout(() => { const s = document.getElementById('tableSearch'); if (s) s.focus(); }, 150);
             }
             yesBtn.onclick = () => { cleanup(); if (onYes) onYes(); };
@@ -4800,10 +4846,12 @@
             document.getElementById('mrsRangeFrom').value = mrsRangeFrom || '';
             document.getElementById('mrsRangeTo').value = mrsRangeTo || '';
             document.getElementById('mrsRangeModal').classList.add('active');
+            toggleBodyScroll(true);
             setTimeout(() => document.getElementById('mrsRangeFrom').focus(), 280);
         }
         function closeMRSRangeModal() {
             document.getElementById('mrsRangeModal').classList.remove('active');
+            toggleBodyScroll(false);
         }
         function saveMRSRange() {
             if (isLocked) { showToast(`Locked: Range creation disabled.`, 'danger'); return; }
@@ -4867,18 +4915,17 @@
             <div class="modal-body" style="padding:10px 20px 20px;">
                 <div style="margin-bottom:15px; position:relative;">
                     <!-- Use type='tel' to trigger numeric keypad and avoid password save prompts -->
-                    <input type="tel" id="authInput" 
-                        placeholder="••••" 
-                        autocomplete="new-password"
-                        name="auth-token-mrs"
-                        maxlength="4"
+                    <input type="tel" id="authInput" placeholder="••••" autocomplete="new-password"
+                        name="auth-token-mrs" maxlength="4"
                         onkeydown="if(event.key==='Enter') verifyAuth(); if(event.key==='Escape') closeAuthModal();"
                         style="width:100%; text-align:center; padding:12px; font-size:1.8rem; letter-spacing:8px; border-radius:12px; border:2px solid var(--border); background:rgba(0,0,0,0.02); outline:none; font-family:monospace; transition:all 0.3s; color:var(--primary);">
                 </div>
                 <div class="modal-btn-row">
-                    <button class="modal-btn-confirm" onclick="verifyAuth()" style="width:100%; justify-content:center;">Unlock System</button>
+                    <button class="modal-btn-confirm" onclick="verifyAuth()"
+                        style="width:100%; justify-content:center;">Unlock System</button>
                 </div>
-                <button onclick="closeAuthModal()" style="width:100%; margin-top:10px; background:transparent; border:none; color:var(--text-muted); font-size:0.7rem; cursor:pointer; font-weight:700;">Cancel</button>
+                <button onclick="closeAuthModal()"
+                    style="width:100%; margin-top:10px; background:transparent; border:none; color:var(--text-muted); font-size:0.7rem; cursor:pointer; font-weight:700;">Cancel</button>
             </div>
         </div>
     </div>
