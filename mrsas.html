@@ -2150,11 +2150,10 @@
                                 <path d="M7 11V7a5 5 0 0 1 9.9-1" />
                             </svg></span> <span id="lockLabel">ACTIVE</span>
                     </button>
-                    <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; justify-content:center;">
                         <div id="saveStatus"
-                            style="font-size:0.6rem; font-weight:800; color:var(--success); opacity:0; transition:opacity 0.3s; pointer-events:none;">
+                            style="font-size:0.65rem; font-weight:800; color:var(--success); opacity:0; transition:opacity 0.3s; pointer-events:none;">
                             SAVED ✓</div>
-                        <div class="record-count" id="recordCount" style="margin:0;">0 Records</div>
                     </div>
                 </div>
             </div>
@@ -2193,11 +2192,12 @@
                         <line x1="16" y1="13" x2="8" y2="13" />
                         <line x1="16" y1="17" x2="8" y2="17" />
                         <line x1="10" y1="9" x2="8" y2="9" />
-                    </svg>
                     <p>No active ledger found.<br>Import source files to begin.</p>
                 </div>
             </div>
-
+            
+            <!-- Floating Counter exactly as requested in bottom right corner of the card -->
+            <div class="record-count" id="recordCount" style="position: absolute; bottom: -28px; right: 66px; margin: 0; font-size: 0.70rem; font-weight: 800; color: var(--text-muted); opacity: 0.8; z-index: 5;">0 Records</div>
         </div>
     </div>
 
