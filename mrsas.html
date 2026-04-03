@@ -3299,6 +3299,17 @@
         function renderLedgerMode() {
             const assigned = rawData.filter(r => r.isDivider || (r['MRS'] && r['MRS'] !== '' && r['MRS'] !== '—'));
 
+            // PRE-SORT by MRS ascending to guarantee claims physically fall under their correct mathematical divider 
+            // before we attempt to parse them into groups. This fixes claims bleeding into wrong books when appended.
+            assigned.sort((a, b) => {
+                const numA = parseInt(a['MRS']) || 0;
+                const numB = parseInt(b['MRS']) || 0;
+                if (numA !== numB) return numA - numB;
+                if (a.isDivider && !b.isDivider) return -1;
+                if (!a.isDivider && b.isDivider) return 1;
+                return 0;
+            });
+
             // Group claims under their MRS Book dividers, then sort descending
             const groups = []; // [{divider, claims}]
             let currentGroup = null;
