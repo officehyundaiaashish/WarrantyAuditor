@@ -3398,6 +3398,8 @@
                 return numB - numA;
             });
 
+            books.unshift("All Books");
+
             const picker = document.createElement('div');
             picker.className = 'mrs-book-popover';
 
@@ -3451,6 +3453,13 @@
 
         function selectMRSBook(bookName) {
             document.getElementById('mrsBookLabel').textContent = bookName;
+
+            if (bookName === 'All Books') {
+                const wrap = document.getElementById('vsTableWrap');
+                if (wrap) { wrap.scrollTop = 0; vsScheduleRender(); }
+                return;
+            }
+
             // Find the divider row in vsData and scroll to it
             const idx = vsData.findIndex(r => r.isDivider && r.dividerText === bookName);
             if (idx !== -1 && vsOffsets[idx] !== undefined) {
@@ -4683,10 +4692,28 @@
             // Priority: Print currently viewed book (paged view) or filtered dataset
             let targetData = [];
             const isPaged = document.getElementById('paginationBar').style.display !== 'none';
-            const isShowAllMode = document.getElementById('mrsBookLabel').textContent.includes("Jump to");
+            const bookLabel = document.getElementById('mrsBookLabel').textContent;
+            const isShowAllMode = bookLabel.includes("Jump to") || bookLabel === "All Books";
 
-            if (!isShowAllMode && isPaged && paginatedSlices[currentPage - 1]) {
-                targetData = paginatedSlices[currentPage - 1];
+            if (!isShowAllMode) {
+                // The user explicitly selected a book, so restrict printout exclusively to that book!
+                const selectedBookData = [];
+                let inBook = false;
+                for (let r of currentDataset) {
+                    if (r.isDivider) {
+                        if (r.dividerText === bookLabel) {
+                            inBook = true;
+                            selectedBookData.push(r);
+                        } else if (inBook) {
+                            // Hit the next book divider, so stop collecting
+                            break;
+                        }
+                    } else if (inBook) {
+                        selectedBookData.push(r);
+                    }
+                }
+                
+                targetData = selectedBookData.length > 0 ? selectedBookData : currentDataset;
             } else if (currentDataset.length > 0 && currentDataset.length !== rawData.length) {
                 targetData = currentDataset;
             } else {
@@ -4730,7 +4757,9 @@
             const pending = targetData.filter(r => !r.isDivider && String(r['REMARKS']).toUpperCase() !== 'CANCELLED' && (!r['AMT RECEIVED'] || r['AMT RECEIVED'] === 0)).length;
 
             let subtitleSuffix = "Full Ledger Snapshot";
-            if (isPaged && targetData[0] && targetData[0].isDivider) {
+            if (!isShowAllMode) {
+                subtitleSuffix = bookLabel;
+            } else if (isPaged && targetData[0] && targetData[0].isDivider) {
                 subtitleSuffix = targetData[0].dividerText;
             } else if (currentDataset.length !== rawData.length) {
                 subtitleSuffix = "Filtered View";
