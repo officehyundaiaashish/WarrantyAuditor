@@ -3763,6 +3763,18 @@
                 }
             }
 
+            // ── Ctrl+Key shortcuts: switch search mode ──
+            if (e.ctrlKey && !e.shiftKey && !e.altKey) {
+                const shortcuts = { r: ['ro','RO No'], b: ['vin','VIN No'], m: ['mrs','MRS No'], p: ['part','Part Desc'], i: ['invoice','Invoice No'] };
+                const hit = shortcuts[e.key.toLowerCase()];
+                if (hit) {
+                    e.preventDefault();
+                    selectSearchMode(hit[0], hit[1]);
+                    searchInput.focus();
+                    return;
+                }
+            }
+
             // Handle Enter key while search bar is focused
             if (active === searchInput && e.key === 'Enter') {
                 e.preventDefault();
