@@ -2169,6 +2169,11 @@
                     <div><span>Received Amt</span><strong id="mrsInfoReceived">—</strong></div>
                     <div><span>Difference</span><strong id="mrsInfoDiff">—</strong></div>
                     <div><span>Status</span><strong id="mrsInfoStatus">—</strong></div>
+                    <div style="grid-column:1/-1"><span>Part Desc</span><strong id="mrsInfoPartDesc" style="white-space:normal;word-break:break-word;">—</strong></div>
+                    <div id="mrsInfoSiblingsWrap" style="display:none;grid-column:1/-1;margin-top:2px;">
+                        <span style="font-size:0.65rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;">Related Parts (Same RO)</span>
+                        <div id="mrsInfoSiblingsList" style="margin-top:4px;display:flex;flex-direction:column;gap:3px;"></div>
+                    </div>
                 </div>
                 <label class="mrs-input-label">MRS Number</label>
                 <div class="mrs-input-wrap">
@@ -3833,20 +3838,36 @@
             dateInp.value = (row['PAYMENT DATE'] && row['PAYMENT DATE'] !== '—') ? row['PAYMENT DATE'] : '';
             dateInp.disabled = isRowLocked;
 
+            // Part Desc
+            document.getElementById('mrsInfoPartDesc').textContent = row['Part Desc'] || '—';
+
             // Check for sibling claims (same RO No)
             const roNo = String(row['R/O No'] || '').trim();
             const siblings = roNo ? rawData.filter(r => String(r['R/O No'] || '').trim() === roNo && (rowIndexMap.get(r) ?? rawData.indexOf(r)) !== rowIdx) : [];
             const applyWrap = document.getElementById('mrsApplyAllWrap');
             const applyChk = document.getElementById('mrsApplyAll');
+            const siblingsWrap = document.getElementById('mrsInfoSiblingsWrap');
+            const siblingsList = document.getElementById('mrsInfoSiblingsList');
             if (siblings.length > 0) {
                 document.getElementById('mrsApplyAllLabel').textContent =
                     `Is RO ke ${siblings.length + 1} claims hain — sabko same MRS assign karo`;
                 applyChk.checked = false;
                 applyWrap.style.display = 'block';
                 applyChk.disabled = isRowLocked;
+                // Show sibling part descriptions
+                siblingsList.innerHTML = siblings.map(s => {
+                    const partDesc = s['Part Desc'] || '—';
+                    const claimNo = s['Claim No'] || '—';
+                    return `<div style="font-size:0.68rem;padding:3px 8px;background:rgba(42,181,165,0.07);border-radius:6px;border:1px solid rgba(42,181,165,0.15);color:var(--text-main);">
+                        <span style="color:var(--text-muted);font-weight:600;">${claimNo}</span> — <strong>${partDesc}</strong>
+                    </div>`;
+                }).join('');
+                siblingsWrap.style.display = 'block';
             } else {
                 applyWrap.style.display = 'none';
                 applyChk.checked = false;
+                siblingsWrap.style.display = 'none';
+                siblingsList.innerHTML = '';
             }
 
             document.getElementById('mrsModal').classList.add('active');
