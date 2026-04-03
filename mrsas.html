@@ -3448,9 +3448,10 @@
             updateBookFilter();
         }
 
-        function updateStats() {
-            const stats = rawData.reduce((acc, r) => {
+        function calcStats(dataset) {
+            return dataset.reduce((acc, r) => {
                 if (r.isDivider) return acc;
+                acc.claims++;
                 const total = parseFloat(String(r['Total Amt'] || "0").replace(/[^\d.-]/g, '')) || 0;
                 const recvd = parseFloat(String(r['AMT RECEIVED'] || "0").replace(/[^\d.-]/g, '')) || 0;
                 acc.total += total;
@@ -3466,29 +3467,57 @@
                 if (rem.includes('SHORT')) acc.short++;
                 if (rem === 'PAID') acc.paid++;
                 return acc;
-            }, { total: 0, recvd: 0, pending: 0, unmarked: 0, cancelled: 0, noRemarks: 0, short: 0, paid: 0 });
+            }, { claims: 0, total: 0, recvd: 0, pending: 0, unmarked: 0, cancelled: 0, noRemarks: 0, short: 0, paid: 0 });
+        }
 
-            const hBadge = document.getElementById('mrs-header-pending');
-            if (hBadge) { hBadge.textContent = `${stats.pending} Pending`; hBadge.style.display = stats.pending > 0 ? 'inline-flex' : 'none'; }
-            const uBadge = document.getElementById('mrs-header-unmarked');
-            if (uBadge) { uBadge.textContent = `${stats.unmarked} No MRS`; uBadge.style.display = (isWorkingMode && stats.unmarked > 0) ? 'inline-flex' : 'none'; }
-            const cBadge = document.getElementById('mrs-header-cancelled');
-            if (cBadge) { cBadge.textContent = `${stats.cancelled} Cancelled`; cBadge.style.display = stats.cancelled > 0 ? 'inline-flex' : 'none'; }
-            const nrBadge = document.getElementById('mrs-header-noremarks');
-            if (nrBadge) { nrBadge.textContent = `${stats.noRemarks} No Remarks`; nrBadge.style.display = stats.noRemarks > 0 ? 'inline-flex' : 'none'; }
-            const sBadge = document.getElementById('mrs-header-short');
-            if (sBadge) { sBadge.textContent = `${stats.short} Short`; sBadge.style.display = stats.short > 0 ? 'inline-flex' : 'none'; }
-            const pBadge = document.getElementById('mrs-header-paid');
-            if (pBadge) { pBadge.textContent = `${stats.paid} Paid`; pBadge.style.display = stats.paid > 0 ? 'inline-flex' : 'none'; }
-            document.getElementById('mrs-header-count').textContent = `Claims: ${rawData.length}`;
-            document.getElementById('mrs-header-total').textContent = `Tot: ₹${Math.round(stats.total).toLocaleString()}`;
-            document.getElementById('mrs-header-received').textContent = `Rec: ₹${Math.round(stats.recvd).toLocaleString()}`;
-            const diff = stats.total - stats.recvd;
-            const diffEl = document.getElementById('mrs-header-diff');
-            diffEl.textContent = `Dif: ₹${Math.round(diff).toLocaleString()}`;
-            if (diff > 0) diffEl.style.color = '#b91c1c';
-            else if (diff < 0) diffEl.style.color = 'var(--success)';
-            else diffEl.style.color = '';
+        function updateStats() {
+            // Mode-aware: stats calculated from currentDataset (what's visible)
+            const stats = calcStats(currentDataset);
+
+            const modeLabel = isWorkingMode ? 'WORKING' : 'LEDGER';
+
+            // Claims count badge in header
+            document.getElementById('mrs-header-count').textContent = `${modeLabel}: ${stats.claims} Claims`;
+
+            if (isWorkingMode) {
+                // WORKING MODE — unassigned claims only
+                // Hide ledger-specific badges
+                ['mrs-header-pending','mrs-header-cancelled','mrs-header-noremarks',
+                 'mrs-header-short','mrs-header-paid'].forEach(id => {
+                    const el = document.getElementById(id); if (el) el.style.display = 'none';
+                });
+                // Show unassigned count
+                const uBadge = document.getElementById('mrs-header-unmarked');
+                if (uBadge) { uBadge.textContent = `${stats.claims} Unassigned`; uBadge.style.display = stats.claims > 0 ? 'inline-flex' : 'none'; }
+                // Amounts for unassigned
+                document.getElementById('mrs-header-total').textContent = `Tot: ₹${Math.round(stats.total).toLocaleString()}`;
+                document.getElementById('mrs-header-received').textContent = `Rec: ₹${Math.round(stats.recvd).toLocaleString()}`;
+                const diff = stats.total - stats.recvd;
+                const diffEl = document.getElementById('mrs-header-diff');
+                diffEl.textContent = `Dif: ₹${Math.round(diff).toLocaleString()}`;
+                diffEl.style.color = diff > 0 ? '#b91c1c' : diff < 0 ? 'var(--success)' : '';
+            } else {
+                // LEDGER MODE — assigned claims stats
+                const uBadge = document.getElementById('mrs-header-unmarked');
+                if (uBadge) uBadge.style.display = 'none';
+
+                const hBadge = document.getElementById('mrs-header-pending');
+                if (hBadge) { hBadge.textContent = `${stats.pending} Pending`; hBadge.style.display = stats.pending > 0 ? 'inline-flex' : 'none'; }
+                const cBadge = document.getElementById('mrs-header-cancelled');
+                if (cBadge) { cBadge.textContent = `${stats.cancelled} Cancelled`; cBadge.style.display = stats.cancelled > 0 ? 'inline-flex' : 'none'; }
+                const nrBadge = document.getElementById('mrs-header-noremarks');
+                if (nrBadge) { nrBadge.textContent = `${stats.noRemarks} No Remarks`; nrBadge.style.display = stats.noRemarks > 0 ? 'inline-flex' : 'none'; }
+                const sBadge = document.getElementById('mrs-header-short');
+                if (sBadge) { sBadge.textContent = `${stats.short} Short`; sBadge.style.display = stats.short > 0 ? 'inline-flex' : 'none'; }
+                const pBadge = document.getElementById('mrs-header-paid');
+                if (pBadge) { pBadge.textContent = `${stats.paid} Paid`; pBadge.style.display = stats.paid > 0 ? 'inline-flex' : 'none'; }
+                document.getElementById('mrs-header-total').textContent = `Tot: ₹${Math.round(stats.total).toLocaleString()}`;
+                document.getElementById('mrs-header-received').textContent = `Rec: ₹${Math.round(stats.recvd).toLocaleString()}`;
+                const diff = stats.total - stats.recvd;
+                const diffEl = document.getElementById('mrs-header-diff');
+                diffEl.textContent = `Dif: ₹${Math.round(diff).toLocaleString()}`;
+                diffEl.style.color = diff > 0 ? '#b91c1c' : diff < 0 ? 'var(--success)' : '';
+            }
         }
 
         function renderData(data) {
