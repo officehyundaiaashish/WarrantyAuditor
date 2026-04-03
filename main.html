@@ -1410,6 +1410,13 @@
             animation: pulse-danger 2s infinite;
         }
 
+        /* Force hide badge on MRS Assignor button - as per user request */
+        .menu-card[onclick*="mrs"] .menu-card-notif,
+        #mrs-assignor .menu-card-notif,
+        .menu-card[onclick*="assignor"] .menu-card-notif {
+            display: none !important;
+        }
+
         @keyframes pulse-danger {
             0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
             70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
@@ -8913,6 +8920,16 @@ Upload the correct file.`);
                     .catch(e => console.warn('SW failed:', e));
             });
         }
+        // Force remove any badge/number on MRS Assignor button
+setTimeout(() => {
+    document.querySelectorAll('.menu-card[onclick*="mrs"], .menu-card[onclick*="assignor"]').forEach(card => {
+        const badge = card.querySelector('.menu-card-notif');
+        if (badge) {
+            badge.style.display = 'none';
+            badge.classList.remove('show');
+        }
+    });
+}, 1000);
 
     </script>
 
