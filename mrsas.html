@@ -3869,8 +3869,12 @@
             const inp = document.getElementById('tableSearch');
             inp.placeholder = `Search by ${label}...`;
             inp.value = '';
-            document.querySelectorAll('#searchModeList li').forEach(li => li.classList.remove('selected'));
-            event.currentTarget.classList.add('selected');
+            document.querySelectorAll('#searchModeList li').forEach(li => {
+                li.classList.remove('selected');
+                if (li.textContent.trim() === label) {
+                    li.classList.add('selected');
+                }
+            });
             renderDataFast(rawData);
             inp.focus();
         }
