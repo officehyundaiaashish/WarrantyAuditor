@@ -3420,9 +3420,14 @@
 
             // Flatten back: divider first, then its claims
             const sorted = [];
+            const bookLabel = document.getElementById('mrsBookLabel') ? document.getElementById('mrsBookLabel').textContent : 'All Books';
+            const showAll = (bookLabel === 'All Books' || bookLabel === 'Jump to Book...');
+
             groups.forEach(g => {
-                if (g.divider) sorted.push(g.divider);
-                sorted.push(...g.claims);
+                if (showAll || (g.divider && g.divider.dividerText === bookLabel)) {
+                    if (g.divider) sorted.push(g.divider);
+                    sorted.push(...g.claims);
+                }
             });
 
             renderDataFast(sorted);
@@ -3541,17 +3546,26 @@
             document.getElementById('mrsBookLabel').textContent = bookName;
 
             if (bookName === 'All Books') {
-                const wrap = document.getElementById('vsTableWrap');
-                if (wrap) { wrap.scrollTop = 0; vsScheduleRender(); }
+                if (!isWorkingMode) {
+                    renderLedgerMode();
+                } else {
+                    const wrap = document.getElementById('vsTableWrap');
+                    if (wrap) { wrap.scrollTop = 0; vsScheduleRender(); }
+                }
                 return;
             }
 
-            // Find the divider row in vsData and scroll to it
-            const idx = vsData.findIndex(r => r.isDivider && r.dividerText === bookName);
-            if (idx !== -1 && vsOffsets[idx] !== undefined) {
-                const wrap = document.getElementById('vsTableWrap');
-                if (wrap) { wrap.scrollTop = vsOffsets[idx]; vsScheduleRender(); }
-                showToast(`Jumped to ${bookName}`, 'info');
+            if (!isWorkingMode) {
+                renderLedgerMode();
+                showToast(`Showing ${bookName}`, 'info');
+            } else {
+                // Find the divider row in vsData and scroll to it (fallback for when not in ledger mode)
+                const idx = vsData.findIndex(r => r.isDivider && r.dividerText === bookName);
+                if (idx !== -1 && vsOffsets[idx] !== undefined) {
+                    const wrap = document.getElementById('vsTableWrap');
+                    if (wrap) { wrap.scrollTop = vsOffsets[idx]; vsScheduleRender(); }
+                    showToast(`Jumped to ${bookName}`, 'info');
+                }
             }
         }
 
