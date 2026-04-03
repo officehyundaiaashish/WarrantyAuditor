@@ -2447,10 +2447,10 @@
                 await localforage.setItem(LOCK_KEY, isLocked);
                 updateLockUI();
                 closeAuthModal();
-                showToast(isLocked ? `${ICONS.LOCK} Ledger Locked Instantly` : `${ICONS.CHECK} System Access Authorized`, isLocked ? 'warn' : 'success');
+                showToast(isLocked ? `Ledger Locked Instantly` : `System Access Authorized`, isLocked ? 'warn' : 'success');
                 window.parent.postMessage({ type: 'mrs-data-changed' }, '*');
             } else {
-                showToast(`${ICONS.FAIL} Access Denied: Incorrect Code`, 'danger');
+                showToast(`Access Denied: Incorrect Code`, 'danger');
                 document.getElementById('authInput').value = '';
                 document.getElementById('authInput').focus();
             }
@@ -2472,7 +2472,7 @@
             }
             catch (e) {
                 console.error('Save ledger:', e);
-                showToast(`${ICONS.FAIL} CRITICAL SAVE ERROR! Check disk space.`, 'danger');
+                showToast(`CRITICAL SAVE ERROR! Check disk space.`, 'danger');
                 // Fallback to localStorage for small data if IndexedDB fails
                 try { localStorage.setItem(LEDGER_KEY + '_fallback', JSON.stringify(rawData)); } catch (ex) { }
             }
@@ -2490,7 +2490,7 @@
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            showToast(`${ICONS.CHECK} Safety Backup Downloaded!`, 'success');
+            showToast(`Safety Backup Downloaded!`, 'success');
         }
 
         // ── Columns ──
@@ -2838,14 +2838,14 @@
 
                     saveLedger(); buildSearchCache(); renderDataFast(rawData);
                     const divMsg = dividersAdded > 0 ? ` · ${dividersAdded} dividers` : '';
-                    showToast(`✓ ${appended} new added · existing updated${divMsg} · Total: ${rawData.length}`, 'success');
+                    showToast(`${appended} new added · existing updated${divMsg} · Total: ${rawData.length}`, 'success');
                 } catch (err) {
                     showToast('Import error: ' + err.message, 'danger');
                 } finally { btn.innerHTML = orig; btn.classList.remove('loading'); }
                 return;
             }
 
-            if (isLocked) { showToast(`${ICONS.LOCK} Locked: Cannot import while ledger is LOCKED!`, 'danger'); return; }
+            if (isLocked) { showToast(`Locked: Cannot import while ledger is LOCKED!`, 'danger'); return; }
 
             // ── Source 1 + 2 flow ──
             if (!source1Data && !source2Data) {
@@ -2941,7 +2941,7 @@
                     ['source1', 'source2', 'source3'].forEach(t => clearUpload(t));
 
                     saveLedger(); buildSearchCache(); renderDataFast(rawData);
-                    showToast(`✓ Sync Complete: ${updated} claims updated with payment data.`, 'success');
+                    showToast(`Sync Complete: ${updated} claims updated with payment data.`, 'success');
                 } catch (err) {
                     showToast('Sync error: ' + err.message, 'danger');
                 } finally { btn.innerHTML = orig; btn.classList.remove('loading'); }
@@ -3116,7 +3116,7 @@
 
                 const filteredCount = (originalCount - rawData.length + newlyAdded);
                 saveLedger(); buildSearchCache(); renderDataFast(rawData);
-                showToast(`✓ Feed processed! New: ${newlyAdded} | Total: ${rawData.length}`);
+                showToast(`Feed processed! New: ${newlyAdded} | Total: ${rawData.length}`);
             } catch (err) {
                 console.error(err); showToast('Error during mapping: ' + err.message, 'danger');
             } finally { btn.innerHTML = orig; btn.classList.remove('loading'); }
@@ -3175,7 +3175,7 @@
                 '⚠️ CRITICAL',
                 () => {
                     rawData.length = 0; saveLedger(); buildSearchCache(); renderDataFast(rawData);
-                    showToast('✓ Ledger database has been reset.', 'success');
+                    showToast('Ledger database has been reset.', 'success');
                 }
             );
         }
@@ -3205,13 +3205,13 @@
                 const filtered = rawData.filter(r => !r.isDivider && (!r['MRS'] || r['MRS'] === '' || r['MRS'] === '—'));
                 currentPage = 1;
                 renderDataFast(filtered);
-                showToast('🎯 Working Mode: Only Unassigned Claims shown', 'success');
+                showToast('Working Mode: Only Unassigned Claims shown', 'success');
             } else {
                 btn.classList.replace('active', 'inactive');
-                label.textContent = 'ALL MODE';
+                label.textContent = 'LEDGER MODE';
                 currentPage = 1;
                 renderDataFast(rawData);
-                showToast('📊 Showing all records', 'info');
+                showToast('Showing all records', 'info');
             }
         }
 
@@ -3395,7 +3395,7 @@
             const hBadge = document.getElementById('mrs-header-pending');
             if (hBadge) { hBadge.textContent = `${stats.pending} Pending`; hBadge.style.display = stats.pending > 0 ? 'inline-flex' : 'none'; }
             const uBadge = document.getElementById('mrs-header-unmarked');
-            if (uBadge) { uBadge.textContent = `${stats.unmarked} No MRS`; uBadge.style.display = stats.unmarked > 0 ? 'inline-flex' : 'none'; }
+            if (uBadge) { uBadge.textContent = `${stats.unmarked} No MRS`; uBadge.style.display = (isWorkingMode && stats.unmarked > 0) ? 'inline-flex' : 'none'; }
             const cBadge = document.getElementById('mrs-header-cancelled');
             if (cBadge) { cBadge.textContent = `${stats.cancelled} Cancelled`; cBadge.style.display = stats.cancelled > 0 ? 'inline-flex' : 'none'; }
             const nrBadge = document.getElementById('mrs-header-noremarks');
@@ -3764,7 +3764,7 @@
                 openMRSModal(ri);
             } else if (e.key === 'Backspace' || e.key === 'Delete') {
                 e.preventDefault();
-                if (isLocked) { showToast('🔒 Ledger Locked', 'danger'); return; }
+                if (isLocked) { showToast('Ledger Locked', 'danger'); return; }
                 const row = rawData[ri];
                 if (row && !row.isRowLocked && row['MRS']) {
                     row['MRS'] = '';
@@ -3862,11 +3862,58 @@
                 if (searchInput) searchInput.focus();
             }, 100);
         }
+        // ── Auto-Generate Dividers for Complete 100-Ranges ──
+        function autoGenerateDividersFor100Ranges() {
+            // Find all 100-ranges (2100-2199, 2200-2299, etc.)
+            const ranges = {};
+            rawData.forEach(r => {
+                if (!r.isDivider && r['MRS']) {
+                    const mrs = parseInt(r['MRS']);
+                    if (!isNaN(mrs)) {
+                        const rangeStart = Math.floor(mrs / 100) * 100;
+                        const rangeEnd = rangeStart + 99;
+                        const rangeKey = `${rangeStart}-${rangeEnd}`;
+                        if (!ranges[rangeKey]) ranges[rangeKey] = { start: rangeStart, end: rangeEnd, nums: new Set(), hasRecords: [] };
+                        ranges[rangeKey].nums.add(mrs);
+                        ranges[rangeKey].hasRecords.push(r);
+                    }
+                }
+            });
+
+            // Check which ranges are complete (all 100 numbers exist or only existing numbers are filled)
+            let dividerAdded = false;
+            for (const [rangeKey, data] of Object.entries(ranges)) {
+                // Check if all numbers from start to end that have records are unique
+                if (data.nums.size === 100 && data.hasRecords.length === 100) {
+                    // All 100 numbers in range are filled
+                    const dividerText = `MRS BOOK (${data.start}-${data.end})`;
+                    const alreadyExists = rawData.some(r => r.isDivider && r.dividerText === dividerText);
+                    
+                    if (!alreadyExists) {
+                        rawData.push({ isDivider: true, dividerText: dividerText, MRS: data.start });
+                        dividerAdded = true;
+                    }
+                }
+            }
+
+            if (dividerAdded) {
+                // Sort to place dividers correctly
+                rawData.sort((a, b) => {
+                    const sA = (a.isDivider || (a['MRS'] && a['MRS'] !== '-')) ? 1 : 0;
+                    const sB = (b.isDivider || (b['MRS'] && b['MRS'] !== '-')) ? 1 : 0;
+                    if (sA !== sB) return sA - sB;
+                    return (parseInt(b['MRS']) || 0) - (parseInt(a['MRS']) || 0);
+                });
+                return true;
+            }
+            return false;
+        }
+
         function saveMRS() {
-            if (isLocked) { showToast('🔒 Locked: Cannot assign MRS.', 'danger'); return; }
+            if (isLocked) { showToast('Locked: Cannot assign MRS.', 'danger'); return; }
             if (currentEditingRowIdx === null) return;
             const row = rawData[currentEditingRowIdx];
-            if (row.isRowLocked) { showToast('🔒 Error: Individual MRS record is locked.', 'danger'); return; }
+            if (row.isRowLocked) { showToast('Error: Individual MRS record is locked.', 'danger'); return; }
             const val = parseInt(document.getElementById('mrsNumberInput').value);
             const dateVal = document.getElementById('mrsDateInput').value.trim();
 
@@ -3891,7 +3938,7 @@
                 buildSearchCache();
                 if (activeFilterFunc) activeFilterFunc(true); else filterTableNow();
                 closeMRSModal();
-                showToast(`✓ MRS ${val} — ${count} claims updated (RO: ${roNo})`, 'success');
+                showToast(`MRS ${val} — ${count} claims updated (RO: ${roNo})`, 'success');
             } else {
                 rawData[currentEditingRowIdx]['MRS'] = val;
                 rawData[currentEditingRowIdx]['PAYMENT DATE'] = dateVal || '—';
@@ -3900,7 +3947,7 @@
                 buildSearchCache();
                 if (activeFilterFunc) activeFilterFunc(true); else filterTableNow();
                 closeMRSModal();
-                showToast(`✓ MRS ${val} saved.`, 'success');
+                showToast(`MRS ${val} saved.`, 'success');
             }
         }
         // Close modal on backdrop click
@@ -3924,7 +3971,7 @@
             document.getElementById('cancelMRSModal').classList.remove('active');
         }
         function saveCancelledMRS() {
-            if (isLocked) { showToast('🔒 Locked: Bulk actions disabled.', 'danger'); return; }
+            if (isLocked) { showToast('Locked: Bulk actions disabled.', 'danger'); return; }
             const raw = document.getElementById('cancelMRSInput').value.trim();
             if (!raw) { showToast('Please enter at least one MRS number.', 'warn'); return; }
 
@@ -3970,7 +4017,7 @@
             });
             saveLedger(); buildSearchCache(); renderDataFast(rawData); closeCancelMRSModal();
             const skipMsg = skipped ? ` · ${skipped} already exist` : '';
-            showToast(`✓ ${added} Cancelled MRS added${skipMsg}.`, 'success');
+            showToast(`${added} Cancelled MRS added${skipMsg}.`, 'success');
         }
         // Show/hide Other input based on dropdown
         document.getElementById('cancelReasonSelect').addEventListener('change', function () {
@@ -4019,9 +4066,9 @@
             input.addEventListener('click', e => e.stopPropagation());
 
             function commitEdit() {
-                if (isLocked) { cancelEdit(); showToast('🔒 Locked: Editing disabled.', 'danger'); return; }
+                if (isLocked) { cancelEdit(); showToast('Locked: Editing disabled.', 'danger'); return; }
                 const row = rawData[rowIdx];
-                if (row.isRowLocked) { cancelEdit(); showToast('🔒 Row is locked.', 'danger'); return; }
+                if (row.isRowLocked) { cancelEdit(); showToast('Row is locked.', 'danger'); return; }
                 const newVal = input.value.trim();
                 td.classList.remove('editing');
                 if (newVal !== '') {
@@ -4054,9 +4101,9 @@
 
         // ── Feature: Delete Entry ──
         function deleteEntry(idx) {
-            if (isLocked) { showToast('🔒 Locked: No deletions allowed.', 'danger'); return; }
+            if (isLocked) { showToast('Locked: No deletions allowed.', 'danger'); return; }
             const entry = rawData[idx];
-            if (entry.isRowLocked) { showToast('🔒 Cannot delete a locked record.', 'danger'); return; }
+            if (entry.isRowLocked) { showToast('Cannot delete a locked record.', 'danger'); return; }
             const name = entry.isDivider ? "Divider" : (entry['Claim No'] || 'Claim');
             showConfirm(
                 `Delete this entry (${name})?`,
@@ -4072,7 +4119,7 @@
         }
 
         function toggleRowLock(idx) {
-            if (isLocked) { showToast('🔒 Cannot toggle lock while global ledger is locked!', 'danger'); return; }
+            if (isLocked) { showToast('Cannot toggle lock while global ledger is locked!', 'danger'); return; }
             const row = rawData[idx];
             const newState = !row.isRowLocked;
             row.isRowLocked = newState;
@@ -4093,9 +4140,9 @@
 
         // ── Feature: Rename Divider ──
         function startEditDivider(evt, td, rowIdx) {
-            if (isLocked) { showToast('🔒 Locked: No changes allowed.', 'danger'); return; }
+            if (isLocked) { showToast('Locked: No changes allowed.', 'danger'); return; }
             const row = rawData[rowIdx];
-            if (row.isRowLocked) { showToast('🔒 Divider is locked.', 'danger'); return; }
+            if (row.isRowLocked) { showToast('Divider is locked.', 'danger'); return; }
             if (evt) evt.stopPropagation();
             if (td.classList.contains('editing')) return;
             const currentVal = row.dividerText || '';
@@ -4175,9 +4222,9 @@
         }
 
         function setRemark(idx, val) {
-            if (isLocked) { showToast('🔒 Locked: Cannot change remarks.', 'danger'); return; }
+            if (isLocked) { showToast('Locked: Cannot change remarks.', 'danger'); return; }
             const row = rawData[idx];
-            if (row.isRowLocked) { showToast('🔒 Row is locked.', 'danger'); return; }
+            if (row.isRowLocked) { showToast('Row is locked.', 'danger'); return; }
 
             if (val === 'OTHER') {
                 const custom = prompt("Enter custom remark:", "");
@@ -4558,7 +4605,7 @@
             document.getElementById('mrsRangeModal').classList.remove('active');
         }
         function saveMRSRange() {
-            if (isLocked) { showToast(`${ICONS.LOCK} Locked: Range creation disabled.`, 'danger'); return; }
+            if (isLocked) { showToast(`Locked: Range creation disabled.`, 'danger'); return; }
             const fromVal = parseInt(document.getElementById('mrsRangeFrom').value);
             const toVal = parseInt(document.getElementById('mrsRangeTo').value);
             if (!fromVal || fromVal < 1) { showToast('Valid "From" MRS number daalo.', 'warn'); return; }
@@ -4573,7 +4620,7 @@
 
             if (overlap) {
                 const type = overlap.isDivider ? 'divider' : 'claim';
-                showToast(`${ICONS.FAIL} Range Error: MRS ${overlap['MRS']} pe pehle se hi ek ${type} hai! Range empty honi chahiye.`, 'danger');
+                showToast(`Range Error: MRS ${overlap['MRS']} pe pehle se hi ek ${type} hai! Range empty honi chahiye.`, 'danger');
                 return;
             }
 
@@ -4593,7 +4640,7 @@
             saveLedger();
             renderDataFast(rawData);
             closeMRSRangeModal();
-            showToast(`${ICONS.CHECK} MRS BOOK divider added for ${fromVal}-${toVal}`, 'success');
+            showToast(`MRS BOOK divider added for ${fromVal}-${toVal}`, 'success');
         }
         function clearMRSRange() {
             // Remove all dividers added via this tool
