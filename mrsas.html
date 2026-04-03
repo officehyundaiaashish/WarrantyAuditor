@@ -2389,6 +2389,7 @@
                         }
                     });
                     rawData = saved;
+                    buildSearchCache();
                     renderDataFast(rawData);
                 }
             } catch (e) {
@@ -2835,7 +2836,7 @@
                     // Reset uploads after success
                     ['source1', 'source2', 'source3'].forEach(t => clearUpload(t));
 
-                    saveLedger(); renderDataFast(rawData);
+                    saveLedger(); buildSearchCache(); renderDataFast(rawData);
                     const divMsg = dividersAdded > 0 ? ` · ${dividersAdded} dividers` : '';
                     showToast(`✓ ${appended} new added · existing updated${divMsg} · Total: ${rawData.length}`, 'success');
                 } catch (err) {
@@ -2939,7 +2940,7 @@
                     // Reset uploads after success
                     ['source1', 'source2', 'source3'].forEach(t => clearUpload(t));
 
-                    saveLedger(); renderDataFast(rawData);
+                    saveLedger(); buildSearchCache(); renderDataFast(rawData);
                     showToast(`✓ Sync Complete: ${updated} claims updated with payment data.`, 'success');
                 } catch (err) {
                     showToast('Sync error: ' + err.message, 'danger');
@@ -3114,7 +3115,7 @@
                 }
 
                 const filteredCount = (originalCount - rawData.length + newlyAdded);
-                saveLedger(); renderDataFast(rawData);
+                saveLedger(); buildSearchCache(); renderDataFast(rawData);
                 showToast(`✓ Feed processed! New: ${newlyAdded} | Total: ${rawData.length}`);
             } catch (err) {
                 console.error(err); showToast('Error during mapping: ' + err.message, 'danger');
@@ -3173,7 +3174,7 @@
                 'Clear entire database? This cannot be undone.',
                 '⚠️ CRITICAL',
                 () => {
-                    rawData.length = 0; saveLedger(); renderDataFast(rawData);
+                    rawData.length = 0; saveLedger(); buildSearchCache(); renderDataFast(rawData);
                     showToast('✓ Ledger database has been reset.', 'success');
                 }
             );
@@ -3635,32 +3636,56 @@
             inp.focus();
         }
 
-        // ── Search / Filter ──
+        // ── Search Cache (precomputed lowercase strings per row) ──
+        // Built once on load/data-change — filter reads from cache instead of converting each keypress
+        let searchCache = []; // parallel array to rawData
+
+        function buildSearchCache() {
+            searchCache = rawData.map(r => {
+                if (r.isDivider) return null; // dividers never match search
+                const ro = String(r['R/O No'] || '').toLowerCase();
+                return {
+                    ro,
+                    roSuffix: ro.replace(/^[^0-9]*/, ''),
+                    mrs:     String(r['MRS'] || '').toLowerCase(),
+                    vin:     String(r['VIN'] || '').toLowerCase(),
+                    part:    String(r['Part Desc'] || '').toLowerCase(),
+                    invoice: String(r['Invoice No'] || '').toLowerCase(),
+                    date:    String(r['PAYMENT DATE'] || '').toLowerCase(),
+                };
+            });
+        }
+
+        // ── Debounce timer for search ──
+        let _filterDebounce = null;
+
+        // filterTable: debounced — for oninput / keypress (user typing)
         function filterTable() {
+            clearTimeout(_filterDebounce);
+            _filterDebounce = setTimeout(_doFilter, 120);
+        }
+
+        // filterTableNow: immediate — for programmatic calls after data changes
+        function filterTableNow() {
+            clearTimeout(_filterDebounce);
+            _doFilter();
+        }
+
+        function _doFilter() {
             currentPage = 1;
             const query = document.getElementById('tableSearch').value.trim().toLowerCase();
             if (!query) { renderDataFast(rawData); return; }
-            const filtered = rawData.filter(row => {
-                if (searchMode === 'mrs') {
-                    const mrs = String(row['MRS'] || '').toLowerCase();
-                    return mrs.includes(query);
-                } else if (searchMode === 'vin') {
-                    const vin = String(row['VIN'] || '').toLowerCase();
-                    return vin.includes(query) || vin.endsWith(query);
-                } else if (searchMode === 'part') {
-                    const part = String(row['Part Desc'] || '').toLowerCase();
-                    return part.includes(query);
-                } else if (searchMode === 'invoice') {
-                    const inv = String(row['Invoice No'] || '').toLowerCase();
-                    return inv.includes(query);
-                } else if (searchMode === 'date') {
-                    const dt = String(row['PAYMENT DATE'] || '').toLowerCase();
-                    return dt.includes(query);
-                } else {
-                    const ro = String(row['R/O No'] || '').toLowerCase();
-                    const roSuffix = ro.replace(/^[^0-9]*/, '');
-                    return ro.includes(query) || roSuffix.endsWith(query);
-                }
+            const filtered = rawData.filter((row, i) => {
+                if (row.isDivider) return false;
+                const c = searchCache[i];
+                if (!c) return false;
+                if (searchMode === 'mrs')     return c.mrs.includes(query);
+                if (searchMode === 'vin')     return c.vin.includes(query) || c.vin.endsWith(query);
+                if (searchMode === 'part')    return c.part.includes(query);
+                if (searchMode === 'invoice') return c.invoice.includes(query);
+                if (searchMode === 'date')    return c.date.includes(query);
+                // default: ro mode
+                return c.ro.includes(query) || c.roSuffix.endsWith(query);
             });
             renderDataFast(filtered);
         }
@@ -3745,6 +3770,7 @@
                     row['MRS'] = '';
                     row['PAYMENT DATE'] = '—';
                     saveLedger();
+                    buildSearchCache();
                     renderDataFast(rawData);
                     showToast('Assigned MRS Cleared.', 'info');
                     // Refocus the same row if possible
@@ -3862,7 +3888,8 @@
                 });
 
                 saveLedger();
-                if (activeFilterFunc) activeFilterFunc(true); else filterTable();
+                buildSearchCache();
+                if (activeFilterFunc) activeFilterFunc(true); else filterTableNow();
                 closeMRSModal();
                 showToast(`✓ MRS ${val} — ${count} claims updated (RO: ${roNo})`, 'success');
             } else {
@@ -3870,7 +3897,8 @@
                 rawData[currentEditingRowIdx]['PAYMENT DATE'] = dateVal || '—';
 
                 saveLedger();
-                if (activeFilterFunc) activeFilterFunc(true); else filterTable();
+                buildSearchCache();
+                if (activeFilterFunc) activeFilterFunc(true); else filterTableNow();
                 closeMRSModal();
                 showToast(`✓ MRS ${val} saved.`, 'success');
             }
@@ -3940,7 +3968,7 @@
                 if (sA !== sB) return sA - sB;
                 return (parseInt(b['MRS']) || 0) - (parseInt(a['MRS']) || 0);
             });
-            saveLedger(); renderDataFast(rawData); closeCancelMRSModal();
+            saveLedger(); buildSearchCache(); renderDataFast(rawData); closeCancelMRSModal();
             const skipMsg = skipped ? ` · ${skipped} already exist` : '';
             showToast(`✓ ${added} Cancelled MRS added${skipMsg}.`, 'success');
         }
@@ -4005,13 +4033,14 @@
                     }
                     saveLedger();
                 }
-                filterTable();
+                buildSearchCache();
+                filterTableNow();
                 const sInput = document.getElementById('tableSearch');
                 if (sInput) sInput.focus();
             }
             function cancelEdit() {
                 td.classList.remove('editing');
-                filterTable();
+                filterTableNow();
                 const sInput = document.getElementById('tableSearch');
                 if (sInput) sInput.focus();
             }
@@ -4035,6 +4064,7 @@
                 () => {
                     rawData.splice(idx, 1);
                     saveLedger();
+                    buildSearchCache();
                     renderDataFast(rawData);
                     showToast('Entry deleted.', 'success');
                 }
