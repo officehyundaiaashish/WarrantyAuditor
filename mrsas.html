@@ -1129,7 +1129,8 @@
             margin: 16px;
             background: var(--surface);
             border-radius: 20px;
-            overflow: hidden;
+            overflow-y: auto;
+            overflow-x: hidden;
             box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.35);
             transform: scale(0.94) translateY(10px);
             transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1161,7 +1162,7 @@
 
         .modal-body {
             padding: 10px 16px 12px;
-            overflow-y: auto;
+            overflow-y: visible;
             flex: 1;
         }
 
@@ -1766,7 +1767,8 @@
             border-radius: 10px;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
             z-index: 200;
-            overflow: hidden;
+            overflow-y: auto;
+            max-height: 220px;
             list-style: none;
             padding: 4px;
         }
