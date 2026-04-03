@@ -1803,20 +1803,6 @@
             opacity: 0.6;
         }
 
-        tr.dragging {
-            opacity: 0.4 !important;
-            background: var(--bg-surface) !important;
-            border: 2px dashed var(--primary);
-        }
-        
-        tr.dragging * {
-            pointer-events: none !important;
-        }
-        
-        tr.drag-over {
-            border-bottom: 2px solid var(--primary);
-        }
-
         .c-drop-list {
             display: none;
             position: absolute;
@@ -1911,21 +1897,6 @@
             border: 1.5px solid var(--primary);
             color: var(--primary);
             box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.05);
-        }
-
-        tr.dragging {
-            opacity: 0.3;
-            background: var(--primary) !important;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-            transition: none;
-        }
-        
-        tr.dragging * {
-            pointer-events: none !important;
-        }
-        
-        .row-clickable:active, .mrs-range-divider-row:active {
-            cursor: grabbing !important;
         }
 
         /* ══════════════════════════════════════════
@@ -2597,26 +2568,6 @@
     </div>
 
     <script>
-        function triggerPaidFilter() {
-            const btn = document.getElementById('mrs-header-paid');
-            if (btn && btn.classList.contains('active')) {
-                btn.classList.remove('active');
-                activeFilterFunc = null;
-                renderLedgerMode();
-                return;
-            }
-            document.querySelectorAll('.pending-badge-header').forEach(b => b.classList.remove('active'));
-            if (btn) btn.classList.add('active');
-            activeFilterFunc = triggerPaidFilter;
-            const filtered = rawData.filter(row => {
-                if (row.isDivider) return true;
-                const rem = String(row['REMARKS'] || "").toUpperCase();
-                return rem === 'PAID';
-            });
-            renderDataFast(filtered);
-            showToast('Showing Paid Claims', 'success');
-        }
-
         // ── Storage Configuration (Aligned with main.html) ──
         localforage.config({ name: 'AutoPuncherDB', storeName: 'audits' });
 
@@ -3162,6 +3113,7 @@
                         if (!ck || target.isDivider) return;
                         const match2 = payMap[ck];
                         if (match2) {
+                            if (target.isRowLocked) return;
                             // SPECIAL REQUEST: Update if current amount is small (< 5) and incoming is larger (> 5)
                             // This fixes issues with partial/incorrect previous imports
                             const existingRecvd = parseFloat(String(target['AMT RECEIVED'] || "0").replace(/[^\d.-]/g, '')) || 0;
@@ -3477,50 +3429,108 @@
 
         // ── Helper: render only assigned rows (ledger mode) ──
         function renderLedgerMode() {
-            const rawAssigned = rawData.filter(r => r.isDivider || (r['MRS'] && r['MRS'] !== '' && r['MRS'] !== '—'));
-            
-            let assignedWithVirtual = [];
-            let firstDividerFound = false;
-            let orphanClaims = [];
+            const assigned = rawData.filter(r => r.isDivider || (r['MRS'] && r['MRS'] !== '' && r['MRS'] !== '—'));
 
-            for (const r of rawAssigned) {
-                if (r.isDivider) {
-                    firstDividerFound = true;
-                    if (orphanClaims.length > 0) {
-                        assignedWithVirtual.push({ isDivider: true, dividerText: 'MRS BOOK (Untitled)', _isVirtual: true });
-                        assignedWithVirtual.push(...orphanClaims);
-                        orphanClaims = [];
+            // PRE-SORT by MRS ascending to guarantee claims physically fall under their correct mathematical divider 
+            // before we attempt to parse them into groups. This fixes claims bleeding into wrong books when appended.
+            assigned.sort((a, b) => {
+                const numA = parseInt(a['MRS']) || 0;
+                const numB = parseInt(b['MRS']) || 0;
+                if (numA !== numB) return numA - numB;
+                if (a.isDivider && !b.isDivider) return -1;
+                if (!a.isDivider && b.isDivider) return 1;
+                return 0;
+            });
+
+            // Build a lookup of all book ranges from dividers
+            const bookRanges = [];
+            assigned.forEach(r => {
+                if (r.isDivider && r.dividerText) {
+                    const match = r.dividerText.match(/(\d+)\s*-\s*(\d+)/);
+                    if (match) {
+                        bookRanges.push({ divider: r, min: parseInt(match[1]), max: parseInt(match[2]) });
                     }
-                    assignedWithVirtual.push(r);
-                } else {
-                    if (!firstDividerFound) orphanClaims.push(r);
-                    else assignedWithVirtual.push(r);
                 }
-            }
-            if (orphanClaims.length > 0) {
-                assignedWithVirtual.unshift({ isDivider: true, dividerText: 'MRS BOOK (Untitled)', _isVirtual: true });
-                assignedWithVirtual.splice(1, 0, ...orphanClaims);
-            }
+            });
 
+            // Group claims under their MRS Book dividers, then sort descending
+            const groups = []; // [{divider, claims}]
+            const dividerGroupMap = new Map(); // divider row → group object
+
+            // First pass: create a group for every divider
+            assigned.forEach(r => {
+                if (r.isDivider) {
+                    const g = { divider: r, claims: [] };
+                    groups.push(g);
+                    dividerGroupMap.set(r, g);
+                }
+            });
+
+            // Second pass: route each claim to the correct book by range, or to orphan/untitled
+            assigned.forEach(r => {
+                if (r.isDivider) return;
+                const claimMrs = parseInt(r['MRS']) || 0;
+
+                // Find a book whose range contains this claim's MRS number
+                const matchingBook = bookRanges.find(b => claimMrs >= b.min && claimMrs <= b.max);
+
+                if (matchingBook) {
+                    // Claim belongs inside this book — add it there
+                    dividerGroupMap.get(matchingBook.divider).claims.push(r);
+                } else {
+                    // SMART ORPHAN ROUTING:
+                    // Claim is outside all existing book ranges.
+                    // Check if there is an "Untitled Book" divider already in rawData.
+                    // If yes, route into it. If no, create one dynamically for display only.
+                    let untitledGroup = groups.find(g => g.divider && g.divider.dividerText === 'MRS BOOK (Untitled)');
+                    if (!untitledGroup) {
+                        // Check if a real untitled divider exists in rawData
+                        let untitledDivider = rawData.find(r => r.isDivider && r.dividerText === 'MRS BOOK (Untitled)');
+                        if (!untitledDivider) {
+                            // Create a temporary display-only divider (not saved to rawData yet)
+                            // It will be saved only when user renames it via the MRS Range tool
+                            untitledDivider = { isDivider: true, dividerText: 'MRS BOOK (Untitled)', MRS: claimMrs, _isTemporary: true };
+                        }
+                        untitledGroup = { divider: untitledDivider, claims: [] };
+                        groups.push(untitledGroup);
+                        dividerGroupMap.set(untitledDivider, untitledGroup);
+                    }
+                    untitledGroup.claims.push(r);
+                }
+            });
+
+            // Sort groups descending by divider MRS number.
+            // Untitled (orphan) group always floats to the TOP (highest position).
+            groups.sort((a, b) => {
+                const aIsUntitled = a.divider && a.divider.dividerText === 'MRS BOOK (Untitled)';
+                const bIsUntitled = b.divider && b.divider.dividerText === 'MRS BOOK (Untitled)';
+                // Untitled group always comes first (top)
+                if (aIsUntitled && !bIsUntitled) return -1;
+                if (!aIsUntitled && bIsUntitled) return 1;
+                // Both normal: sort descending by MRS number
+                const aNum = a.divider ? (parseInt(a.divider['MRS']) || 0) : 0;
+                const bNum = b.divider ? (parseInt(b.divider['MRS']) || 0) : 0;
+                return bNum - aNum;
+            });
+
+            // Within each group, sort claims descending by MRS number
+            groups.forEach(g => {
+                g.claims.sort((a, b) => (parseInt(b['MRS']) || 0) - (parseInt(a['MRS']) || 0));
+            });
+
+            // Flatten back: divider first, then its claims
+            const sorted = [];
             const bookLabel = document.getElementById('mrsBookLabel') ? document.getElementById('mrsBookLabel').textContent : 'All Books';
             const showAll = (bookLabel === 'All Books' || bookLabel === 'Jump to Book...');
 
-            let filtered = assignedWithVirtual;
-            if (!showAll) {
-                let inSelectedBook = false;
-                filtered = [];
-                for (const r of assignedWithVirtual) {
-                    if (r.isDivider) {
-                        if (r.dividerText === bookLabel) inSelectedBook = true;
-                        else if (inSelectedBook) break; 
-                        if (inSelectedBook) filtered.push(r);
-                    } else if (inSelectedBook) {
-                        filtered.push(r);
-                    }
+            groups.forEach(g => {
+                if (showAll || (g.divider && g.divider.dividerText === bookLabel)) {
+                    if (g.divider) sorted.push(g.divider);
+                    sorted.push(...g.claims);
                 }
-            }
+            });
 
-            renderDataFast(filtered);
+            renderDataFast(sorted);
         }
 
         // ── Feature: Working Mode Toggle ──
@@ -3572,15 +3582,6 @@
                     if (!books.includes(r.dividerText)) books.push(r.dividerText);
                 }
             });
-            // Auto-check for orphans to add Untitled option
-            const hasOrphans = rawData.some((r, i) => {
-                if (r.isDivider || !r['MRS'] || r['MRS'] === '' || r['MRS'] === '—') return false;
-                // Find if there is any divider above it
-                for(let j=i-1; j>=0; j--) { if(rawData[j].isDivider) return false; }
-                return true;
-            });
-            if (hasOrphans && !books.includes('MRS BOOK (Untitled)')) books.push('MRS BOOK (Untitled)');
-
             // Ensure dropdown list is explicitly descending numerically
             books.sort((a, b) => {
                 const numA = parseInt((a.match(/\d+/) || [0])[0]);
@@ -3847,6 +3848,7 @@
 
         function buildRowHTML(row, ri) {
             if (row.isDivider) {
+                const isRowLocked = !!row.isRowLocked;
                 let missingInfo = '';
                 if (row.dividerText && row.dividerText.includes('(') && row.dividerText.includes('-') && row.dividerText.includes(')')) {
                     const match = row.dividerText.match(/\((\d+)-(\d+)\)/);
@@ -3875,11 +3877,13 @@
                         }
                     }
                 }
-                return `<tr class="mrs-range-divider-row" style="height:${VS_DIV_H}px" draggable="true" ondragstart="handleDragStart(event, ${ri})" ondragover="handleDragOver(event)" ondragenter="handleDragEnter(event, ${ri})" ondragend="handleDragEnd(event)">
-                    <td style="text-align:center;background:rgba(77,207,195,0.18);border-top:2.5px solid #2ab5a5;border-bottom:2.5px solid #2ab5a5;width:50px;box-shadow:inset 0 2px 4px rgba(0,0,0,0.05);border-right:1.5px solid rgba(42,181,165,0.3);cursor:grab;" title="Drag to move">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.6;"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+                return `<tr class="mrs-range-divider-row ${isRowLocked ? 'row-locked' : ''}" style="height:${VS_DIV_H}px">
+                    <td style="text-align:center;background:rgba(77,207,195,0.18);border-top:2.5px solid #2ab5a5;border-bottom:2.5px solid #2ab5a5;width:50px;box-shadow:inset 0 2px 4px rgba(0,0,0,0.05);border-right:1.5px solid rgba(42,181,165,0.3);">
+                        <button onclick="event.stopPropagation();toggleRowLock(${ri})" title="${isRowLocked ? 'Unlock book' : 'Lock book'}" style="background:transparent;border:none;color:${isRowLocked ? 'var(--danger)' : 'var(--success)'};cursor:pointer;opacity:0.6;transition:0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">
+                            ${isRowLocked ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>'}
+                        </button>
                     </td>
-                    <td colspan="${columns.length - 1}" class="editable" ondblclick="startEditDivider(event,this,${ri})" title="Double-click to rename" style="padding:11px 18px;background:linear-gradient(90deg,rgba(42,181,165,0.28) 0%,rgba(77,207,195,0.18) 100%);border-top:2.5px solid #2ab5a5;border-bottom:2.5px solid #2ab5a5;color:var(--primary);font-size:0.85rem;font-weight:900;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;cursor:pointer;">
+                    <td colspan="${columns.length - 1}" class="editable" ondblclick="startEditDivider(event,this,${ri})" title="${isRowLocked ? 'Locked Divider' : 'Double-click to rename'}" style="padding:11px 18px;background:linear-gradient(90deg,rgba(42,181,165,0.28) 0%,rgba(77,207,195,0.18) 100%);border-top:2.5px solid #2ab5a5;border-bottom:2.5px solid #2ab5a5;color:var(--primary);font-size:0.85rem;font-weight:900;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;cursor:pointer;">
                         <span style="display:inline-flex;align-items:center;gap:10px;">
                             <span onclick="event.stopPropagation();startEditDivider(event, this.closest('td'), ${ri})" title="Rename Book" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:rgba(42,181,165,0.15);cursor:pointer;transition:all 0.2s;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span>
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -3894,9 +3898,11 @@
             const cells = columns.map(col => {
                 let val = (row[col] !== undefined && row[col] !== null && row[col] !== '') ? row[col] : '\u2014';
                 if (col === '') {
-                    return `<td style="text-align:center;width:44px;background:rgba(0,0,0,0.012);border-right:1px solid var(--border);cursor:grab;" title="Drag to move">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4;"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
-                    </td>`;
+                    const rl = !!row.isRowLocked;
+                    return `<td style="text-align:center;width:44px;background:rgba(0,0,0,0.012);border-right:1px solid var(--border);">
+                        <button onclick="event.stopPropagation();toggleRowLock(${ri})" title="${rl ? 'Unlock row' : 'Lock row'}" style="background:transparent;border:none;color:${rl ? 'var(--danger)' : 'var(--success)'};cursor:pointer;opacity:0.6;transition:0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">
+                            ${rl ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>'}
+                        </button></td>`;
                 }
                 if (col === 'MRS') return `<td><span class="badge badge-mrs" title="Click row to assign MRS">${val} <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5;vertical-align:middle;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span></td>`;
                 if (col === 'R/O No') { const css = /^CANC/i.test(String(val)) ? 'badge badge-cancel' : 'badge badge-ro'; return `<td><span class="${css}">${val}</span></td>`; }
@@ -3908,73 +3914,10 @@
                 return `<td class="editable" ondblclick="startEdit(event,this,${ri},'${col}')" title="Double-click to edit">${val}</td>`;
             }).join('');
             const isCancelled = String(row['REMARKS']).toUpperCase().startsWith('CANCELLED');
+            const isRowLocked = !!row.isRowLocked;
             const isUnassigned = !row['MRS'] || row['MRS'] === '' || row['MRS'] === '—';
-            const rowClasses = ['row-clickable', isCancelled ? 'row-cancelled' : '', isUnassigned ? 'row-unassigned' : ''].filter(Boolean).join(' ');
-            return `<tr class="${rowClasses}" style="height:${VS_ROW_H}px" tabindex="0" draggable="true" ondragstart="handleDragStart(event, ${ri})" ondragover="handleDragOver(event)" ondragenter="handleDragEnter(event, ${ri})" ondragend="handleDragEnd(event)" onkeydown="handleRowKey(event,${ri})" onclick="openMRSModal(${ri})" title="${isUnassigned ? 'Click to assign MRS' : 'Click to view MRS #' + mrsVal}">${cells}</tr>`;
-        }
-
-        // ── Drag & Drop Handlers ──
-        let draggingIdx = null;
-        let lastSwapTime = 0;
-        let isSwappingNow = false;
-
-        function handleDragStart(e, idx) {
-            if (idx === -1) { e.preventDefault(); return; }
-            draggingIdx = idx;
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', idx); // Compatibility
-            e.target.classList.add('dragging');
-        }
-        function handleDragOver(e) { e.preventDefault(); return false; }
-        function handleDragEnter(e, targetIdx) {
-            if (isSwappingNow || draggingIdx === null || draggingIdx === targetIdx || targetIdx === -1) return;
-            
-            if (isLocked) {
-                // Throttled toast to avoid spamming
-                const now = Date.now();
-                if (now - lastSwapTime > 2000) {
-                    showToast('Ledger is locked. Unlock to reorder.', 'warn');
-                    lastSwapTime = now;
-                }
-                return;
-            }
-
-            const now = Date.now();
-            if (now - lastSwapTime < 180) return; 
-
-            isSwappingNow = true;
-
-            const itemDragging = rawData[draggingIdx];
-            const itemTarget = rawData[targetIdx];
-            if (!itemDragging || !itemTarget) { isSwappingNow = false; return; }
-
-            // Perform Physical Swap in rawData
-            rawData[draggingIdx] = itemTarget;
-            rawData[targetIdx] = itemDragging;
-
-            // Sync swap in currentDataset if it exists
-            const dsIdx1 = currentDataset.indexOf(itemDragging);
-            const dsIdx2 = currentDataset.indexOf(itemTarget);
-            if (dsIdx1 !== -1 && dsIdx2 !== -1) {
-                currentDataset[dsIdx1] = itemTarget;
-                currentDataset[dsIdx2] = itemDragging;
-            }
-
-            draggingIdx = targetIdx;
-            lastSwapTime = now;
-
-            vsComputeOffsets(currentDataset);
-            vsRender(); // SYNC RENDER: Immediately update DOM indices to prevent yoyo-flicker
-            
-            isSwappingNow = false;
-        }
-        function handleDragEnd(e) {
-            draggingIdx = null;
-            const dragged = document.querySelector('.dragging');
-            if (dragged) dragged.classList.remove('dragging');
-            saveLedger();
-            if (!isWorkingMode) renderLedgerMode();
-            else filterTableNow();
+            const rowClasses = ['row-clickable', isCancelled ? 'row-cancelled' : '', isRowLocked ? 'row-locked' : '', isUnassigned ? 'row-unassigned' : ''].filter(Boolean).join(' ');
+            return `<tr class="${rowClasses}" style="height:${VS_ROW_H}px" tabindex="0" onkeydown="handleRowKey(event,${ri})" onclick="openMRSModal(${ri})" title="${isRowLocked ? 'Locked - Click to view' : isUnassigned ? 'Click to assign MRS' : 'Click to view MRS #' + mrsVal}">${cells}</tr>`;
         }
 
         // Binary search: find first row index whose bottom edge > scrollTop
@@ -4245,7 +4188,7 @@
                 e.preventDefault();
                 if (isLocked) { showToast('Ledger Locked', 'danger'); return; }
                 const row = rawData[ri];
-                if (row && row['MRS']) {
+                if (row && !row.isRowLocked && row['MRS']) {
                     row['MRS'] = '';
                     row['PAYMENT DATE'] = '—';
                     saveLedger();
@@ -4274,15 +4217,16 @@
         // ── Feature #5+6: MRS Modal ──
         function openMRSModal(rowIdx) {
             const row = rawData[rowIdx];
-            currentEditingRowIdx = rowIdx;
+            const isRowLocked = isLocked || !!row.isRowLocked;
 
-            // Basic Info
+            currentEditingRowIdx = rowIdx;
             document.getElementById('mrsInfoRO').textContent = row['R/O No'] || '—';
+            document.getElementById('mrsInfoClaim').textContent = row['Claim No'] || '—';
+            document.getElementById('mrsInfoType').textContent = row['Claim Type'] || '—';
             document.getElementById('mrsInfoVIN').textContent = row['VIN'] || '—';
             document.getElementById('mrsInfoTotal').textContent = row['Total Amt'] || '—';
             document.getElementById('mrsInfoReceived').textContent = row['AMT RECEIVED'] || '—';
             document.getElementById('mrsInfoDiff').textContent = row['DIFF AMT'] || '—';
-            
             const status = row['REMARKS'] || '—';
             const sEl = document.getElementById('mrsInfoStatus');
             sEl.textContent = status;
@@ -4291,62 +4235,67 @@
 
             const inp = document.getElementById('mrsNumberInput');
             inp.value = (row['MRS'] && row['MRS'] !== '—') ? row['MRS'] : '';
-            inp.disabled = isLocked;
+            inp.disabled = isRowLocked;
+
+            inp.disabled = isRowLocked;
 
             const dateInp = document.getElementById('mrsDateInput');
-            dateInp.value = (row['MRS DATE'] && row['MRS DATE'] !== '—') ? row['MRS DATE'] : row['PAYMENT DATE'] || '';
-            dateInp.disabled = isLocked;
+            dateInp.value = (row['PAYMENT DATE'] && row['PAYMENT DATE'] !== '—') ? row['PAYMENT DATE'] : '';
+            dateInp.disabled = isRowLocked;
 
             // Part Desc
             document.getElementById('mrsInfoPartDesc').textContent = row['Part Desc'] || '—';
 
-            // Siblings
+            // Check for sibling claims (same RO No)
             const roNo = String(row['R/O No'] || '').trim();
-            const siblings = roNo ? rawData.filter(r => !r.isDivider && String(r['R/O No'] || '').trim() === roNo && (rowIndexMap.get(r) ?? rawData.indexOf(r)) !== rowIdx) : [];
+            const siblings = roNo ? rawData.filter(r => String(r['R/O No'] || '').trim() === roNo && (rowIndexMap.get(r) ?? rawData.indexOf(r)) !== rowIdx) : [];
             const applyWrap = document.getElementById('mrsApplyAllWrap');
-            const applyChk = document.getElementById('applyToAllSimilar');
+            const applyChk = document.getElementById('mrsApplyAll');
             const siblingsWrap = document.getElementById('mrsInfoSiblingsWrap');
             const siblingsList = document.getElementById('mrsInfoSiblingsList');
-
             if (siblings.length > 0) {
-                document.getElementById('mrsApplyAllLabel').textContent = `Is RO ke ${siblings.length + 1} claims hain — sabko same MRS assign karo`;
-                if (applyChk) {
-                    applyChk.checked = false;
-                    applyChk.disabled = isLocked;
-                }
+                document.getElementById('mrsApplyAllLabel').textContent =
+                    `Is RO ke ${siblings.length + 1} claims hain — sabko same MRS assign karo`;
+                applyChk.checked = false;
                 applyWrap.style.display = 'block';
+                applyChk.disabled = isRowLocked;
+                // Show sibling part descriptions
                 siblingsList.innerHTML = siblings.map(s => {
-                    const pd = s['Part Desc'] || '—';
-                    const cn = s['Claim No'] || '—';
+                    const partDesc = s['Part Desc'] || '—';
+                    const claimNo = s['Claim No'] || '—';
                     return `<div style="font-size:0.68rem;padding:3px 8px;background:rgba(42,181,165,0.07);border-radius:6px;border:1px solid rgba(42,181,165,0.15);color:var(--text-main);">
-                        <span style="color:var(--text-muted);font-weight:600;">${cn}</span> — <strong>${pd}</strong>
+                        <span style="color:var(--text-muted);font-weight:600;">${claimNo}</span> — <strong>${partDesc}</strong>
                     </div>`;
                 }).join('');
                 siblingsWrap.style.display = 'block';
             } else {
                 applyWrap.style.display = 'none';
+                applyChk.checked = false;
                 siblingsWrap.style.display = 'none';
+                siblingsList.innerHTML = '';
             }
 
-            // Lock Notice
-            document.getElementById('mrsModalLockedNotice').style.display = isLocked ? 'block' : 'none';
-            if (isLocked) {
-                document.getElementById('mrsModalLockedNotice').innerText = '🔒 GLOBAL LEDGER IS LOCKED';
+            document.getElementById('mrsModal').classList.add('active');
+            toggleBodyScroll(true);
+
+            // Handle row lock state in modal
+            document.getElementById('mrsModalLockedNotice').style.display = isRowLocked ? 'block' : 'none';
+            if (isRowLocked) {
+                document.getElementById('mrsModalLockedNotice').innerText = isLocked ? '🔒 GLOBAL LEDGER IS LOCKED' : '🔒 THIS RECORD IS INDIVIDUALLY LOCKED';
             }
 
             const saveBtn = document.querySelector('#mrsModal .modal-btn-confirm');
             if (saveBtn) {
-                saveBtn.disabled = isLocked;
-                saveBtn.style.opacity = isLocked ? '0.5' : '1';
-                saveBtn.style.pointerEvents = isLocked ? 'none' : 'auto';
+                saveBtn.disabled = isRowLocked;
+                saveBtn.style.opacity = isRowLocked ? '0.5' : '1';
+                saveBtn.style.pointerEvents = isRowLocked ? 'none' : 'auto';
             }
 
+            // Show "Clear MRS" button only if MRS is already assigned
             const clearWrap = document.getElementById('clearMRSWrap');
-            if (clearWrap) clearWrap.style.display = (row['MRS'] && row['MRS'] !== '—' && !isLocked) ? 'block' : 'none';
+            if (clearWrap) clearWrap.style.display = (row['MRS'] && row['MRS'] !== '—' && !isRowLocked) ? 'block' : 'none';
 
-            document.getElementById('mrsModal').classList.add('active');
-            toggleBodyScroll(true);
-            setTimeout(() => { if (!isLocked) inp.focus(); }, 280);
+            setTimeout(() => { if (!isRowLocked) inp.focus(); }, 280);
         }
         function clearMRSEntry() {
             if (currentEditingRowIdx === null) return;
@@ -4411,6 +4360,13 @@
             }
 
             if (dividerAdded) {
+                // Sort to place dividers correctly
+                rawData.sort((a, b) => {
+                    const sA = (a.isDivider || (a['MRS'] && a['MRS'] !== '-')) ? 1 : 0;
+                    const sB = (b.isDivider || (b['MRS'] && b['MRS'] !== '-')) ? 1 : 0;
+                    if (sA !== sB) return sA - sB;
+                    return (parseInt(b['MRS']) || 0) - (parseInt(a['MRS']) || 0);
+                });
                 return true;
             }
             return false;
@@ -4420,6 +4376,7 @@
             if (isLocked) { showToast('Locked: Cannot assign MRS.', 'danger'); return; }
             if (currentEditingRowIdx === null) return;
             const row = rawData[currentEditingRowIdx];
+            if (row.isRowLocked) { showToast('Error: Individual MRS record is locked.', 'danger'); return; }
             const val = parseInt(document.getElementById('mrsNumberInput').value);
             const dateVal = document.getElementById('mrsDateInput').value.trim();
 
@@ -4611,6 +4568,7 @@
             function commitEdit() {
                 if (isLocked) { cancelEdit(); showToast('Locked: Editing disabled.', 'danger'); return; }
                 const row = rawData[rowIdx];
+                if (row.isRowLocked) { cancelEdit(); showToast('Row is locked.', 'danger'); return; }
                 const newVal = input.value.trim();
                 td.classList.remove('editing');
                 if (newVal !== '') {
@@ -4645,6 +4603,7 @@
         function deleteEntry(idx) {
             if (isLocked) { showToast('Locked: No deletions allowed.', 'danger'); return; }
             const entry = rawData[idx];
+            if (entry.isRowLocked) { showToast('Cannot delete a locked record.', 'danger'); return; }
             const name = entry.isDivider ? "Divider" : (entry['Claim No'] || 'Claim');
             showConfirm(
                 `Delete this entry (${name})?`,
@@ -4659,10 +4618,31 @@
             );
         }
 
+        function toggleRowLock(idx) {
+            if (isLocked) { showToast('Cannot toggle lock while global ledger is locked!', 'danger'); return; }
+            const row = rawData[idx];
+            const newState = !row.isRowLocked;
+            row.isRowLocked = newState;
+
+            // If it's a divider, toggle all claims in this book
+            if (row.isDivider) {
+                for (let i = idx + 1; i < rawData.length; i++) {
+                    if (rawData[i].isDivider) break;
+                    rawData[i].isRowLocked = newState;
+                }
+            }
+
+            saveLedger();
+            renderDataFast(currentDataset);
+            const msg = row.isRowLocked ? (row.isDivider ? '🔒 Entire Book Locked' : '🔒 Row Locked') : (row.isDivider ? '🔓 Entire Book Unlocked' : '🔓 Row Unlocked');
+            showToast(msg, row.isRowLocked ? 'warn' : 'success');
+        }
+
         // ── Feature: Rename Divider ──
         function startEditDivider(evt, td, rowIdx) {
             if (isLocked) { showToast('Locked: No changes allowed.', 'danger'); return; }
             const row = rawData[rowIdx];
+            if (row.isRowLocked) { showToast('Divider is locked.', 'danger'); return; }
             if (evt) evt.stopPropagation();
             if (td.classList.contains('editing')) return;
             const currentVal = row.dividerText || '';
@@ -4750,6 +4730,7 @@
         function setRemark(idx, val) {
             if (isLocked) { showToast('Locked: Cannot change remarks.', 'danger'); return; }
             const row = rawData[idx];
+            if (row.isRowLocked) { showToast('Row is locked.', 'danger'); return; }
 
             if (val === 'OTHER') {
                 const custom = prompt("Enter custom remark:", "");
