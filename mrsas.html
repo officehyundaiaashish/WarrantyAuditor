@@ -1865,7 +1865,7 @@
     <div class="content-wrap" id="app-root">
 
         <!-- Import Controls -->
-        <div class="premium-card" style="padding: 16px 20px 14px;">
+        <div id="importControlsCard" class="premium-card" style="padding: 16px 20px 14px;">
             <div class="section-header" style="margin-bottom: 12px; padding-bottom: 10px;">
                 <div class="tile-icon" style="width: 32px; height: 32px;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
@@ -3198,10 +3198,13 @@
             isWorkingMode = !isWorkingMode;
             const btn = document.getElementById('workingModeBtn');
             const label = document.getElementById('workingLabel');
+            const importCard = document.getElementById('importControlsCard');
 
             if (isWorkingMode) {
                 btn.classList.replace('inactive', 'active');
                 label.textContent = 'WORKING MODE';
+                // Hide import card — working mode is for assigning MRS, not importing
+                if (importCard) importCard.style.display = 'none';
                 const filtered = rawData.filter(r => !r.isDivider && (!r['MRS'] || r['MRS'] === '' || r['MRS'] === '—'));
                 currentPage = 1;
                 renderDataFast(filtered);
@@ -3209,9 +3212,13 @@
             } else {
                 btn.classList.replace('active', 'inactive');
                 label.textContent = 'LEDGER MODE';
+                // Show import card in ledger mode
+                if (importCard) importCard.style.display = '';
+                // Ledger mode = only assigned rows (MRS is filled)
+                const assigned = rawData.filter(r => r.isDivider || (r['MRS'] && r['MRS'] !== '' && r['MRS'] !== '—'));
                 currentPage = 1;
-                renderDataFast(rawData);
-                showToast('Ledger Mode: Showing ledger records', 'info');
+                renderDataFast(assigned);
+                showToast('Ledger Mode: Only Assigned MRS shown', 'info');
             }
         }
 
