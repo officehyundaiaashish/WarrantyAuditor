@@ -1804,8 +1804,9 @@
         }
 
         tr.dragging {
-            opacity: 0.05 !important;
-            background: var(--primary) !important;
+            opacity: 0.4 !important;
+            background: var(--bg-surface) !important;
+            border: 2px dashed var(--primary);
         }
         
         tr.dragging * {
@@ -3918,22 +3919,34 @@
         let isSwappingNow = false;
 
         function handleDragStart(e, idx) {
-            if (isLocked) { e.preventDefault(); return; }
+            if (idx === -1) { e.preventDefault(); return; }
             draggingIdx = idx;
             e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', idx); // Compatibility
             e.target.classList.add('dragging');
         }
         function handleDragOver(e) { e.preventDefault(); return false; }
         function handleDragEnter(e, targetIdx) {
-            if (isSwappingNow || draggingIdx === null || draggingIdx === targetIdx) return;
+            if (isSwappingNow || draggingIdx === null || draggingIdx === targetIdx || targetIdx === -1) return;
+            
+            if (isLocked) {
+                // Throttled toast to avoid spamming
+                const now = Date.now();
+                if (now - lastSwapTime > 2000) {
+                    showToast('Ledger is locked. Unlock to reorder.', 'warn');
+                    lastSwapTime = now;
+                }
+                return;
+            }
+
             const now = Date.now();
-            if (now - lastSwapTime < 200) return; // High throttle to eliminate vibration/flicker
+            if (now - lastSwapTime < 180) return; 
+
+            isSwappingNow = true;
 
             const itemDragging = rawData[draggingIdx];
             const itemTarget = rawData[targetIdx];
-            if (!itemDragging || !itemTarget) return;
-
-            isSwappingNow = true;
+            if (!itemDragging || !itemTarget) { isSwappingNow = false; return; }
 
             // Perform Physical Swap in rawData
             rawData[draggingIdx] = itemTarget;
