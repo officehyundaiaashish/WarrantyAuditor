@@ -3779,7 +3779,14 @@
         function _doFilter() {
             currentPage = 1;
             const query = document.getElementById('tableSearch').value.trim().toLowerCase();
-            if (!query) { renderDataFast(rawData); return; }
+            if (!query) {
+                if (isWorkingMode) {
+                    renderDataFast(rawData.filter(r => !r.isDivider && (!r['MRS'] || r['MRS'] === '' || r['MRS'] === '—')));
+                } else {
+                    renderLedgerMode();
+                }
+                return;
+            }
             const filtered = rawData.filter((row, i) => {
                 if (row.isDivider) return false;
                 const c = searchCache[i];
@@ -4092,7 +4099,9 @@
 
                 saveLedger();
                 buildSearchCache();
-                if (activeFilterFunc) activeFilterFunc(true); else filterTableNow();
+                if (activeFilterFunc) activeFilterFunc(true);
+                else if (isWorkingMode) renderDataFast(rawData.filter(r => !r.isDivider && (!r['MRS'] || r['MRS'] === '' || r['MRS'] === '—')));
+                else renderLedgerMode();
                 closeMRSModal();
                 showToast(`MRS ${val} — ${count} claims updated (RO: ${roNo})`, 'success');
             } else {
@@ -4101,7 +4110,9 @@
 
                 saveLedger();
                 buildSearchCache();
-                if (activeFilterFunc) activeFilterFunc(true); else filterTableNow();
+                if (activeFilterFunc) activeFilterFunc(true);
+                else if (isWorkingMode) renderDataFast(rawData.filter(r => !r.isDivider && (!r['MRS'] || r['MRS'] === '' || r['MRS'] === '—')));
+                else renderLedgerMode();
                 closeMRSModal();
                 showToast(`MRS ${val} saved.`, 'success');
             }
@@ -4192,21 +4203,29 @@
             const trigger = e.currentTarget;
             const isOpen = drop.classList.contains('open');
             if (isOpen) { drop.classList.remove('open'); return; }
-            // Position the list using fixed coords so modal overflow doesn't clip it
+
+            // Apply fixed positioning BEFORE opening so it doesn't get clipped by modal
             const rect = trigger.getBoundingClientRect();
-            const spaceBelow = window.innerHeight - rect.bottom;
-            const listH = Math.min(220, list.scrollHeight + 10);
-            if (spaceBelow < listH) {
-                // Open upward
-                list.style.top = 'auto';
-                list.style.bottom = (window.innerHeight - rect.top + 6) + 'px';
-            } else {
-                list.style.bottom = 'auto';
-                list.style.top = (rect.bottom + 6) + 'px';
-            }
+            list.style.position = 'fixed';
             list.style.left = rect.left + 'px';
             list.style.width = rect.width + 'px';
-            list.style.position = 'fixed';
+            list.style.zIndex = '99999';
+            list.style.maxHeight = '220px';
+            list.style.overflowY = 'auto';
+            // Temporarily make visible off-screen to measure height
+            list.style.top = '-9999px';
+            list.style.display = 'block';
+            const listH = Math.min(220, list.offsetHeight + 4);
+            list.style.display = '';
+
+            const spaceBelow = window.innerHeight - rect.bottom;
+            if (spaceBelow < listH + 10) {
+                list.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+                list.style.top = 'auto';
+            } else {
+                list.style.top = (rect.bottom + 4) + 'px';
+                list.style.bottom = 'auto';
+            }
             drop.classList.add('open');
         }
         function selectCancelReason(val, label) {
