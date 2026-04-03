@@ -4539,6 +4539,12 @@
                 const nv = input.value.trim();
                 td.classList.remove('editing');
                 if (nv && nv !== currentVal) {
+                    // Update jump to book label if it's currently selected
+                    const bookLabelEl = document.getElementById('mrsBookLabel');
+                    if (bookLabelEl && bookLabelEl.textContent === currentVal) {
+                        bookLabelEl.textContent = nv;
+                    }
+                    
                     row.dividerText = nv;
                     saveLedger();
                 }
