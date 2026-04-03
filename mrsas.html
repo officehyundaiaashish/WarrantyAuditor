@@ -2089,7 +2089,7 @@
                 <!-- Group 3: Status & Info -->
                 <div style="display:flex; align-items:center; gap:10px; flex-shrink:0;">
                     <button id="workingModeBtn" onclick="toggleWorkingMode()" class="btn-working-mode inactive" title="Show only unassigned claims">
-                        <span id="workingIcon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> <span id="workingLabel">ALL MODE</span>
+                        <span id="workingIcon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> <span id="workingLabel">LEDGER MODE</span>
                     </button>
                     <button id="lockStatusBtn" onclick="toggleGlobalLock()" class="btn-premium btn-outline"
                         style="padding:7px 12px; font-size:0.68rem; font-weight:800; border-color:var(--border); display:inline-flex; align-items:center; gap:6px; min-width:105px;">
@@ -3211,7 +3211,7 @@
                 label.textContent = 'LEDGER MODE';
                 currentPage = 1;
                 renderDataFast(rawData);
-                showToast('Showing all records', 'info');
+                showToast('Ledger Mode: Showing ledger records', 'info');
             }
         }
 
