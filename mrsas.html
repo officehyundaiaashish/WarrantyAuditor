@@ -3331,6 +3331,7 @@
         }
 
         let paginatedSlices = [];
+        let rowIndexMap = new Map(); // row object → rawData index (O(1) lookup)
 
         function updateBookFilter() {
             // Updated to ensure label stays correct if we are in book mode
@@ -3340,6 +3341,9 @@
         // ── Render Table (paginated) ──
         function renderData(data) {
             currentDataset = data;
+            // Precompute index map — avoids O(n) indexOf in renderPage (perf fix for large DB)
+            rowIndexMap = new Map();
+            rawData.forEach((row, idx) => rowIndexMap.set(row, idx));
 
             // Calculate slices: Each slice starts with a divider (if any exist)
             paginatedSlices = [];
@@ -3485,7 +3489,7 @@
             // ── Rendering ──
             const rows = [];
             pageRows.forEach((row) => {
-                const ri = rawData.indexOf(row);
+                const ri = rowIndexMap.get(row) ?? rawData.indexOf(row);
                 if (row.isDivider) {
                     const isRowLocked = !!row.isRowLocked;
                     rows.push(`<tr class="mrs-range-divider-row ${isRowLocked ? 'row-locked' : ''}">
@@ -3702,7 +3706,7 @@
             if (active === searchInput && e.key === 'Enter') {
                 e.preventDefault();
                 if (currentDataset.length > 0) {
-                    const firstRealIdx = rawData.indexOf(currentDataset[0]);
+                    const firstRealIdx = rowIndexMap.get(currentDataset[0]) ?? rawData.indexOf(currentDataset[0]);
                     if (firstRealIdx !== -1) openMRSModal(firstRealIdx);
                 }
                 return;
@@ -3774,7 +3778,7 @@
 
             // Check for sibling claims (same RO No)
             const roNo = String(row['R/O No'] || '').trim();
-            const siblings = roNo ? rawData.filter(r => String(r['R/O No'] || '').trim() === roNo && rawData.indexOf(r) !== rowIdx) : [];
+            const siblings = roNo ? rawData.filter(r => String(r['R/O No'] || '').trim() === roNo && (rowIndexMap.get(r) ?? rawData.indexOf(r)) !== rowIdx) : [];
             const applyWrap = document.getElementById('mrsApplyAllWrap');
             const applyChk = document.getElementById('mrsApplyAll');
             if (siblings.length > 0) {
