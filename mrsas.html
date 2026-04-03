@@ -2222,6 +2222,14 @@
                     </button>
                     <button class="modal-btn-cancel" onclick="closeMRSModal()">Cancel</button>
                 </div>
+                <div id="clearMRSWrap" style="margin-top:8px;display:none;">
+                    <button onclick="clearMRSEntry()" style="width:100%;padding:8px;border-radius:10px;border:1.5px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.05);color:var(--danger);font-size:0.75rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease;font-family:inherit;"
+                        onmouseover="this.style.background='var(--danger)';this.style.color='#fff';"
+                        onmouseout="this.style.background='rgba(239,68,68,0.05)';this.style.color='var(--danger)';">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                        Clear MRS Assignment
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -3210,7 +3218,48 @@
         // ── Helper: render only assigned rows (ledger mode) ──
         function renderLedgerMode() {
             const assigned = rawData.filter(r => r.isDivider || (r['MRS'] && r['MRS'] !== '' && r['MRS'] !== '—'));
-            renderDataFast(assigned);
+
+            // Group claims under their MRS Book dividers, then sort descending
+            const groups = []; // [{divider, claims}]
+            let currentGroup = null;
+
+            assigned.forEach(r => {
+                if (r.isDivider) {
+                    currentGroup = { divider: r, claims: [] };
+                    groups.push(currentGroup);
+                } else {
+                    if (currentGroup) {
+                        currentGroup.claims.push(r);
+                    } else {
+                        // Claims with no divider — put in a virtual group
+                        if (!groups.length || groups[0].divider !== null) {
+                            groups.unshift({ divider: null, claims: [] });
+                        }
+                        groups[0].claims.push(r);
+                    }
+                }
+            });
+
+            // Sort groups descending by divider MRS number
+            groups.sort((a, b) => {
+                const aNum = a.divider ? (parseInt(a.divider['MRS']) || 0) : -1;
+                const bNum = b.divider ? (parseInt(b.divider['MRS']) || 0) : -1;
+                return bNum - aNum;
+            });
+
+            // Within each group, sort claims descending by MRS number
+            groups.forEach(g => {
+                g.claims.sort((a, b) => (parseInt(b['MRS']) || 0) - (parseInt(a['MRS']) || 0));
+            });
+
+            // Flatten back: divider first, then its claims
+            const sorted = [];
+            groups.forEach(g => {
+                if (g.divider) sorted.push(g.divider);
+                sorted.push(...g.claims);
+            });
+
+            renderDataFast(sorted);
         }
 
         // ── Feature: Working Mode Toggle ──
@@ -3907,8 +3956,31 @@
                 saveBtn.style.pointerEvents = isRowLocked ? 'none' : 'auto';
             }
 
+            // Show "Clear MRS" button only if MRS is already assigned
+            const clearWrap = document.getElementById('clearMRSWrap');
+            if (clearWrap) clearWrap.style.display = (row['MRS'] && row['MRS'] !== '—' && !isRowLocked) ? 'block' : 'none';
+
             setTimeout(() => { if (!isRowLocked) inp.focus(); }, 280);
         }
+        function clearMRSEntry() {
+            if (currentEditingRowIdx === null) return;
+            const row = rawData[currentEditingRowIdx];
+            showConfirm(`MRS ${row['MRS']} clear kar dein is claim se?`, '🗑️',
+                () => {
+                    row['MRS'] = '';
+                    saveLedger();
+                    buildSearchCache();
+                    if (isWorkingMode) {
+                        renderDataFast(rawData.filter(r => !r.isDivider && (!r['MRS'] || r['MRS'] === '' || r['MRS'] === '—')));
+                    } else {
+                        renderLedgerMode();
+                    }
+                    closeMRSModal();
+                    showToast('MRS cleared. Claim is now unassigned.', 'success');
+                }
+            );
+        }
+
         function closeMRSModal() {
             document.getElementById('mrsModal').classList.remove('active');
             currentEditingRowIdx = null;
@@ -4086,7 +4158,27 @@
         // ── Custom Cancel Reason Dropdown ──
         function toggleCancelDrop(e) {
             e.stopPropagation();
-            document.getElementById('cancelReasonDrop').classList.toggle('open');
+            const drop = document.getElementById('cancelReasonDrop');
+            const list = document.getElementById('cancelReasonList');
+            const trigger = e.currentTarget;
+            const isOpen = drop.classList.contains('open');
+            if (isOpen) { drop.classList.remove('open'); return; }
+            // Position the list using fixed coords so modal overflow doesn't clip it
+            const rect = trigger.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const listH = Math.min(220, list.scrollHeight + 10);
+            if (spaceBelow < listH) {
+                // Open upward
+                list.style.top = 'auto';
+                list.style.bottom = (window.innerHeight - rect.top + 6) + 'px';
+            } else {
+                list.style.bottom = 'auto';
+                list.style.top = (rect.bottom + 6) + 'px';
+            }
+            list.style.left = rect.left + 'px';
+            list.style.width = rect.width + 'px';
+            list.style.position = 'fixed';
+            drop.classList.add('open');
         }
         function selectCancelReason(val, label) {
             document.getElementById('cancelReasonSelect').value = val;
