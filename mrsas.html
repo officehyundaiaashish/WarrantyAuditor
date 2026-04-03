@@ -5170,14 +5170,24 @@
             if (toVal < fromVal) { showToast('"To" number "From" se bada hona chahiye.', 'warn'); return; }
 
             // Check for existing claims or dividers in this range
+            // STRICT CHECK: Do not create divider if any claim already exists in this range
+            // Ignore "MRS BOOK (Untitled)" claims — ye sirf temporary unassigned claims ke liye hai
             const overlap = rawData.find(r => {
+                if (r.isDivider) return false;           // ignore existing dividers
+                
+                // IMPORTANT: Ignore Untitled Book claims
+                if (r['MRS'] && String(r['MRS']).trim() !== '' && 
+                    rawData.some(d => d.isDivider && d.dividerText === 'MRS BOOK (Untitled)' && 
+                    parseInt(r['MRS']) === parseInt(d['MRS']))) {
+                    return false;  // ignore untitled book claims
+                }
+
                 const m = parseInt(r['MRS']);
                 return !isNaN(m) && m >= fromVal && m <= toVal;
             });
 
             if (overlap) {
-                const type = overlap.isDivider ? 'divider' : 'claim';
-                showToast(`Range Error: MRS ${overlap['MRS']} pe pehle se hi ek ${type} hai! Range empty honi chahiye.`, 'danger');
+                showToast(`Range Error: MRS ${overlap['MRS']} already exists as a claim.<br>Divider cannot be created.`, 'danger');
                 return;
             }
 
