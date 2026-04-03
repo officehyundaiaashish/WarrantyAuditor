@@ -4722,12 +4722,20 @@
 
             if (!targetData.length) { showToast('No data to print.', 'warn'); return; }
 
-            // Sort by MRS ascending (old to new)
-            // But ensure divider stays at the very top if it exists in the selection
+            // Sort correctly: Ascending by MRS number so it reads chronologically.
+            // If they share exactly the same base MRS number (like a book divider sharing its start number with the first claim),
+            // correctly position the divider ABOVE its claims.
             const sorted = [...targetData].sort((a, b) => {
+                const numA = parseInt(a['MRS']) || 0;
+                const numB = parseInt(b['MRS']) || 0;
+
+                if (numA !== numB) return numA - numB;
+
+                // Priority tiebreaker: Divider always floats above the identical claim number
                 if (a.isDivider && !b.isDivider) return -1;
                 if (!a.isDivider && b.isDivider) return 1;
-                return (parseInt(a['MRS']) || 0) - (parseInt(b['MRS']) || 0);
+
+                return 0;
             });
 
             const now = new Date();
@@ -4737,18 +4745,37 @@
             const printCols = ['MRS', 'R/O No', 'Claim No', 'Claim Date', 'Claim Type', 'VIN', 'Total Amt', 'AMT RECEIVED', 'DIFF AMT', 'PAYMENT DATE', 'REMARKS', 'AUTH. SIGN'];
 
             const headerRow = printCols.map(c => `<th>${c}</th>`).join('');
-            const bodyRows = sorted.map(row => {
+            let bodyRows = '';
+            for (let i = 0; i < sorted.length; i++) {
+                const row = sorted[i];
+
                 if (row.isDivider) {
-                    return `<tr><td colspan="${printCols.length}" style="background:#e6fffa;color:#0d9488;font-weight:bold;text-align:center;padding:8px;font-size:11px;border-bottom:2px solid #2ab5a5;">\u25BC ${row.dividerText}</td></tr>`;
+                    bodyRows += `<tr><td colspan="${printCols.length}" style="background:#e6fffa;color:#0d9488;font-weight:bold;text-align:center;padding:8px;font-size:11px;border-bottom:2px solid #2ab5a5;">\u25BC ${row.dividerText}</td></tr>`;
+                } else {
+                    const isCancelled = String(row['REMARKS']).toUpperCase().startsWith('CANCELLED');
+                    const rowStyle = isCancelled ? ' style="opacity:0.45;background:#fff5f5;"' : '';
+                    const cells = printCols.map(col => {
+                        const val = (row[col] !== undefined && row[col] !== null && row[col] !== '') ? row[col] : '—';
+                        return `<td>${val}</td>`;
+                    }).join('');
+                    bodyRows += `<tr${rowStyle}>${cells}</tr>`;
                 }
-                const isCancelled = String(row['REMARKS']).toUpperCase().startsWith('CANCELLED');
-                const rowStyle = isCancelled ? ' style="opacity:0.45;background:#fff5f5;"' : '';
-                const cells = printCols.map(col => {
-                    const val = (row[col] !== undefined && row[col] !== null && row[col] !== '') ? row[col] : '—';
-                    return `<td>${val}</td>`;
-                }).join('');
-                return `<tr${rowStyle}>${cells}</tr>`;
-            }).join('');
+
+                // Inject authorization signature space at the end of the book
+                const isLastInArray = (i === sorted.length - 1);
+                const isNextDivider = (i + 1 < sorted.length && sorted[i + 1].isDivider);
+
+                if (isLastInArray || (isNextDivider && !row.isDivider)) {
+                    bodyRows += `<tr>
+                        <td colspan="${printCols.length}" style="padding: 28px 40px 18px 40px; border-bottom: 3px solid #2ab5a5; background: #fafafa;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="font-weight: 700; color: #374151; font-size: 11px;">Checked Date: <span style="display:inline-block; border-bottom:1px solid #6b7280; width:180px; margin-left:6px;"></span></div>
+                                <div style="font-weight: 700; color: #374151; font-size: 11px;">Authorised Signatory: <span style="display:inline-block; border-bottom:1px solid #6b7280; width:180px; margin-left:6px;"></span></div>
+                            </div>
+                        </td>
+                    </tr>`;
+                }
+            }
 
             // Recalculate summary totals for the print selection only
             const totalClaims = targetData.filter(r => !r.isDivider && String(r['REMARKS']).toUpperCase() !== 'CANCELLED').length;
