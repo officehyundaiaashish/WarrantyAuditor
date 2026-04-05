@@ -5183,22 +5183,50 @@
         return; 
     }
 
-    const dividerText = `MRS BOOK (${fromVal}-${toVal})`;
+    const newDividerText = `MRS BOOK (${fromVal}-${toVal})`;
 
-    // Removed old overlap check and duplicate divider prevention (Rule 3 & 5 removed)
-    // Now user can create same range multiple times and even if claims exist
+    // === New Rule: Check only for existing DIVIDERS (not claims) ===
+    let errorMsg = '';
 
-    // Remove old divider with same text (to avoid duplicate dividers with same name)
-    rawData = rawData.filter(r => !(r.isDivider && r.dividerText === dividerText));
+    for (let r of rawData) {
+        if (!r.isDivider || !r.dividerText) continue;
+
+        const match = r.dividerText.match(/\((\d+)-(\d+)\)/);
+        if (!match) continue;
+
+        const existFrom = parseInt(match[1]);
+        const existTo = parseInt(match[2]);
+
+        // Case 1: Exact same range already exists
+        if (existFrom === fromVal && existTo === toVal) {
+            errorMsg = `Error: MRS BOOK (${fromVal}-${toVal}) already exists!`;
+            break;
+        }
+
+        // Case 2: Overlapping range
+        if (Math.max(fromVal, existFrom) <= Math.min(toVal, existTo)) {
+            errorMsg = `Error: Range overlaps with existing MRS BOOK (${existFrom}-${existTo}) at ${Math.max(fromVal, existFrom)}`;
+            break;
+        }
+    }
+
+    if (errorMsg) {
+        showToast(errorMsg, 'danger');
+        return;
+    }
+    // =====================================================
+
+    // Remove any old divider with same text (safety)
+    rawData = rawData.filter(r => !(r.isDivider && r.dividerText === newDividerText));
 
     // Add new divider
     rawData.push({ 
         isDivider: true, 
-        dividerText: dividerText, 
+        dividerText: newDividerText, 
         MRS: fromVal 
     });
 
-    // Sort to place divider correctly
+    // Sort correctly
     rawData.sort((a, b) => {
         const sA = (a.isDivider || (a['MRS'] && a['MRS'] !== '-')) ? 1 : 0;
         const sB = (b.isDivider || (b['MRS'] && b['MRS'] !== '-')) ? 1 : 0;
