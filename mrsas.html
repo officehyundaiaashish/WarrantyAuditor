@@ -5162,53 +5162,55 @@
             toggleBodyScroll(false);
         }
         function saveMRSRange() {
-            if (isLocked) { showToast(`Locked: Range creation disabled.`, 'danger'); return; }
-            const fromVal = parseInt(document.getElementById('mrsRangeFrom').value);
-            const toVal = parseInt(document.getElementById('mrsRangeTo').value);
-            if (!fromVal || fromVal < 1) { showToast('Valid "From" MRS number daalo.', 'warn'); return; }
-            if (!toVal || toVal < 1) { showToast('Valid "To" MRS number daalo.', 'warn'); return; }
-            if (toVal < fromVal) { showToast('"To" number "From" se bada hona chahiye.', 'warn'); return; }
+    if (isLocked) { 
+        showToast(`Locked: Range creation disabled.`, 'danger'); 
+        return; 
+    }
 
-            // Check for existing claims or dividers in this range
-            // STRICT CHECK: Do not create divider if any claim already exists in this range
-            // Ignore "MRS BOOK (Untitled)" claims — ye sirf temporary unassigned claims ke liye hai
-            const overlap = rawData.find(r => {
-                if (r.isDivider) return false;           // ignore existing dividers
-                
-                // IMPORTANT: Ignore Untitled Book claims
-                if (r['MRS'] && String(r['MRS']).trim() !== '' && 
-                    rawData.some(d => d.isDivider && d.dividerText === 'MRS BOOK (Untitled)' && 
-                    parseInt(r['MRS']) === parseInt(d['MRS']))) {
-                    return false;  // ignore untitled book claims
-                }
+    const fromVal = parseInt(document.getElementById('mrsRangeFrom').value);
+    const toVal = parseInt(document.getElementById('mrsRangeTo').value);
 
-                const m = parseInt(r['MRS']);
-                return !isNaN(m) && m >= fromVal && m <= toVal;
-            });
+    if (!fromVal || fromVal < 1) { 
+        showToast('Valid "From" MRS number daalo.', 'warn'); 
+        return; 
+    }
+    if (!toVal || toVal < 1) { 
+        showToast('Valid "To" MRS number daalo.', 'warn'); 
+        return; 
+    }
+    if (toVal < fromVal) { 
+        showToast('"To" number "From" se bada hona chahiye.', 'warn'); 
+        return; 
+    }
 
-            if (overlap) {
-                showToast(`Range Error: MRS ${overlap['MRS']} already exists as a claim.<br>Divider cannot be created.`, 'danger');
-                return;
-            }
+    const dividerText = `MRS BOOK (${fromVal}-${toVal})`;
 
-            const dividerText = `MRS BOOK (${fromVal}-${toVal})`;
-            // Remove same divider if exists (though overlap check above would catch it)
-            rawData = rawData.filter(r => !(r.isDivider && r.dividerText === dividerText));
-            rawData.push({ isDivider: true, dividerText: dividerText, MRS: fromVal });
+    // Removed old overlap check and duplicate divider prevention (Rule 3 & 5 removed)
+    // Now user can create same range multiple times and even if claims exist
 
-            // Sort to place divider correctly
-            rawData.sort((a, b) => {
-                const sA = (a.isDivider || (a['MRS'] && a['MRS'] !== '-')) ? 1 : 0;
-                const sB = (b.isDivider || (b['MRS'] && b['MRS'] !== '-')) ? 1 : 0;
-                if (sA !== sB) return sA - sB;
-                return (parseInt(b['MRS']) || 0) - (parseInt(a['MRS']) || 0);
-            });
+    // Remove old divider with same text (to avoid duplicate dividers with same name)
+    rawData = rawData.filter(r => !(r.isDivider && r.dividerText === dividerText));
 
-            saveLedger();
-            renderDataFast(rawData);
-            closeMRSRangeModal();
-            showToast(`MRS BOOK divider added for ${fromVal}-${toVal}`, 'success');
-        }
+    // Add new divider
+    rawData.push({ 
+        isDivider: true, 
+        dividerText: dividerText, 
+        MRS: fromVal 
+    });
+
+    // Sort to place divider correctly
+    rawData.sort((a, b) => {
+        const sA = (a.isDivider || (a['MRS'] && a['MRS'] !== '-')) ? 1 : 0;
+        const sB = (b.isDivider || (b['MRS'] && b['MRS'] !== '-')) ? 1 : 0;
+        if (sA !== sB) return sA - sB;
+        return (parseInt(b['MRS']) || 0) - (parseInt(a['MRS']) || 0);
+    });
+
+    saveLedger();
+    renderDataFast(rawData);
+    closeMRSRangeModal();
+    showToast(`MRS BOOK divider added for ${fromVal}-${toVal}`, 'success');
+}
         function clearMRSRange() {
             // Remove all dividers added via this tool
             rawData = rawData.filter(r => !r.isDivider);
