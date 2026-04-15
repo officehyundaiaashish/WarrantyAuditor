@@ -5857,8 +5857,11 @@
             updateModalDropdown();
 
             // --- 100% DIRECT UI UPDATE ---
-            document.getElementById('modal-discrepancy').value = "0";
             const wrapper = document.getElementById('wrap-modal-disc');
+            const hiddenDisc = document.getElementById('modal-discrepancy');
+            
+            // Set default: Clean (0)
+            hiddenDisc.value = "0";
             wrapper.querySelector('.trigger-text').innerText = "Part is Clean (None Found)";
             wrapper.classList.add('has-value');
             wrapper.querySelectorAll('.custom-option').forEach(o => {
@@ -5867,25 +5870,40 @@
             });
 
             if (entry && entry.audited) {
-                const f = entry.findings[0];
-                for (let key in DISCREPANCY_TYPES) {
-                    if (f.includes(DISCREPANCY_TYPES[key])) {
-                        const opt = wrapper.querySelector(`.custom-option[data-value="${key}"]`);
-                        document.getElementById('modal-discrepancy').value = key;
-                        if (opt) {
-                            wrapper.querySelector('.trigger-text').innerHTML = opt.innerHTML;
-                        } else {
-                            wrapper.querySelector('.trigger-text').innerText = DISCREPANCY_TYPES[key] === "None Found" ? "Part is Clean (None Found)" : DISCREPANCY_TYPES[key];
+                // Priority 1: Use explicitly saved discrepancy_code
+                // Priority 2: Fallback to string matching for backward compatibility
+                let keyToSelect = entry.discrepancy_code;
+                
+                if (!keyToSelect) {
+                    const f = entry.findings && entry.findings[0] ? entry.findings[0] : "";
+                    for (let k in DISCREPANCY_TYPES) {
+                        if (f.includes(DISCREPANCY_TYPES[k])) {
+                            keyToSelect = k;
+                            break;
                         }
-                        wrapper.classList.add('has-value');
-                        wrapper.querySelectorAll('.custom-option').forEach(o => {
-                            o.classList.remove('selected');
-                            if (o.getAttribute('data-value') === String(key)) o.classList.add('selected');
-                        });
+                    }
+                }
 
-                        if (key === '1') { document.getElementById('modal-extra-inputs').style.display = 'block'; document.getElementById('modal-extra-label').innerText = "POD Number (Optional)"; document.getElementById('modal-extra-text').value = entry.pod_number || ''; }
-                        if (key === '7') { document.getElementById('modal-extra-inputs').style.display = 'block'; document.getElementById('modal-extra-label').innerText = "Missing Part Name (Required)"; document.getElementById('modal-extra-text').value = entry.missing_part_name || ''; }
-                        break;
+                if (keyToSelect) {
+                    const opt = wrapper.querySelector(`.custom-option[data-value="${keyToSelect}"]`);
+                    hiddenDisc.value = keyToSelect;
+                    if (opt) {
+                        wrapper.querySelector('.trigger-text').innerHTML = opt.innerHTML;
+                        wrapper.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+                        opt.classList.add('selected');
+                    } else {
+                        wrapper.querySelector('.trigger-text').innerText = DISCREPANCY_TYPES[keyToSelect] || "None Found";
+                    }
+                    
+                    if (keyToSelect === '1') { 
+                        document.getElementById('modal-extra-inputs').style.display = 'block'; 
+                        document.getElementById('modal-extra-label').innerText = "POD Number (Optional)"; 
+                        document.getElementById('modal-extra-text').value = entry.pod_number || ''; 
+                    }
+                    if (keyToSelect === '7') { 
+                        document.getElementById('modal-extra-inputs').style.display = 'block'; 
+                        document.getElementById('modal-extra-label').innerText = "Missing Part Name (Required)"; 
+                        document.getElementById('modal-extra-text').value = entry.missing_part_name || ''; 
                     }
                 }
             }
@@ -5970,7 +5988,7 @@
             const extraText = document.getElementById('modal-extra-text').value.trim();
 
             let finding = DISCREPANCY_TYPES[discCode];
-            let entry = { audited: true, timestamp: new Date().toISOString() };
+            let entry = { audited: true, timestamp: new Date().toISOString(), discrepancy_code: discCode };
 
             if (discCode === '1') {
                 entry.pod_number = extraText; entry.remarks = "Sent to Hmil Suspense (P)"; entry.courier_provider = "Track-On Couriers"; finding += extraText ? ` [POD: ${extraText}]` : "";
