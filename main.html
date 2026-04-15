@@ -4271,7 +4271,7 @@
         </div>
     </div>
 
-    <div id="audit-modal" class="modal-backdrop">
+    <div id="audit-modal" class="modal-backdrop" onmousedown="if(event.target===this) closeModal()">
         <div class="modal-dialog">
             <div class="modal-header">
                 <h3 id="modal-claim-no" style="margin:0; font-size: 1.25rem;">Claim No</h3>
@@ -4285,7 +4285,7 @@
                 <label>Discrepancy Status</label>
                 <div class="custom-select-wrapper has-value" id="wrap-modal-disc">
                     <input type="hidden" id="modal-discrepancy" value="0">
-                    <div class="custom-select-trigger"><span class="trigger-text">Part is Clean (None Found)</span> <svg
+                    <div class="custom-select-trigger" tabindex="0"><span class="trigger-text">Part is Clean (None Found)</span> <svg
                             style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2">
                             <polyline points="6 9 12 15 18 9"></polyline>
@@ -5948,6 +5948,13 @@
             const bClaimDate = document.getElementById('modal-claim-table-date');
 
             if (bCode) bCode.value = entry && entry.batch_code ? entry.batch_code : '';
+
+            // --- KEYBOARD FOCUS ENHANCEMENT ---
+            // Small delay to ensure render is complete before focusing
+            setTimeout(() => {
+                const discTrigger = wrapper.querySelector('.custom-select-trigger');
+                if (discTrigger) discTrigger.focus();
+            }, 60);
             if (bDecoded) bDecoded.value = entry && entry.decoded_prod_date ? entry.decoded_prod_date : '';
             if (bMsg) bMsg.style.display = 'none';
 
@@ -7765,30 +7772,33 @@ Upload the correct file.`);
 
             // --- Audit modal bindings ---
             if (modalOpen) {
-                if (e.key === 'Escape') { e.preventDefault(); closeModal(); return; }
                 const activeEl = document.activeElement;
-                const isTypingInModal = activeEl && (activeEl.id === 'modal-remark' || activeEl.id === 'modal-extra-text' || activeEl.tagName === 'TEXTAREA');
+                if (e.key === 'Escape') { e.preventDefault(); closeModal(); return; }
 
+                // --- Tab Focus Trap ---
+                if (e.key === 'Tab') {
+                    const focusable = Array.from(document.getElementById('audit-modal').querySelectorAll('button, [tabindex="0"], input, select, textarea')).filter(el => el.offsetParent !== null);
+                    if (focusable.length > 0) {
+                        const first = focusable[0];
+                        const last = focusable[focusable.length - 1];
+                        if (e.shiftKey && activeEl === first) { e.preventDefault(); last.focus(); return; }
+                        if (!e.shiftKey && activeEl === last) { e.preventDefault(); first.focus(); return; }
+                    }
+                }
+
+                // --- ArrowDown on focused trigger opens it ---
+                if (e.key === 'ArrowDown' && activeEl && activeEl.classList.contains('custom-select-trigger')) {
+                    const wrap = activeEl.closest('.custom-select-wrapper');
+                    if (wrap && !wrap.classList.contains('open')) {
+                        e.preventDefault();
+                        activeEl.click();
+                        return;
+                    }
+                }
 
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    
-                    // Case 1: If a dropdown is open, Enter should close it first
-                    if (document.querySelector('.custom-select-wrapper.open')) {
-                        document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
-                        return;
-                    }
-
-                    // Case 2: Allow Enter to save from all input fields in the modal
-                    if (activeEl && activeEl.tagName === 'INPUT') {
-                        saveClaimAudit();
-                        return;
-                    }
-
-                    // Case 3: Block Enter for true textareas (allow manual newline if ever added)
-                    if (isTypingInModal && activeEl.tagName === 'TEXTAREA') return;
-
-                    // Fallback: Trigger save for anything else (badges, buttons, or inactive elements)
+                    if (activeEl && activeEl.tagName === 'TEXTAREA') return; // Allow newline
                     saveClaimAudit();
                 }
                 return;
