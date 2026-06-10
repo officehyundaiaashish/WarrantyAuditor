@@ -2370,160 +2370,172 @@
             }
         }
 
-        /* ════════════════════════════════════════════════════════
-           § 2 — USER MANAGEMENT CARDS
-           ════════════════════════════════════════════════════════ */
-        .user-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            transition: all 0.2s;
-            box-shadow: var(--shadow);
-            opacity: 0;
-            transform: translateY(10px);
-            animation: slideFadeUpDelay 0.3s forwards;
-        }
+       /* ════════════════════════════════════════════════════════
+   § 2 — USER MANAGEMENT CARDS
+   ════════════════════════════════════════════════════════ */
+.user-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: all 0.2s;
+    box-shadow: var(--shadow);
+    opacity: 0;
+    transform: translateY(10px);
+    animation: slideFadeUpDelay 0.3s forwards;
+}
 
-        .user-card.blocked {
-            border-left: 4px solid var(--danger);
-        }
+.user-card.blocked {
+    border-left: 4px solid var(--danger);
+}
 
-        .user-card.active-user {
-            border-left: 4px solid var(--success);
-        }
+.user-card.active-user {
+    border-left: 4px solid var(--success);
+}
 
-        .user-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
+.user-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
 
-        .user-avatar {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            background: var(--bg-base);
-            border: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            font-size: 1.1rem;
-            color: var(--accent);
-            flex-shrink: 0;
-        }
+.user-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--bg-base);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: var(--accent);
+    flex-shrink: 0;
+}
 
-        .user-info {
-            flex: 1;
-            margin-left: 12px;
-            min-width: 0;
-        }
+.user-info {
+    flex: 1;
+    margin-left: 12px;
+    min-width: 0;
+}
 
-        .user-name {
-            font-weight: 800;
-            font-size: 1rem;
-            color: var(--text-main);
-            margin-bottom: 2px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+.user-name {
+    font-weight: 800;
+    font-size: 1rem;
+    color: var(--text-main);
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 
-        .user-email {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            font-family: monospace;
-        }
+.user-email {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-family: monospace;
+}
 
-        .user-status-badge {
-            font-size: 0.65rem;
-            font-weight: 800;
-            padding: 3px 8px;
-            border-radius: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+.user-status-badge {
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
 
-        .badge-active {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-        }
+.badge-active {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
 
-        .badge-blocked {
-            background: rgba(239, 68, 68, 0.1);
-            color: var(--danger);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-        }
+.badge-blocked {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
 
-        .user-actions {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-top: 4px;
-            padding-top: 12px;
-            border-top: 1px dashed var(--border);
-        }
+.user-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border);
+}
 
-        .user-actions .btn {
-            width: auto;
-            margin: 0;
-            padding: 6px 12px;
-            font-size: 0.75rem;
-            flex: 1;
-            min-width: 80px;
-        }
+.user-actions .btn {
+    width: auto;
+    margin: 0;
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    flex: 1;
+    min-width: 80px;
+}
 
-        .perm-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 10px;
-            margin-top: 12px;
-        }
+/* Mobile view: User actions buttons full width with proper spacing */
+@media (max-width: 640px) {
+    .user-actions {
+        flex-direction: column;
+        gap: 6px;
+    }
+    .user-actions .btn {
+        width: 100%;
+        min-width: unset;
+    }
+}
 
-        .perm-box {
-            background: var(--bg-base);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            transition: 0.2s;
-            user-select: none;
-        }
+.perm-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+}
 
-        .perm-box:hover {
-            border-color: var(--accent);
-        }
+.perm-box {
+    background: var(--bg-base);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+    user-select: none;
+}
 
-        .perm-box input[type="checkbox"] {
-            flex-shrink: 0;
-            width: 16px;
-            height: 16px;
-            accent-color: var(--accent);
-            cursor: pointer;
-        }
+.perm-box:hover {
+    border-color: var(--accent);
+}
 
-        .perm-box label {
-            margin: 0;
-            font-size: 0.8rem;
-            cursor: pointer;
-            font-weight: 600;
-        }
+.perm-box input[type="checkbox"] {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
 
-        @keyframes slideFadeUpDelay {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+.perm-box label {
+    margin: 0;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+@keyframes slideFadeUpDelay {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 
         /* ════════════════════════════════════════════════════════
            § 3 — DROPDOWN POPUP MENU
