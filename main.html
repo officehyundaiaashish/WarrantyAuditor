@@ -2479,6 +2479,19 @@
     min-width: 80px;
 }
 
+/* Mobile view: User actions buttons full width */
+@media (max-width: 640px) {
+    .user-actions {
+        flex-direction: column;
+        gap: 6px;
+    }
+    .user-actions .btn {
+        width: 100%;
+        min-width: unset;
+        flex: none;
+    }
+}
+
 /* Mobile view: User actions buttons full width with proper spacing */
 @media (max-width: 640px) {
     .user-actions {
