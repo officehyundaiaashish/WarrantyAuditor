@@ -5653,7 +5653,10 @@
                 if (tableWrap) tableWrap.style.display = 'block';
                 if (pagination) pagination.style.display = 'flex';
                 if (searchBar) searchBar.style.display = 'block';
-                if (chartArea) chartArea.style.display = 'block';
+                // Restore chart only if user had it open (label = 'Hide Chart')
+                const toggleLabel = document.getElementById('chart-toggle-label');
+                const chartVisible = toggleLabel && toggleLabel.textContent.trim() === 'Hide Chart';
+                if (chartArea) chartArea.style.display = chartVisible ? 'block' : 'none';
                 if (chartBtn) chartBtn.style.display = 'inline-flex';
                 if (amountStats) amountStats.style.display = 'block';
                 // Only show suspense notif if it was meant to be shown (count > 0)
