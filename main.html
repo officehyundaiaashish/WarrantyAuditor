@@ -2922,6 +2922,11 @@
         th {
             transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
         }
+
+        /* Ensure dialog alerts display in front of modals */
+        #app-dialog {
+            z-index: 10100 !important;
+        }
     </style>
 </head>
 
@@ -6196,8 +6201,11 @@
             // --- KEYBOARD FOCUS ENHANCEMENT ---
             // Small delay to ensure render is complete before focusing
             setTimeout(() => {
-                const discTrigger = wrapper.querySelector('.custom-select-trigger');
-                if (discTrigger) discTrigger.focus();
+                const modalEl = document.getElementById('audit-modal');
+                if (modalEl) {
+                    modalEl.setAttribute('tabindex', '-1');
+                    modalEl.focus();
+                }
             }, 60);
             if (bDecoded) bDecoded.value = entry && entry.decoded_prod_date ? entry.decoded_prod_date : '';
             if (bMsg) bMsg.style.display = 'none';
@@ -8030,13 +8038,17 @@ Upload the correct file.`);
                     }
                 }
 
-                // --- ArrowDown on focused trigger opens it ---
-                if (e.key === 'ArrowDown' && activeEl && activeEl.classList.contains('custom-select-trigger')) {
-                    const wrap = activeEl.closest('.custom-select-wrapper');
-                    if (wrap && !wrap.classList.contains('open')) {
+                // --- ArrowDown/ArrowUp anywhere in modal (when dropdown is closed) opens the dropdown trigger ---
+                if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && !openDropdown) {
+                    if (activeEl && (activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'INPUT')) {
+                        // Allow default input behavior
+                    } else {
                         e.preventDefault();
-                        activeEl.click();
-                        return;
+                        const trigger = document.querySelector('#audit-modal .custom-select-trigger');
+                        if (trigger) {
+                            trigger.click();
+                            return;
+                        }
                     }
                 }
 
