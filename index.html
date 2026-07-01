@@ -129,7 +129,14 @@
             display: none;
             align-items: center;
             justify-content: center;
-            backdrop-filter: blur(4px);
+            /* Disabled backdrop filter for rendering speed */
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+
+        /* Smooth iPhone-style Transitions */
+        button, input, .input, .card, .btn {
+            transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
         }
 
         .spinner {
