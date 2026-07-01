@@ -1941,6 +1941,82 @@
             margin-bottom: 20px;
         }
 
+        /* --- COMPACT AUDIT ENTRY MODAL OVERRIDES --- */
+        #audit-modal .modal-dialog {
+            max-width: 580px;
+            max-height: 95vh;
+            margin: 8px;
+            border-radius: 12px;
+        }
+
+        #audit-modal .modal-header {
+            padding: 10px 16px;
+        }
+
+        #audit-modal .modal-body {
+            padding: 10px 16px;
+        }
+
+        #audit-modal .all-details-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px 12px;
+            padding: 8px 12px;
+            margin-bottom: 12px;
+        }
+
+        @media (max-width: 480px) {
+            #audit-modal .all-details-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            #audit-modal .modal-dialog {
+                margin: 4px;
+                max-height: 98vh;
+            }
+        }
+
+        #audit-modal label {
+            margin-bottom: 3px;
+            font-size: 0.72rem;
+        }
+
+        #audit-modal .input {
+            padding: 8px 12px !important;
+            font-size: 0.85rem !important;
+            margin-bottom: 10px !important;
+            border-radius: 8px !important;
+        }
+
+        #audit-modal .custom-select-wrapper {
+            margin-bottom: 10px !important;
+        }
+
+        #audit-modal .custom-select-trigger {
+            padding: 8px 12px !important;
+            font-size: 0.85rem !important;
+            border-radius: 8px !important;
+        }
+
+        #audit-modal #modal-batch-section,
+        #audit-modal #modal-suspense-box {
+            padding: 10px 12px !important;
+            margin-top: 10px !important;
+            margin-bottom: 10px !important;
+            border-radius: 8px !important;
+        }
+
+        #audit-modal .grid-2 {
+            margin-top: 10px !important;
+            gap: 8px !important;
+        }
+
+        #audit-modal .btn {
+            padding: 8px 12px !important;
+            font-size: 0.85rem !important;
+            min-height: 36px !important;
+            border-radius: 8px !important;
+        }
+
         .detail-item span {
             display: block;
         }
