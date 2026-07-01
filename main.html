@@ -4656,7 +4656,7 @@
         // ════════════════════════════════════════════════════════
         // JS § 2 — DIALOG / ALERT / CONFIRM / PROMPT
         // ════════════════════════════════════════════════════════
-        function closeDialog() { document.getElementById('app-dialog').classList.remove('active'); const di = document.getElementById('dialog-input'); di.value = ''; di.style.cssText = 'text-align:center; letter-spacing:4px; font-size:1.2rem; margin:0; padding-right:44px; -webkit-text-security:disc; text-security:disc;'; di.placeholder = '••••••••'; di.setAttribute('inputmode', 'numeric'); }
+        function closeDialog() { document.getElementById('app-dialog').classList.remove('active'); const di = document.getElementById('dialog-input'); di.value = ''; di.style.cssText = 'text-align:center; letter-spacing:4px; font-size:1.2rem; margin:0; padding-right:44px; -webkit-text-security:disc; text-security:disc;'; di.placeholder = '••••••••'; di.setAttribute('inputmode', 'numeric'); window._lastDialogClosedAt = Date.now(); }
         function showAppAlert(msg) {
             const iconEl = document.getElementById('dialog-icon');
             if (iconEl) iconEl.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
@@ -4672,12 +4672,6 @@
             document.getElementById('dialog-btn-yes').onclick = yesHandler;
             document.getElementById('dialog-btn-no').onclick = closeDialog;
             document.getElementById('app-dialog').classList.add('active');
-            // Allow Enter key to confirm
-            const onKey = (e) => {
-                if (e.key === 'Enter') { e.preventDefault(); document.removeEventListener('keydown', onKey); yesHandler(); }
-                if (e.key === 'Escape') { e.preventDefault(); document.removeEventListener('keydown', onKey); closeDialog(); }
-            };
-            setTimeout(() => document.addEventListener('keydown', onKey), 100);
         }
 
         function showAppPrompt(msg, isPassword, onConfirm, disableCancel = false) {
@@ -7824,6 +7818,10 @@ Upload the correct file.`);
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     if (activeEl && activeEl.tagName === 'TEXTAREA') return; // Allow newline
+                    if (activeEl && activeEl.classList.contains('custom-select-trigger')) {
+                        activeEl.click();
+                        return;
+                    }
                     saveClaimAudit();
                 }
                 return;
@@ -7878,9 +7876,12 @@ Upload the correct file.`);
             if (e.key === 'ArrowLeft' && !isTypingInSearch) { e.preventDefault(); changePage(-1); return; }
             if (e.key === 'ArrowRight' && !isTypingInSearch) { e.preventDefault(); changePage(1); return; }
 
+            const dialogCooldown = window._lastDialogClosedAt && (Date.now() - window._lastDialogClosedAt < 300);
+
             if (isTypingInSearch) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
+                    if (dialogCooldown) return;
                     const firstRow = document.querySelector('#claims-tbody tr');
                     if (firstRow) { searchInput.blur(); firstRow.click(); }
                 }
@@ -7889,6 +7890,7 @@ Upload the correct file.`);
 
             if (e.key === 'Enter') {
                 e.preventDefault();
+                if (dialogCooldown) return;
                 const firstRow = document.querySelector('#claims-tbody tr');
                 if (firstRow) firstRow.click();
                 return;
