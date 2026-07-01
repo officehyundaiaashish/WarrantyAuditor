@@ -2131,7 +2131,7 @@
         }
 
         .input {
-            padding: 8px 10px !important;
+            padding: 8px 10px;
             font-size: 0.82rem !important;
             margin-bottom: 8px !important;
             border-radius: 6px !important;
@@ -3228,19 +3228,6 @@
             <span id="notif-text">Loading notifications...</span>
         </div>
 
-        <div id="analytics-notification" class="notification-banner notif-shimmer shimmer-general"
-            style="background: var(--surface); border: 1px solid var(--border); color: var(--text-main); display: none; flex-direction:column; align-items:flex-start; position:relative; padding: 10px 36px 10px 12px;"
-            onclick="buildDashboardAllMonths()">
-            <span id="analytics-notif-text" style="width:100%;"></span>
-            <button class="notif-close-btn" title="Dismiss" style="position:absolute;top:8px;right:8px;"
-                onclick="dismissNotif(event,'analytics-notification','notif_analytics')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                    stroke-linecap="round">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-            </button>
-        </div>
 
         <div id="suspense-notification" class="notification-banner notif-shimmer shimmer-critical"
             style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.4); color: var(--danger); display: none;"
@@ -5328,20 +5315,6 @@
             const zoneLabel = inSafeZone ? 'Safe Zone' : 'Danger Zone';
             const zoneColor = inSafeZone ? 'var(--success)' : 'var(--danger)';
 
-            // Analytics notification card — always show when data exists
-            if (totalAllClaims > 0) {
-                const analyticsEl = document.getElementById('analytics-notification');
-                if (analyticsEl) {
-                    if (!sessionStorage.getItem('notif_analytics_dismissed')) analyticsEl.style.display = 'flex';
-                    document.getElementById('analytics-notif-text').innerHTML =
-                        `<strong style="font-size:0.75rem;display:block;margin-bottom:6px;">Audit Analytics — <span style="color:${zoneColor};">${zoneLabel}</span></strong>
-                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                            <span style="background:rgba(16,185,129,0.15);color:var(--success);padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:700;">Clean ${clearPct}%</span>
-                            <span style="background:rgba(245,158,11,0.15);color:var(--warning);padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:700;">Unclear ${unclearPct}%</span>
-                            <span style="background:rgba(100,116,139,0.15);color:var(--text-muted);padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:700;">Pending ${pendingPct}%</span>
-                        </div>`;
-                }
-            }
 
             if (tunclear > 0 || tpending > 0) {
                 const monthsStr = actionMonths.join(', ');
