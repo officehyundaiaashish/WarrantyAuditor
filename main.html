@@ -2928,28 +2928,48 @@
             z-index: 10100 !important;
         }
 
-        /* Prevent archive screen actions column from overflowing on mobile */
-        @media (max-width: 480px) {
-            #screen-archive table {
-                width: 100% !important;
-                table-layout: fixed !important;
-            }
-            #screen-archive th, #screen-archive td {
-                padding: 4px 4px !important;
-            }
-            /* Set proportional column widths to fit all content */
-            #screen-archive th:nth-child(1), #screen-archive td:nth-child(1) { width: 30% !important; }
-            #screen-archive th:nth-child(2), #screen-archive td:nth-child(2) { width: 22% !important; }
-            #screen-archive th:nth-child(3), #screen-archive td:nth-child(3) { width: 13% !important; }
-            #screen-archive th:nth-child(4), #screen-archive td:nth-child(4) { width: 35% !important; }
-
-            .archive-btn {
-                padding: 3px 5px !important;
-                font-size: 0.65rem !important;
-            }
-            .archive-btn svg {
-                display: none !important; /* Hide small icons to save horizontal space on mobile */
-            }
+        /* ── Archive Screen: Card layout on mobile ── */
+        @media (max-width: 600px) {
+            /* Hide the table and show nothing — JS will render cards */
+            #screen-archive .table-wrap { display: none !important; }
+            #archive-cards { display: flex !important; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+        }
+        @media (min-width: 601px) {
+            #archive-cards { display: none !important; }
+        }
+        .archive-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 14px;
+            box-shadow: var(--shadow);
+        }
+        .archive-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        .archive-card-period { font-weight: 700; font-size: 0.9rem; color: var(--text-main); }
+        .archive-card-date { font-size: 0.68rem; color: var(--text-muted); margin-top: 2px; }
+        .archive-card-remark { font-size: 0.68rem; color: var(--accent); font-style: italic; margin-top: 2px; }
+        .archive-card-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        .archive-card-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .archive-card-actions .archive-btn {
+            padding: 5px 12px !important;
+            font-size: 0.75rem !important;
+            width: auto !important;
+            margin: 0 !important;
         }
     </style>
 </head>
@@ -3652,6 +3672,7 @@
                     <thead>
                         <tr>
                             <th style="cursor:pointer;" onclick="dashSortTable(0)">Claim No ↕</th>
+                            <th>Audit Month</th>
                             <th style="cursor:pointer;" onclick="dashSortTable(1)">Status ↕</th>
                             <th>R/O No</th>
                             <th>Type</th>
@@ -4472,6 +4493,9 @@
             </table>
         </div>
 
+        <!-- Mobile card list (shown on small screens via CSS) -->
+        <div id="archive-cards" style="display:none;"></div>
+
         <div class="pagination" id="archive-pagination">
             <button class="btn" onclick="changeArchivePage(-1)" id="btn-archive-prev"><svg width="14" height="14"
                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
@@ -5126,6 +5150,7 @@
 
         // Read Only Dashboard State
         let dashCurrentData = []; let dashFilteredData = []; let dashAuditData = {}; let dashColMap = {}; let dashCurrentPage = 1;
+        let dashClaimMonthMap = {}; // maps claimNo -> audit month label
         let dashCurrentFilter = 'all';
 
         // Active Workspace State
@@ -5503,6 +5528,7 @@
             sessionStorage.setItem('dash_last_key', sessionKey);
             showLoader(true);
 
+            dashClaimMonthMap = {};
             if (sessionKey === '__all__') {
                 // Merge all sessions — always use filtered data only
                 dashCurrentData = []; dashAuditData = {}; dashColMap = null; dashCurrentPage = 1;
@@ -5515,6 +5541,8 @@
                     const rows = s.filtered_data && s.filtered_data.length > 0
                         ? s.filtered_data
                         : (s.raw_data && s.raw_data.length > 0 ? applyAuditFilter(s.raw_data, s.col_map) : []);
+                    const monthLabel = (dbIndex[k] && dbIndex[k].month) ? dbIndex[k].month : k;
+                    rows.forEach(r => { const cn = r[s.col_map && s.col_map.claim_no]; if (cn) dashClaimMonthMap[cn] = monthLabel; });
                     dashCurrentData = dashCurrentData.concat(rows);
                     Object.assign(dashAuditData, s.audit_data);
                 }
@@ -5528,6 +5556,8 @@
                     ? session.filtered_data
                     : (session.raw_data && session.raw_data.length > 0 ? applyAuditFilter(session.raw_data, session.col_map) : []);
                 if (rows.length === 0) { showLoader(false); return showAppAlert("No filtered data for this audit."); }
+                const singleMonthLabel = (dbIndex[sessionKey] && dbIndex[sessionKey].month) ? dbIndex[sessionKey].month : '';
+                rows.forEach(r => { const cn = r[session.col_map && session.col_map.claim_no]; if (cn && singleMonthLabel) dashClaimMonthMap[cn] = singleMonthLabel; });
                 dashCurrentData = rows; dashAuditData = session.audit_data; dashColMap = session.col_map; dashCurrentPage = 1;
                 document.getElementById('dash-search').value = '';
             }
@@ -5708,7 +5738,8 @@
                     row[dashColMap.amount] ? fmtAmt(row[dashColMap.amount]) : '',
                     entry.findings && entry.findings[0] ? entry.findings[0].split(' [')[0].split(' (')[0] : ''
                 ].filter(Boolean).join(' · ');
-                tr.innerHTML = `<td>${claimNo}</td><td>${statusHtml}</td><td>${row[dashColMap.ro_no] || '-'}</td><td>${row[dashColMap.claim_type] || '-'}</td><td>${row[dashColMap.causal_part] || '-'}</td><td style="color:var(--text-muted); max-width:100px; overflow:hidden; text-overflow:ellipsis;">${row[dashColMap.part_desc] || '-'}</td><td style="white-space:nowrap;">${row[dashColMap.prod_date] || '-'}</td><td>${row[dashColMap.amount] || '-'}</td><td style="color:var(--text-muted);">${(entry.findings || []).join('; ')}</td><td style="color:var(--accent); font-style:italic; max-width:120px; overflow:hidden; text-overflow:ellipsis;">${entry.optional_remark || '-'}</td><td style="position:relative;padding:0;width:0;border:none;"><span class="row-tooltip">${dTooltip}</span></td>`;
+                const auditMonthLabel = dashClaimMonthMap[claimNo] || '-';
+                tr.innerHTML = `<td>${claimNo}</td><td style="white-space:nowrap;font-size:0.75rem;color:var(--accent);font-weight:600;">${auditMonthLabel}</td><td>${statusHtml}</td><td>${row[dashColMap.ro_no] || '-'}</td><td>${row[dashColMap.claim_type] || '-'}</td><td>${row[dashColMap.causal_part] || '-'}</td><td style="color:var(--text-muted); max-width:100px; overflow:hidden; text-overflow:ellipsis;">${row[dashColMap.part_desc] || '-'}</td><td style="white-space:nowrap;">${row[dashColMap.prod_date] || '-'}</td><td>${row[dashColMap.amount] || '-'}</td><td style="color:var(--text-muted);">${(entry.findings || []).join('; ')}</td><td style="color:var(--accent); font-style:italic; max-width:120px; overflow:hidden; text-overflow:ellipsis;">${entry.optional_remark || '-'}</td><td style="position:relative;padding:0;width:0;border:none;"><span class="row-tooltip">${dTooltip}</span></td>`;
                 frag.appendChild(tr);
             }); tbody.appendChild(frag);
 
@@ -6641,6 +6672,59 @@ Upload the correct file.`);
                 frag.appendChild(tr);
             }
             tbody.appendChild(frag);
+
+            // --- MOBILE CARDS ---
+            const cardsContainer = document.getElementById('archive-cards');
+            if (cardsContainer) {
+                cardsContainer.innerHTML = '';
+                if (currentArchiveData.length === 0) {
+                    cardsContainer.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:20px;">No records found.</div>`;
+                } else {
+                    for (const [key, meta] of pageData) {
+                        const auditNum = meta.audit_number || '';
+                        const isFrozen = !!meta.audit_number;
+                        const cancelCount = meta.audit_cancel_count || 0;
+                        let cardActions = '';
+                        if (archiveShowFinalized) {
+                            if (!isFrozen) {
+                                cardActions = `
+                                <button class="btn primary archive-btn" onclick="resumeSession('${key}', ${meta.finalized})">Reopen</button>
+                                <button class="btn archive-btn" style="color:var(--accent);border-color:rgba(59,130,246,0.4);" onclick="generateAuditNumber('${key}')">Gen No.</button>
+                                <button class="btn danger archive-btn" onclick="deleteSession('${key}', ${meta.finalized})">Delete</button>`;
+                            } else {
+                                cardActions = `
+                                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.4);color:var(--success);font-size:0.75rem;font-weight:700;">🔒 Frozen</span>
+                                <button class="btn danger archive-btn" onclick="cancelAuditNumber('${key}')">Cancel No.</button>`;
+                            }
+                        } else {
+                            cardActions = `
+                            <button class="btn primary archive-btn" onclick="resumeSession('${key}', ${meta.finalized})">Open</button>
+                            <button class="btn danger archive-btn" onclick="deleteSession('${key}', ${meta.finalized})">Delete</button>`;
+                        }
+                        const cancelHtml = cancelCount > 0 ? `<span style="padding:2px 7px;border-radius:10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--danger);font-size:0.68rem;font-weight:700;">${cancelCount}× cancelled</span>` : '';
+                        const auditNumHtml = auditNum
+                            ? `<span style="font-family:monospace;font-weight:800;color:var(--success);background:rgba(16,185,129,0.1);padding:3px 8px;border-radius:6px;border:1px solid rgba(16,185,129,0.3);">${auditNum}</span>${cancelHtml}`
+                            : `<span style="color:var(--text-muted);font-size:0.75rem;">Not generated</span>`;
+                        const card = document.createElement('div');
+                        card.className = 'archive-card';
+                        card.innerHTML = `
+                            <div class="archive-card-header">
+                                <div>
+                                    <div class="archive-card-period">${meta.month}</div>
+                                    <div class="archive-card-date">${meta.last_saved}</div>
+                                    ${meta.audit_remark ? `<div class="archive-card-remark">"${meta.audit_remark}"</div>` : ''}
+                                </div>
+                                <span class="badge ${meta.finalized ? 'status-clear' : 'status-unclear'}" style="flex-shrink:0;">${meta.finalized ? 'Closed' : 'Draft'}</span>
+                            </div>
+                            <div class="archive-card-meta">
+                                <span style="font-size:0.72rem;color:var(--text-muted);font-weight:600;">Audit No:</span>
+                                ${auditNumHtml}
+                            </div>
+                            <div class="archive-card-actions">${cardActions}</div>`;
+                        cardsContainer.appendChild(card);
+                    }
+                }
+            }
 
             pagination.style.display = totalPages > 1 ? 'flex' : 'none';
             document.getElementById('archive-page-indicator').innerText = `Page ${currentArchivePage} of ${totalPages}`;
