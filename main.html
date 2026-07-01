@@ -1943,7 +1943,7 @@
 
         /* --- COMPACT AUDIT ENTRY MODAL OVERRIDES --- */
         #audit-modal .modal-dialog {
-            max-width: 580px;
+            max-width: 760px;
             max-height: 95vh;
             margin: 8px;
             border-radius: 12px;
@@ -1957,6 +1957,19 @@
             padding: 10px 16px;
         }
 
+        #audit-modal .modal-columns-wrapper {
+            display: flex;
+            gap: 16px;
+            width: 100%;
+        }
+
+        #audit-modal .modal-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
         #audit-modal .all-details-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -1965,7 +1978,11 @@
             margin-bottom: 12px;
         }
 
-        @media (max-width: 480px) {
+        @media (max-width: 600px) {
+            #audit-modal .modal-columns-wrapper {
+                flex-direction: column;
+                gap: 0;
+            }
             #audit-modal .all-details-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
@@ -4381,114 +4398,119 @@
                 </p>
             </div>
             <div class="modal-body">
-                <div id="modal-all-details" class="all-details-grid"></div>
+                <div class="modal-columns-wrapper">
+                    <!-- Left Column: Details & Batch Verification -->
+                    <div class="modal-column">
+                        <div id="modal-all-details" class="all-details-grid"></div>
 
-                <label>Discrepancy Status</label>
-                <div class="custom-select-wrapper has-value" id="wrap-modal-disc">
-                    <input type="hidden" id="modal-discrepancy" value="0">
-                    <div class="custom-select-trigger" tabindex="0"><span class="trigger-text">Part is Clean (None Found)</span> <svg
-                            style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg></div>
-                    <div class="custom-options">
-                        <div class="custom-option selected" data-value="0">Part is Clean (None Found)</div>
-                        <div class="custom-option" data-value="1">Part is clean (Sent HMIL Suspense)</div>
-                        <div class="custom-option" data-value="3">Part is Missing</div>
-                        <div class="custom-option" data-value="4">Part Batch Code Mismatch</div>
-                        <div class="custom-option" data-value="5">Part Not Tagged</div>
-                        <div class="custom-option" data-value="6">Part Packing Missing</div>
-                        <div class="custom-option" data-value="7">Related Part Missing to Causal or Affected Part
-                            Missing</div>
-                        <div class="custom-option" data-value="8">Part is Not Defective</div>
-                        <div class="custom-option" data-value="9">Part is Damaged</div>
-                    </div>
-                </div>
+                        <div id="modal-batch-section"
+                            style="margin-top: 16px; padding: 16px; background: rgba(42, 181, 165, 0.05); border: 1px solid rgba(42, 181, 165, 0.2); border-radius: 12px; animation: slideFadeUp 0.2s ease;">
+                            <label style="color: var(--primary); font-weight: 700; margin-bottom: 12px;">Batch Code Verification</label>
 
-                <div id="modal-extra-inputs" style="display: none; animation: slideFadeUp 0.2s ease;">
-                    <label id="modal-extra-label">Additional Details</label>
-                    <input type="text" id="modal-extra-text" class="input" placeholder="...">
-                </div>
+                            <div class="grid-2" style="gap: 12px; margin-bottom: 12px;">
+                                <div>
+                                    <label style="font-size: 0.75rem;">Category</label>
+                                    <select id="modal-batch-category" class="input" style="margin-bottom: 0;">
+                                        <option value="2005">Main (A=2005)</option>
+                                        <option value="2019">Cooling Coil (A=2019)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.75rem;">Batch Code (Physical)</label>
+                                    <input type="text" id="modal-batch-code" class="input" placeholder="e.g. AFE" maxlength="3"
+                                        style="margin-bottom: 0; text-transform: uppercase;">
+                                </div>
+                            </div>
 
-                <div id="modal-suspense-box"
-                    style="display:none; animation: slideFadeUp 0.2s ease; margin-bottom: 16px; padding: 16px; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px;">
-                    <label style="color: var(--danger); font-weight: 700; margin-bottom: 12px;">Suspense(P) — Send to
-                        Technical Centre</label>
-                    <div style="margin-bottom: 12px;">
-                        <label style="font-size: 0.75rem; margin-bottom: 8px;">Part Sent Status</label>
-                        <div class="grid-2" style="gap: 8px;">
-                            <button type="button" class="btn" id="suspense-done-btn"
-                                onclick="selectSuspenseStatus('done')"
-                                style="margin: 0; min-height: 48px; font-size: 0.9rem;"><svg width="13" height="13"
-                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                                    stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="20 6 9 17 4 12" />
-                                </svg> Sent</button>
-                            <button type="button" class="btn" id="suspense-no-btn" onclick="selectSuspenseStatus('no')"
-                                style="margin: 0; min-height: 48px; font-size: 0.9rem;"><svg width="13" height="13"
-                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                                    stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="18" y1="6" x2="6" y2="18" />
-                                    <line x1="6" y1="6" x2="18" y2="18" />
-                                </svg> Not Sent</button>
-                        </div>
-                    </div>
-                    <div id="suspense-pod-box" style="display: none;">
-                        <label style="font-size: 0.75rem;">POD Number (Optional)</label>
-                        <input type="text" id="suspense-pod" class="input" placeholder="Enter POD number..."
-                            style="margin-bottom: 0;">
-                    </div>
-                </div>
+                            <div class="grid-2" style="gap: 12px; margin-bottom: 12px;">
+                                <div>
+                                    <label style="font-size: 0.75rem;">Production Date</label>
+                                    <input type="text" id="modal-prod-date-decoded" class="input" readonly
+                                        placeholder="Auto-calculated"
+                                        style="margin-bottom: 0; background: var(--surface); cursor: default;">
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.75rem;">Claim Table Date</label>
+                                    <input type="date" id="modal-claim-table-date" class="input" style="margin-bottom: 0;">
+                                </div>
+                            </div>
 
-                <div id="modal-batch-section"
-                    style="margin-top: 16px; padding: 16px; background: rgba(42, 181, 165, 0.05); border: 1px solid rgba(42, 181, 165, 0.2); border-radius: 12px; animation: slideFadeUp 0.2s ease;">
-                    <label style="color: var(--primary); font-weight: 700; margin-bottom: 12px;">Batch Code
-                        Verification</label>
-
-                    <div class="grid-2" style="gap: 12px; margin-bottom: 12px;">
-                        <div>
-                            <label style="font-size: 0.75rem;">Category</label>
-                            <select id="modal-batch-category" class="input" style="margin-bottom: 0;">
-                                <option value="2005">Main (A=2005)</option>
-                                <option value="2019">Cooling Coil (A=2019)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label style="font-size: 0.75rem;">Batch Code (Physical)</label>
-                            <input type="text" id="modal-batch-code" class="input" placeholder="e.g. AFE" maxlength="3"
-                                style="margin-bottom: 0; text-transform: uppercase;">
+                            <div id="modal-batch-val-msg" class="result"
+                                style="display:none; padding: 10px; border-radius: 8px; font-size: 0.85rem; text-align: center; font-weight: 600; margin-top: 8px;">
+                            </div>
                         </div>
                     </div>
 
-                    <div class="grid-2" style="gap: 12px; margin-bottom: 12px;">
-                        <div>
-                            <label style="font-size: 0.75rem;">Production Date</label>
-                            <input type="text" id="modal-prod-date-decoded" class="input" readonly
-                                placeholder="Auto-calculated"
-                                style="margin-bottom: 0; background: var(--surface); cursor: default;">
+                    <!-- Right Column: Discrepancy Status & optional remark / actions -->
+                    <div class="modal-column">
+                        <label>Discrepancy Status</label>
+                        <div class="custom-select-wrapper has-value" id="wrap-modal-disc">
+                            <input type="hidden" id="modal-discrepancy" value="0">
+                            <div class="custom-select-trigger" tabindex="0"><span class="trigger-text">Part is Clean (None Found)</span> <svg
+                                    style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg></div>
+                            <div class="custom-options">
+                                <div class="custom-option selected" data-value="0">Part is Clean (None Found)</div>
+                                <div class="custom-option" data-value="1">Part is clean (Sent HMIL Suspense)</div>
+                                <div class="custom-option" data-value="3">Part is Missing</div>
+                                <div class="custom-option" data-value="4">Part Batch Code Mismatch</div>
+                                <div class="custom-option" data-value="5">Part Not Tagged</div>
+                                <div class="custom-option" data-value="6">Part Packing Missing</div>
+                                <div class="custom-option" data-value="7">Related Part Missing to Causal or Affected Part Missing</div>
+                                <div class="custom-option" data-value="8">Part is Not Defective</div>
+                                <div class="custom-option" data-value="9">Part is Damaged</div>
+                            </div>
                         </div>
-                        <div>
-                            <label style="font-size: 0.75rem;">Claim Table Date</label>
-                            <input type="date" id="modal-claim-table-date" class="input" style="margin-bottom: 0;">
+
+                        <div id="modal-extra-inputs" style="display: none; animation: slideFadeUp 0.2s ease;">
+                            <label id="modal-extra-label">Additional Details</label>
+                            <input type="text" id="modal-extra-text" class="input" placeholder="...">
+                        </div>
+
+                        <div id="modal-suspense-box"
+                            style="display:none; animation: slideFadeUp 0.2s ease; margin-bottom: 16px; padding: 16px; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px;">
+                            <label style="color: var(--danger); font-weight: 700; margin-bottom: 12px;">Suspense(P) — Send to Technical Centre</label>
+                            <div style="margin-bottom: 12px;">
+                                <label style="font-size: 0.75rem; margin-bottom: 8px;">Part Sent Status</label>
+                                <div class="grid-2" style="gap: 8px;">
+                                    <button type="button" class="btn" id="suspense-done-btn"
+                                        onclick="selectSuspenseStatus('done')"
+                                        style="margin: 0; min-height: 48px; font-size: 0.9rem;"><svg width="13" height="13"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="20 6 9 17 4 12" />
+                                        </svg> Sent</button>
+                                    <button type="button" class="btn" id="suspense-no-btn" onclick="selectSuspenseStatus('no')"
+                                        style="margin: 0; min-height: 48px; font-size: 0.9rem;"><svg width="13" height="13"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <line x1="18" y1="6" x2="6" y2="18" />
+                                            <line x1="6" y1="6" x2="18" y2="18" />
+                                        </svg> Not Sent</button>
+                                </div>
+                            </div>
+                            <div id="suspense-pod-box" style="display: none;">
+                                <label style="font-size: 0.75rem;">POD Number (Optional)</label>
+                                <input type="text" id="suspense-pod" class="input" placeholder="Enter POD number..."
+                                    style="margin-bottom: 0;">
+                            </div>
+                        </div>
+
+                        <div id="modal-remark-box" style="display:block; animation: slideFadeUp 0.2s ease; margin-top: 16px;">
+                            <label>Optional Remark</label>
+                            <input type="text" id="modal-remark" class="input" placeholder="Add a remark (optional)...">
+                        </div>
+
+                        <div class="grid-2" style="margin-top: 24px;">
+                            <button class="btn primary" style="margin:0; padding: 14px 20px;" onclick="saveClaimAudit()">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                                Save Audit Entry
+                            </button>
+                            <button class="btn" style="margin:0; padding: 14px 20px;" onclick="closeModal()">Cancel</button>
                         </div>
                     </div>
-
-                    <div id="modal-batch-val-msg" class="result"
-                        style="display:none; padding: 10px; border-radius: 8px; font-size: 0.85rem; text-align: center; font-weight: 600; margin-top: 8px;">
-                    </div>
-                </div>
-
-                <div id="modal-remark-box" style="display:block; animation: slideFadeUp 0.2s ease; margin-top: 16px;">
-                    <label>Optional Remark</label>
-                    <input type="text" id="modal-remark" class="input" placeholder="Add a remark (optional)...">
-                </div>
-
-                <div class="grid-2" style="margin-top: 24px;">
-                    <button class="btn primary" style="margin:0; padding: 14px 20px;" onclick="saveClaimAudit()">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-                        Save Audit Entry
-                    </button>
-                    <button class="btn" style="margin:0; padding: 14px 20px;" onclick="closeModal()">Cancel</button>
                 </div>
             </div>
         </div>
