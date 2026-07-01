@@ -4801,6 +4801,7 @@
                 textDisplay.innerHTML = (optIconEl ? optIconEl.outerHTML : '') + ' ' + (optTextEl ? optTextEl.innerText.trim() : option.innerText.trim());
                 wrapper.classList.add('has-value');
                 wrapper.classList.remove('open');
+                if (document.activeElement) document.activeElement.blur();
 
                 if (hiddenInput.id === 'modal-discrepancy') handleDiscrepancyChange(val);
                 if (hiddenInput.id === 'dash-scope') loadDashboardMonth(val);
