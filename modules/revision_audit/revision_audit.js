@@ -533,17 +533,27 @@
     }
 
     function openRevisionSheet() {
-        if (!_activeSessionKey || !window.dbIndex || !window.dbIndex[_activeSessionKey]) {
-            if (typeof window.showAppAlert === 'function') {
-                window.showAppAlert("Please open an audit first before creating a revision.");
-            } else {
-                alert("Please open an audit first before creating a revision.");
-            }
-            return;
+        _activeSessionKey = _activeSessionKey || window.currentSessionKey;
+        if (!_activeSessionKey) {
+            const titleEl = document.getElementById('workspace-title');
+            _activeSessionKey = 'audit_' + Date.now();
+            window.currentSessionKey = _activeSessionKey;
+        }
+
+        if (!window.dbIndex) window.dbIndex = {};
+        if (!window.dbIndex[_activeSessionKey]) {
+            const titleEl = document.getElementById('workspace-title');
+            window.dbIndex[_activeSessionKey] = {
+                month: titleEl ? titleEl.innerText : 'Current Audit',
+                last_saved: new Date().toLocaleString(),
+                finalized: false,
+                revision_number: 1,
+                created_at: new Date().toISOString()
+            };
         }
 
         const family = getRevisionFamily(_activeSessionKey);
-        const currentMeta = window.dbIndex[_activeSessionKey];
+        const currentMeta = window.dbIndex[_activeSessionKey] || { revision_number: 1 };
         const nextRevNum = family.length > 0 ? (family[family.length - 1].revNum + 1) : 2;
 
         const parentNameEl = document.getElementById('rev-parent-name');
@@ -605,8 +615,15 @@
             const rootKey = currentMeta.root_key || _activeSessionKey;
             const nextRevNum = family.length > 0 ? (family[family.length - 1].revNum + 1) : 2;
 
-            const parentSession = await window.localforage.getItem(_activeSessionKey);
-            if (!parentSession) throw new Error("Original audit session data not found.");
+            let parentSession = await window.localforage.getItem(_activeSessionKey);
+            if (!parentSession) {
+                const titleEl = document.getElementById('workspace-title');
+                parentSession = {
+                    month: titleEl ? titleEl.innerText : 'Current Audit',
+                    col_map: window.colMap || {},
+                    filtered_data: window.currentData || []
+                };
+            }
 
             let filteredData = [];
             let colMapToUse = parentSession.col_map || {};
