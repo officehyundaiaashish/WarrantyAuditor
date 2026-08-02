@@ -1367,11 +1367,13 @@
         }
 
         #modal-claim-no {
+            color: var(--primary);
             background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             font-weight: 800;
             letter-spacing: -0.5px;
+            display: inline-block;
         }
 
         @media (max-width: 480px) {
@@ -4693,8 +4695,8 @@
                 </div>
                 <button type="button" class="btn danger btn-clear-marking" onclick="clearClaimMarking()"
                     title="Clear all markings for this claim"
-                    style="margin:0; padding: 6px 10px; font-size: 0.75rem; font-weight:700; border-radius:8px; display:inline-flex; align-items:center; gap:4px; background:rgba(239,68,68,0.1); color:var(--danger); border:1px solid rgba(239,68,68,0.3); flex-shrink:0;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    style="margin:0; padding: 4px 8px; font-size: 0.72rem; font-weight:700; border-radius:6px; display:inline-flex; align-items:center; gap:4px; background:rgba(239,68,68,0.1); color:var(--danger); border:1px solid rgba(239,68,68,0.3); flex-shrink:0;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                         stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="3 6 5 6 21 6"></polyline>
                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
