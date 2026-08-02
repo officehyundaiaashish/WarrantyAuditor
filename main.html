@@ -6860,7 +6860,11 @@ Upload the correct file.`);
             } else {
                 updateStats(); renderTablePage(); showScreen('screen-workspace');
             }
-            if (window.RevisionAuditModule) window.RevisionAuditModule.initWorkspace(key);
+            const iframe = document.getElementById('revision-audit-iframe');
+            const revMod = (iframe && iframe.contentWindow && iframe.contentWindow.RevisionAuditModule)
+                ? iframe.contentWindow.RevisionAuditModule
+                : window.RevisionAuditModule;
+            if (revMod && typeof revMod.initWorkspace === 'function') revMod.initWorkspace(key);
         }
 
         async function deleteSession(key, isFinalized) {
@@ -8798,6 +8802,17 @@ Upload the correct file.`);
                 setTimeout(initGistUI, 50);
                 setTimeout(initGdriveUI, 80);
             }
+            if (id === 'screen-workspace') {
+                setTimeout(() => {
+                    const iframe = document.getElementById('revision-audit-iframe');
+                    const mod = (iframe && iframe.contentWindow && iframe.contentWindow.RevisionAuditModule)
+                        ? iframe.contentWindow.RevisionAuditModule
+                        : window.RevisionAuditModule;
+                    if (mod && typeof mod.initWorkspace === 'function') {
+                        mod.initWorkspace(currentSessionKey);
+                    }
+                }, 50);
+            }
         };
 
 
@@ -9433,29 +9448,8 @@ setTimeout(() => {
 }, 1000);
 </script>
 
-    <!-- Revision Audit All-in-One Module Container -->
-    <div id="revision-audit-module-container"></div>
-    <script>
-        // Dynamically load single-file module: modules/revision_audit/revision_audit.html
-        (function loadRevisionAuditModule() {
-            fetch('modules/revision_audit/revision_audit.html')
-                .then(res => res.text())
-                .then(html => {
-                    const container = document.getElementById('revision-audit-module-container');
-                    if (container) {
-                        container.innerHTML = html;
-                        // Execute script blocks inside revision_audit.html
-                        const scripts = container.querySelectorAll('script');
-                        scripts.forEach(s => {
-                            const sc = document.createElement('script');
-                            sc.textContent = s.textContent;
-                            document.body.appendChild(sc);
-                        });
-                    }
-                })
-                .catch(err => console.error('Error loading revision_audit.html module:', err));
-        })();
-    </script>
+    <!-- Revision Audit Module (iframe loader — CORS & local file:// safe) -->
+    <iframe src="modules/revision_audit/revision_audit.html" id="revision-audit-iframe" style="display:none;"></iframe>
 
 </body>
 
