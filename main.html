@@ -6609,8 +6609,13 @@
             }
 
             const nextInput = document.getElementById('search-claim');
-            if (nextInput.value) { handleSearch(); nextInput.focus(); }
-            else { applyWorkspaceFilters(true); }
+            if (nextInput) {
+                nextInput.value = '';
+                handleSearch();
+                nextInput.focus();
+            } else {
+                applyWorkspaceFilters(true);
+            }
         }
 
         async function clearClaimMarking() {
