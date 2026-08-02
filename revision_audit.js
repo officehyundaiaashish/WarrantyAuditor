@@ -1,0 +1,1216 @@
+/**
+ * Warranty Auditor — Revision Audit Module (Modern Pop-up Sheet UIX)
+ */
+
+(function () {
+    // ── 1. MODULE STYLES (MODERN & SLEEK UI) ──
+    const styles = `
+    #revision-audit-container {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-revision-audit {
+        background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+        color: #ffffff;
+        border: none;
+        font-weight: 600;
+        font-size: 0.78rem;
+        padding: 6px 12px;
+        border-radius: 7px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        transition: all 0.18s ease;
+        white-space: nowrap;
+        box-shadow: 0 2px 5px rgba(99, 102, 241, 0.25);
+    }
+
+    .btn-revision-audit:hover {
+        background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
+        box-shadow: 0 4px 10px rgba(99, 102, 241, 0.35);
+        transform: translateY(-1px);
+    }
+
+    .rev-badge-active {
+        background: rgba(255, 255, 255, 0.22);
+        color: #ffffff;
+        padding: 1px 7px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+    }
+
+    /* Modern Pop-up Modal Sheet Backdrop */
+    .rev-modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(15, 23, 42, 0.65);
+        backdrop-filter: blur(4px);
+        z-index: 9900;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.22s ease-in-out;
+        padding: 16px;
+    }
+
+    .rev-modal-backdrop.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .rev-modal-sheet {
+        background: var(--bg-card, #ffffff);
+        color: var(--text-main, #0f172a);
+        width: 100%;
+        max-width: 520px;
+        border-radius: 16px;
+        box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--border, #e2e8f0);
+        overflow: hidden;
+        transform: scale(0.96);
+        transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .rev-modal-backdrop.active .rev-modal-sheet {
+        transform: scale(1);
+    }
+
+    .rev-modal-header {
+        padding: 18px 22px 14px 22px;
+        border-bottom: 1px solid var(--border, #f1f5f9);
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+    }
+
+    .rev-modal-title {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: var(--text-main, #0f172a);
+        letter-spacing: -0.2px;
+    }
+
+    .rev-modal-subtitle-text {
+        font-size: 0.78rem;
+        color: var(--text-muted, #64748b);
+        margin-top: 2px;
+        font-weight: 500;
+    }
+
+    .rev-modal-close {
+        background: rgba(148, 163, 184, 0.1);
+        border: none;
+        font-size: 1.2rem;
+        color: #64748b;
+        cursor: pointer;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        transition: all 0.15s ease;
+    }
+
+    .rev-modal-close:hover {
+        background: rgba(239, 68, 68, 0.12);
+        color: #ef4444;
+    }
+
+    /* Segmented Navigation Controls */
+    .rev-modal-tabs {
+        display: flex;
+        background: var(--bg-base, #f8fafc);
+        padding: 4px;
+        gap: 4px;
+        border-bottom: 1px solid var(--border, #e2e8f0);
+    }
+
+    .rev-tab-btn {
+        flex: 1;
+        padding: 8px 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        border: none;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--text-muted, #64748b);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: all 0.15s ease;
+    }
+
+    .rev-tab-btn:hover {
+        color: var(--text-main, #0f172a);
+    }
+
+    .rev-tab-btn.active {
+        background: var(--bg-card, #ffffff);
+        color: #4f46e5;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        font-weight: 700;
+    }
+
+    .rev-tab-view {
+        padding: 20px;
+    }
+
+    /* All Revisions List Cards */
+    .rev-family-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-height: 340px;
+        overflow-y: auto;
+        padding-right: 2px;
+    }
+
+    .rev-card {
+        background: var(--bg-base, #f8fafc);
+        border: 1px solid var(--border, #e2e8f0);
+        border-radius: 10px;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        transition: all 0.15s ease;
+    }
+
+    .rev-card:hover {
+        border-color: #818cf8;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.06);
+    }
+
+    .rev-card.active-rev {
+        background: rgba(99, 102, 241, 0.04);
+        border-color: #6366f1;
+    }
+
+    .rev-card-title {
+        font-weight: 700;
+        font-size: 0.88rem;
+        color: var(--text-main, #0f172a);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .rev-status-pill {
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 20px;
+        letter-spacing: 0.2px;
+    }
+
+    .rev-status-pill.active {
+        background: rgba(16, 185, 129, 0.15);
+        color: #059669;
+    }
+
+    .rev-status-pill.closed {
+        background: rgba(59, 130, 246, 0.15);
+        color: #2563eb;
+    }
+
+    .rev-status-pill.draft {
+        background: rgba(100, 116, 139, 0.15);
+        color: #475569;
+    }
+
+    .rev-card-sub {
+        font-size: 0.75rem;
+        color: var(--text-muted, #64748b);
+        margin-top: 3px;
+    }
+
+    .rev-card-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .rev-switch-btn {
+        padding: 6px 14px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        border: 1px solid #6366f1;
+        background: #ffffff;
+        color: #4f46e5;
+        border-radius: 7px;
+        cursor: pointer;
+        transition: 0.15s ease;
+        white-space: nowrap;
+    }
+
+    .rev-switch-btn:hover {
+        background: #4f46e5;
+        color: #ffffff;
+        box-shadow: 0 2px 6px rgba(79, 70, 229, 0.2);
+    }
+
+    .rev-delete-btn {
+        background: rgba(239, 68, 68, 0.08);
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        padding: 5px 8px;
+        border-radius: 7px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s ease;
+    }
+
+    .rev-delete-btn:hover {
+        background: #ef4444;
+        color: #ffffff;
+        border-color: #ef4444;
+        box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+    }
+
+    .rev-current-indicator {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #059669;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .rev-view-footer {
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid var(--border, #f1f5f9);
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .rev-btn-new-trigger {
+        background: #4f46e5;
+        color: #ffffff;
+        border: none;
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 9px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: 0.15s ease;
+    }
+
+    .rev-btn-new-trigger:hover {
+        background: #4338ca;
+    }
+
+    /* Create Revision Options */
+    .rev-create-intro {
+        font-size: 0.84rem;
+        color: var(--text-muted, #64748b);
+        margin: 0 0 16px 0;
+        line-height: 1.4;
+    }
+
+    .rev-options-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .rev-option-item {
+        border: 1px solid var(--border, #cbd5e1);
+        border-radius: 10px;
+        padding: 14px;
+        cursor: pointer;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        background: var(--bg-base, #ffffff);
+        transition: 0.15s;
+    }
+
+    .rev-option-item:hover {
+        border-color: #6366f1;
+        background: rgba(99, 102, 241, 0.02);
+    }
+
+    .rev-option-item.selected {
+        border-color: #6366f1;
+        background: rgba(99, 102, 241, 0.04);
+        box-shadow: 0 0 0 1px #6366f1;
+    }
+
+    .rev-option-item input[type="radio"] {
+        margin-top: 3px;
+        accent-color: #4f46e5;
+    }
+
+    .rev-option-label {
+        font-weight: 700;
+        font-size: 0.88rem;
+        color: var(--text-main, #0f172a);
+    }
+
+    .rev-option-subtext {
+        font-size: 0.76rem;
+        color: var(--text-muted, #64748b);
+        margin-top: 2px;
+    }
+
+    .rev-file-box {
+        margin-top: 10px;
+    }
+
+    .rev-file-name {
+        margin-top: 6px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #4338ca;
+    }
+
+    .rev-next-notice {
+        font-size: 0.8rem;
+        color: #059669;
+        font-weight: 700;
+        background: rgba(16, 185, 129, 0.08);
+        padding: 8px 12px;
+        border-radius: 6px;
+        margin-bottom: 16px;
+    }
+
+    .rev-modal-footer {
+        padding-top: 14px;
+        border-top: 1px solid var(--border, #e2e8f0);
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+
+    .rev-btn-cancel {
+        padding: 8px 14px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        border: 1px solid var(--border, #cbd5e1);
+        background: #ffffff;
+        color: #475569;
+        border-radius: 7px;
+        cursor: pointer;
+    }
+
+    .rev-btn-confirm {
+        padding: 8px 18px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        border: none;
+        background: #4f46e5;
+        color: #ffffff;
+        border-radius: 7px;
+        cursor: pointer;
+        transition: 0.15s ease;
+    }
+
+    .rev-btn-confirm:hover {
+        background: #4338ca;
+    }
+
+    .rev-notif-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+        user-select: none;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--text-muted, #64748b);
+        white-space: nowrap;
+    }
+
+    .rev-toggle-track {
+        width: 30px;
+        height: 16px;
+        background: #cbd5e1;
+        border-radius: 20px;
+        position: relative;
+        flex-shrink: 0;
+        transition: background 0.2s ease;
+    }
+
+    .rev-toggle-track::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 12px;
+        height: 12px;
+        background: #ffffff;
+        border-radius: 50%;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        transition: transform 0.2s ease;
+    }
+
+    .rev-notif-toggle.on .rev-toggle-track {
+        background: #4f46e5;
+    }
+
+    .rev-notif-toggle.on .rev-toggle-track::after {
+        transform: translateX(14px);
+    }
+    `;
+
+    function getTargetWindow() { try { return (window.parent && window.parent.document) ? window.parent : window; } catch (e) { return window; } }
+    function getTargetDocument() { try { return (window.parent && window.parent.document) ? window.parent.document : document; } catch (e) { return document; } }
+
+    function getGlobalDbIndex() {
+        const win = getTargetWindow();
+        if (win.dbIndex) return win.dbIndex;
+        if (win.parent && win.parent.dbIndex) return win.parent.dbIndex;
+        if (!win.dbIndex) win.dbIndex = {};
+        return win.dbIndex;
+    }
+
+    function injectStyles() {
+        const doc = getTargetDocument();
+        if (!doc.getElementById('rev-audit-style')) {
+            const styleTag = doc.createElement('style');
+            styleTag.id = 'rev-audit-style';
+            styleTag.textContent = styles;
+            doc.head.appendChild(styleTag);
+        }
+    }
+
+    // ── 2. POP-UP SHEET MODAL HTML ──
+    const modalHtml = `
+    <div id="rev-sheet-backdrop" class="rev-modal-backdrop" onclick="RevisionAuditModule.closeRevisionSheet()">
+        <div class="rev-modal-sheet" onclick="event.stopPropagation()">
+            <div class="rev-modal-header">
+                <div>
+                    <h4 class="rev-modal-title">All Revisions</h4>
+                    <div class="rev-modal-subtitle-text" id="rev-modal-sub-period">Audit Family</div>
+                </div>
+                <button class="rev-modal-close" onclick="RevisionAuditModule.closeRevisionSheet()">&times;</button>
+            </div>
+
+            <div class="rev-modal-tabs">
+                <button class="rev-tab-btn active" id="rev-tab-list" onclick="RevisionAuditModule.switchTab('list')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                    All Revisions
+                </button>
+                <button class="rev-tab-btn" id="rev-tab-create" onclick="RevisionAuditModule.switchTab('create')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    + Create Revision
+                </button>
+            </div>
+
+            <!-- Tab 1: All Revisions View -->
+            <div id="rev-view-list" class="rev-tab-view">
+                <div id="rev-family-cards" class="rev-family-cards"></div>
+                <div class="rev-view-footer">
+                    <button class="rev-btn-new-trigger" onclick="RevisionAuditModule.switchTab('create')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Create New Revision
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab 2: Create Revision View -->
+            <div id="rev-view-create" class="rev-tab-view" style="display: none;">
+                <p class="rev-create-intro">
+                    Select how to create the new revision. <strong id="rev-parent-name">Audit 1</strong> data will be <strong>100% saved and preserved</strong>.
+                </p>
+
+                <div class="rev-options-list">
+                    <div class="rev-option-item selected" id="rev-card-new" onclick="RevisionAuditModule.selectOption('new')">
+                        <input type="radio" name="rev-option" id="rev-opt-new" value="new" checked>
+                        <div style="flex:1;">
+                            <div class="rev-option-label">Upload new warranty claim list</div>
+                            <div class="rev-option-subtext">Upload updated Excel (.xlsx, .xls) or CSV file for this audit period.</div>
+
+                            <div id="rev-upload-panel" class="file-upload-wrapper" style="margin-top: 10px; margin-bottom: 0;">
+                                <input type="file" id="rev-file-input" accept=".xlsx, .xls, .csv" onchange="RevisionAuditModule.handleFileSelect(event)">
+                                <label for="rev-file-input" class="file-upload-btn" style="padding: 10px 14px; border-radius: 8px;">
+                                    <svg viewBox="0 0 24 24" style="width:18px; height:18px;">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="17 8 12 3 7 8"></polyline>
+                                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                                    </svg>
+                                    <span>Browse File</span>
+                                </label>
+                            </div>
+                            <div id="rev-file-card" style="display: none; margin-top: 8px;"></div>
+                        </div>
+                    </div>
+
+                    <div class="rev-option-item" id="rev-card-existing" onclick="RevisionAuditModule.selectOption('existing')">
+                        <input type="radio" name="rev-option" id="rev-opt-existing" value="existing">
+                        <div style="flex:1;">
+                            <div class="rev-option-label">Use existing claim list (from Audit 1)</div>
+                            <div class="rev-option-subtext">Re-use exact claims from Audit 1, but clear all audit markings to start over.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rev-next-notice">
+                    New revision will be created as <span id="rev-next-name">Audit 2</span>.
+                </div>
+
+                <div class="rev-modal-footer">
+                    <button class="rev-btn-cancel" onclick="RevisionAuditModule.switchTab('list')">Back to List</button>
+                    <button class="rev-btn-confirm" id="rev-btn-submit" onclick="RevisionAuditModule.confirmCreateRevision()">Create Revision</button>
+                </div>
+            </div>
+        </div>
+    </div>`;
+
+    function injectModal() {
+        const doc = getTargetDocument();
+        if (!doc.getElementById('rev-sheet-backdrop')) {
+            const wrapper = doc.createElement('div');
+            wrapper.innerHTML = modalHtml;
+            doc.body.appendChild(wrapper.firstElementChild);
+        }
+    }
+
+    let _activeSessionKey = null;
+    let _selectedOption = 'new';
+    let _uploadedFile = null;
+
+    function formatCreationTime(dateStr) {
+        if (!dateStr) return '';
+        try {
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return dateStr;
+            const dayMonth = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+            const timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            return `${dayMonth}, ${timeStr}`;
+        } catch (e) { return ''; }
+    }
+
+    function getRevisionFamily(sessionKey) {
+        const dbIdx = getGlobalDbIndex();
+        if (!sessionKey || !dbIdx) return [];
+        const currentMeta = dbIdx[sessionKey] || {};
+        const rootKey = currentMeta.root_key || (sessionKey.includes('_rev_') ? sessionKey.split('_rev_')[0] : sessionKey);
+
+        const family = [];
+        for (const [key, meta] of Object.entries(dbIdx)) {
+            const metaRoot = meta.root_key || (key.includes('_rev_') ? key.split('_rev_')[0] : key);
+            if (metaRoot === rootKey) {
+                const revNum = meta.revision_number || (key.includes('_rev_') ? parseInt(key.split('_rev_')[1].split('_')[0]) : 1);
+                family.push({
+                    key: key,
+                    meta: meta,
+                    revNum: revNum,
+                    createdAt: meta.created_at || meta.last_saved || ''
+                });
+            }
+        }
+        family.sort((a, b) => a.revNum - b.revNum);
+        return family;
+    }
+
+    function initWorkspace(sessionKey) {
+        injectStyles();
+        injectModal();
+
+        const win = getTargetWindow();
+        const doc = getTargetDocument();
+        const dbIdx = getGlobalDbIndex();
+
+        sessionKey = sessionKey || win.currentSessionKey;
+        _activeSessionKey = sessionKey;
+
+        const container = doc.getElementById('revision-audit-container');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        if (sessionKey && !dbIdx[sessionKey]) {
+            const titleEl = doc.getElementById('workspace-title');
+            dbIdx[sessionKey] = {
+                month: titleEl ? titleEl.innerText : 'Current Audit',
+                last_saved: new Date().toLocaleString(),
+                finalized: false,
+                revision_number: 1,
+                created_at: new Date().toISOString()
+            };
+        }
+
+        const currentMeta = (dbIdx && sessionKey) ? dbIdx[sessionKey] : { revision_number: 1 };
+        const currentRevNum = currentMeta ? (currentMeta.revision_number || 1) : 1;
+        const currentLabel = `Audit ${currentRevNum}`;
+
+        const revBtn = doc.createElement('button');
+        revBtn.className = 'btn-revision-audit';
+        revBtn.title = 'View all revisions & create new versions';
+        revBtn.onclick = openRevisionSheet;
+        revBtn.innerHTML = `
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                <polyline points="2 17 12 22 22 17"/>
+                <polyline points="2 12 12 17 22 12"/>
+            </svg>
+            <span>All Revisions</span>
+            <span class="rev-badge-active">${currentLabel}</span>
+        `;
+        container.appendChild(revBtn);
+    }
+
+    function switchTab(tab) {
+        const doc = getTargetDocument();
+        const tabList = doc.getElementById('rev-tab-list');
+        const tabCreate = doc.getElementById('rev-tab-create');
+        const viewList = doc.getElementById('rev-view-list');
+        const viewCreate = doc.getElementById('rev-view-create');
+
+        if (tab === 'list') {
+            if (tabList) tabList.classList.add('active');
+            if (tabCreate) tabCreate.classList.remove('active');
+            if (viewList) viewList.style.display = 'block';
+            if (viewCreate) viewCreate.style.display = 'none';
+            renderRevisionList();
+        } else {
+            if (tabList) tabList.classList.remove('active');
+            if (tabCreate) tabCreate.classList.add('active');
+            if (viewList) viewList.style.display = 'none';
+            if (viewCreate) viewCreate.style.display = 'block';
+        }
+    }
+
+    function renderRevisionList() {
+        const win = getTargetWindow();
+        const doc = getTargetDocument();
+        const cardsContainer = doc.getElementById('rev-family-cards');
+        if (!cardsContainer) return;
+
+        cardsContainer.innerHTML = '';
+
+        const activeKey = _activeSessionKey || win.currentSessionKey;
+        const family = getRevisionFamily(activeKey);
+
+        if (family.length === 0) {
+            cardsContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: #64748b; font-size: 0.84rem;">No revisions recorded.</div>`;
+            return;
+        }
+
+        family.forEach(item => {
+            const isCurrent = item.key === activeKey;
+            const meta = item.meta || {};
+            const timeLabel = formatCreationTime(item.createdAt);
+            const isFinalized = meta.finalized;
+            const isMainAudit1 = item.revNum === 1;
+
+            let statusPillClass = 'draft';
+            let statusText = 'Draft';
+            if (isCurrent) {
+                statusPillClass = 'active';
+                statusText = '● Active';
+            } else if (isFinalized) {
+                statusPillClass = 'closed';
+                statusText = 'Closed';
+            }
+
+            const titleText = isMainAudit1 ? 'Audit 1 (Original)' : `Audit ${item.revNum} (Revision)`;
+
+            // notify_in_dashboard: Audit 1 defaults ON, revisions default OFF
+            const notifOn = (meta.notify_in_dashboard !== undefined)
+                ? meta.notify_in_dashboard
+                : isMainAudit1;
+            const toggleClass = notifOn ? 'rev-notif-toggle on' : 'rev-notif-toggle';
+
+            const card = doc.createElement('div');
+            card.className = `rev-card ${isCurrent ? 'active-rev' : ''}`;
+            card.innerHTML = `
+                <div>
+                    <div class="rev-card-title">
+                        <span>${titleText}</span>
+                        <span class="rev-status-pill ${statusPillClass}">${statusText}</span>
+                    </div>
+                    <div class="rev-card-sub">
+                        ${timeLabel ? `Created: ${timeLabel}` : ''}
+                        ${meta.last_saved ? ` &bull; Saved: ${meta.last_saved}` : ''}
+                    </div>
+                </div>
+                <div class="rev-card-actions">
+                    <label class="${toggleClass}" title="Include in dashboard notifications" onclick="RevisionAuditModule.toggleNotification(event, '${item.key}')">
+                        <div class="rev-toggle-track"></div>
+                        <span>Notify</span>
+                    </label>
+
+                    ${isCurrent ? `
+                        <span class="rev-current-indicator">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                            Current
+                        </span>
+                    ` : `
+                        <button class="rev-switch-btn" onclick="RevisionAuditModule.switchVersion('${item.key}')">Switch</button>
+                    `}
+
+                    ${!isMainAudit1 ? `
+                        <button class="rev-delete-btn" title="Delete Audit ${item.revNum}" onclick="RevisionAuditModule.deleteRevision('${item.key}', ${item.revNum})">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+            cardsContainer.appendChild(card);
+        });
+    }
+
+    function openRevisionSheet() {
+        const win = getTargetWindow();
+        const doc = getTargetDocument();
+        const dbIdx = getGlobalDbIndex();
+
+        _activeSessionKey = _activeSessionKey || win.currentSessionKey;
+        if (!_activeSessionKey) {
+            const titleEl = doc.getElementById('workspace-title');
+            _activeSessionKey = 'audit_' + Date.now();
+            win.currentSessionKey = _activeSessionKey;
+        }
+
+        if (!dbIdx[_activeSessionKey]) {
+            const titleEl = doc.getElementById('workspace-title');
+            dbIdx[_activeSessionKey] = {
+                month: titleEl ? titleEl.innerText : 'Current Audit',
+                last_saved: new Date().toLocaleString(),
+                finalized: false,
+                revision_number: 1,
+                created_at: new Date().toISOString()
+            };
+        }
+
+        const family = getRevisionFamily(_activeSessionKey);
+        const currentMeta = dbIdx[_activeSessionKey] || { revision_number: 1 };
+        const nextRevNum = family.length > 0 ? (family[family.length - 1].revNum + 1) : 2;
+
+        const periodEl = doc.getElementById('rev-modal-sub-period');
+        if (periodEl) periodEl.innerText = currentMeta.month || 'Current Audit';
+
+        const parentNameEl = doc.getElementById('rev-parent-name');
+        const nextNameEl = doc.getElementById('rev-next-name');
+        if (parentNameEl) parentNameEl.innerText = `Audit ${currentMeta.revision_number || 1}`;
+        if (nextNameEl) nextNameEl.innerText = `Audit ${nextRevNum}`;
+
+        _selectedOption = 'new';
+        clearFileSelect();
+
+        selectOption('new');
+        switchTab('list');
+
+        const sheet = doc.getElementById('rev-sheet-backdrop');
+        if (sheet) sheet.classList.add('active');
+    }
+
+    function closeRevisionSheet() {
+        const doc = getTargetDocument();
+        const sheet = doc.getElementById('rev-sheet-backdrop');
+        if (sheet) sheet.classList.remove('active');
+    }
+
+    function selectOption(option) {
+        const doc = getTargetDocument();
+        _selectedOption = option;
+        const cardNew = doc.getElementById('rev-card-new');
+        const cardExisting = doc.getElementById('rev-card-existing');
+        const optNew = doc.getElementById('rev-opt-new');
+        const optExisting = doc.getElementById('rev-opt-existing');
+        const uploadPanel = doc.getElementById('rev-upload-panel');
+        const cardEl = doc.getElementById('rev-file-card');
+
+        if (cardNew) cardNew.classList.toggle('selected', option === 'new');
+        if (cardExisting) cardExisting.classList.toggle('selected', option === 'existing');
+
+        if (optNew) optNew.checked = (option === 'new');
+        if (optExisting) optExisting.checked = (option === 'existing');
+
+        if (uploadPanel) {
+            if (option === 'new') {
+                if (_uploadedFile && cardEl && cardEl.innerHTML !== '') {
+                    uploadPanel.style.display = 'none';
+                    cardEl.style.display = 'block';
+                } else {
+                    uploadPanel.style.display = 'block';
+                    if (cardEl) cardEl.style.display = 'none';
+                }
+            } else {
+                uploadPanel.style.display = 'none';
+                if (cardEl) cardEl.style.display = 'none';
+            }
+        }
+    }
+
+    function handleFileSelect(evt) {
+        const doc = getTargetDocument();
+        const files = evt.target.files;
+        if (files && files.length > 0) {
+            _uploadedFile = files[0];
+            const cardEl = doc.getElementById('rev-file-card');
+            const uploadPanel = doc.getElementById('rev-upload-panel');
+            let fileSize = (_uploadedFile.size / 1024).toFixed(2) + ' KB';
+            if (_uploadedFile.size > 1024 * 1024) fileSize = (_uploadedFile.size / (1024 * 1024)).toFixed(2) + ' MB';
+
+            if (cardEl) {
+                cardEl.innerHTML = `
+                <div class="file-card" style="margin-bottom: 0;">
+                    <div class="file-card-icon">
+                        <svg viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+                    </div>
+                    <div class="file-card-info">
+                        <div class="file-card-name">${_uploadedFile.name}</div>
+                        <div class="file-card-size">${fileSize}</div>
+                    </div>
+                    <div class="file-card-remove" onclick="RevisionAuditModule.clearFileSelect()">
+                        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </div>
+                </div>
+            `;
+                cardEl.style.display = 'block';
+            }
+            if (uploadPanel) uploadPanel.style.display = 'none';
+        }
+    }
+
+    function clearFileSelect() {
+        const doc = getTargetDocument();
+        _uploadedFile = null;
+        const fileInput = doc.getElementById('rev-file-input');
+        const cardEl = doc.getElementById('rev-file-card');
+        const uploadPanel = doc.getElementById('rev-upload-panel');
+        if (fileInput) fileInput.value = '';
+        if (cardEl) { cardEl.style.display = 'none'; cardEl.innerHTML = ''; }
+        if (uploadPanel) uploadPanel.style.display = 'block';
+    }
+
+    async function confirmCreateRevision() {
+        const win = getTargetWindow();
+        const doc = getTargetDocument();
+        const dbIdx = getGlobalDbIndex();
+
+        const activeKey = _activeSessionKey || win.currentSessionKey;
+        if (!activeKey) return;
+
+        if (typeof win.showLoader === 'function') win.showLoader(true);
+
+        try {
+            const family = getRevisionFamily(activeKey);
+            const currentMeta = dbIdx[activeKey] || { revision_number: 1 };
+            const rootKey = currentMeta.root_key || activeKey;
+            const nextRevNum = family.length > 0 ? (family[family.length - 1].revNum + 1) : 2;
+
+            let parentSession = await win.localforage.getItem(activeKey);
+            const titleEl = doc.getElementById('workspace-title');
+            const monthTitle = parentSession ? parentSession.month : (titleEl ? titleEl.innerText : 'Current Audit');
+
+            let rawClaims = [];
+            if (win.currentData && win.currentData.length > 0) {
+                rawClaims = win.currentData;
+            } else if (parentSession) {
+                rawClaims = (parentSession.filtered_data && parentSession.filtered_data.length > 0)
+                    ? parentSession.filtered_data
+                    : (parentSession.raw_data || []);
+            }
+            const audit1Claims = JSON.parse(JSON.stringify(rawClaims));
+
+            // Ensure live in-memory audit_data is preserved for Audit 1
+            const liveAuditData = (win.currentAuditData && Object.keys(win.currentAuditData).length > 0)
+                ? win.currentAuditData
+                : (parentSession ? parentSession.audit_data : {});
+            const audit1Data = JSON.parse(JSON.stringify(liveAuditData || {}));
+            const audit1ColMap = JSON.parse(JSON.stringify(win.colMap || (parentSession ? parentSession.col_map : {}) || {}));
+
+            const parentSessionToSave = {
+                month: monthTitle,
+                year: (parentSession && parentSession.year) || '',
+                last_saved: new Date().toLocaleString(),
+                finalized: (parentSession && parentSession.finalized) || false,
+                col_map: audit1ColMap,
+                audit_data: audit1Data, // Audit 1 markings 100% PRESERVED
+                filtered_data: audit1Claims,
+                raw_data: audit1Claims,
+                root_key: rootKey,
+                revision_number: (parentSession && parentSession.revision_number) || 1,
+                created_at: (parentSession && parentSession.created_at) || new Date().toISOString()
+            };
+
+            await win.localforage.setItem(activeKey, parentSessionToSave);
+            dbIdx[activeKey] = {
+                month: monthTitle,
+                last_saved: parentSessionToSave.last_saved,
+                finalized: parentSessionToSave.finalized,
+                root_key: rootKey,
+                revision_number: parentSessionToSave.revision_number,
+                created_at: parentSessionToSave.created_at
+            };
+
+            if (typeof win.saveSessionToDB === 'function') {
+                await win.saveSessionToDB(parentSessionToSave, activeKey);
+            }
+
+            let filteredData = [];
+            let colMapToUse = audit1ColMap;
+
+            if (_selectedOption === 'new') {
+                if (!_uploadedFile) {
+                    if (typeof win.showLoader === 'function') win.showLoader(false);
+                    return win.showAppAlert ? win.showAppAlert("Please choose an Excel or CSV file.") : alert("Please choose a file.");
+                }
+
+                const parsed = await parseUploadedFile(_uploadedFile, colMapToUse);
+                filteredData = parsed.filteredData;
+                colMapToUse = parsed.colMap;
+            } else {
+                filteredData = JSON.parse(JSON.stringify(audit1Claims));
+            }
+
+            const nowIso = new Date().toISOString();
+            const nowDisplay = new Date().toLocaleString();
+            const newKey = `${rootKey}_rev_${nextRevNum}_${Date.now()}`;
+
+            const newSession = {
+                month: monthTitle,
+                year: parentSessionToSave.year || '',
+                last_saved: nowDisplay,
+                finalized: false,
+                col_map: colMapToUse,
+                audit_data: {}, // Audit 2 starts with fresh markings
+                filtered_data: filteredData,
+                raw_data: filteredData,
+                root_key: rootKey,
+                revision_number: nextRevNum,
+                created_at: nowIso
+            };
+
+            await win.localforage.setItem(newKey, newSession);
+            dbIdx[newKey] = {
+                month: monthTitle,
+                last_saved: nowDisplay,
+                finalized: false,
+                root_key: rootKey,
+                revision_number: nextRevNum,
+                created_at: nowIso
+            };
+
+            await win.localforage.setItem('db_index', dbIdx);
+            if (typeof win.saveSessionToDB === 'function') {
+                await win.saveSessionToDB(newSession, newKey);
+            }
+
+            closeRevisionSheet();
+            if (typeof win.showLoader === 'function') win.showLoader(false);
+            if (typeof win.showToast === 'function') win.showToast(`Audit ${nextRevNum} created! Markings cleared for new revision.`, 'success', 4000);
+
+            await win.loadSession(newKey);
+            initWorkspace(newKey);
+
+        } catch (e) {
+            if (typeof win.showLoader === 'function') win.showLoader(false);
+            console.error(e);
+            if (typeof win.showAppAlert === 'function') win.showAppAlert("Failed to create revision: " + e.message);
+        }
+    }
+
+    function parseUploadedFile(file, existingColMap) {
+        const win = getTargetWindow();
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = win.XLSX.read(data, { type: 'array' });
+                    const jsonData = win.XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
+                    if (jsonData.length === 0) return reject(new Error("Uploaded file is empty."));
+
+                    let colMap = win.detectColumns ? win.detectColumns(Object.keys(jsonData[0])) : existingColMap;
+                    if (!colMap.claim_no) colMap = existingColMap;
+
+                    const filteredData = jsonData.filter(row => {
+                        const type = String(row[colMap.claim_type] || "").toUpperCase();
+                        const amt = parseFloat(row[colMap.amount]) || 0;
+                        const desc = String(row[colMap.part_desc] || "").toUpperCase();
+                        if (type.includes("FREE SERVICE") || type.includes("FSC")) return false;
+                        if (type.includes("CAMPAIGN") && amt < 300 && !desc.includes("POWER WINDOW") && !desc.includes("FUEL PUMP")) return false;
+                        return true;
+                    });
+
+                    if (filteredData.length === 0) return reject(new Error("No valid claims found in file."));
+
+                    resolve({ filteredData, colMap });
+                } catch (err) { reject(err); }
+            };
+            reader.onerror = () => reject(new Error("Error reading file."));
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    async function switchVersion(targetKey) {
+        const win = getTargetWindow();
+        const dbIdx = getGlobalDbIndex();
+
+        if (!targetKey || targetKey === _activeSessionKey) return;
+        if (typeof win.loadSession === 'function') {
+            const activeKey = win.currentSessionKey || _activeSessionKey;
+            if (activeKey && win.saveSessionToDB && win.localforage) {
+                const currentSess = await win.localforage.getItem(activeKey);
+                if (currentSess) {
+                    const liveData = (win.currentAuditData && Object.keys(win.currentAuditData).length > 0)
+                        ? win.currentAuditData
+                        : currentSess.audit_data;
+                    currentSess.audit_data = JSON.parse(JSON.stringify(liveData || {}));
+                    currentSess.filtered_data = JSON.parse(JSON.stringify(win.currentData || []));
+                    currentSess.last_saved = new Date().toLocaleString();
+                    await win.saveSessionToDB(currentSess, activeKey);
+                }
+            }
+            closeRevisionSheet();
+            await win.loadSession(targetKey);
+            initWorkspace(targetKey);
+            const targetMeta = dbIdx[targetKey] || {};
+            const revNum = targetMeta.revision_number || 1;
+            if (typeof win.showToast === 'function') win.showToast(`Switched to Audit ${revNum}`, 'info', 3000);
+        }
+    }
+
+    async function deleteRevision(targetKey, revNum) {
+        const win = getTargetWindow();
+        const dbIdx = getGlobalDbIndex();
+
+        if (!targetKey || revNum === 1) return; // Main Audit 1 cannot be deleted here
+
+        const confirmMsg = `Are you sure you want to delete Audit ${revNum}?\n\nThis revision will be permanently deleted and cannot be undone.`;
+
+        const doDelete = async () => {
+            if (typeof win.showLoader === 'function') win.showLoader(true);
+            try {
+                // 1. Delete session from localforage
+                if (win.localforage) {
+                    await win.localforage.removeItem(targetKey);
+                }
+                // 2. Delete entry from dbIndex
+                if (dbIdx[targetKey]) {
+                    delete dbIdx[targetKey];
+                }
+                if (win.dbIndex && win.dbIndex[targetKey]) {
+                    delete win.dbIndex[targetKey];
+                }
+                // 3. Save db_index
+                if (win.localforage) {
+                    await win.localforage.setItem('db_index', dbIdx);
+                }
+
+                const activeKey = _activeSessionKey || win.currentSessionKey;
+                const family = getRevisionFamily(activeKey);
+
+                if (typeof win.showLoader === 'function') win.showLoader(false);
+                if (typeof win.showToast === 'function') win.showToast(`Audit ${revNum} deleted.`, 'info', 3000);
+
+                // 4. If deleted revision was the currently open workspace session, switch back to Audit 1
+                if (activeKey === targetKey) {
+                    const audit1Item = family.find(f => f.revNum === 1) || family[0];
+                    if (audit1Item && typeof win.loadSession === 'function') {
+                        closeRevisionSheet();
+                        await win.loadSession(audit1Item.key);
+                        initWorkspace(audit1Item.key);
+                    }
+                } else {
+                    renderRevisionList();
+                }
+            } catch (e) {
+                if (typeof win.showLoader === 'function') win.showLoader(false);
+                console.error(e);
+                if (typeof win.showAppAlert === 'function') win.showAppAlert("Failed to delete revision: " + e.message);
+            }
+        };
+
+        if (typeof win.showAppConfirm === 'function') {
+            win.showAppConfirm(confirmMsg, doDelete);
+        } else if (confirm(confirmMsg)) {
+            doDelete();
+        }
+    }
+
+    async function toggleNotification(event, sessionKey) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const win = getTargetWindow();
+        const dbIdx = getGlobalDbIndex();
+        if (!dbIdx[sessionKey]) return;
+
+        const meta = dbIdx[sessionKey];
+        const isMainAudit1 = !sessionKey.includes('_rev_');
+        const current = (meta.notify_in_dashboard !== undefined)
+            ? meta.notify_in_dashboard
+            : isMainAudit1;
+
+        meta.notify_in_dashboard = !current;
+
+        if (win.localforage) await win.localforage.setItem('db_index', dbIdx);
+
+        renderRevisionList();
+
+        if (typeof win.loadDashboardNotifications === 'function') {
+            win.loadDashboardNotifications();
+        }
+
+        const label = meta.notify_in_dashboard ? 'on' : 'off';
+        if (typeof win.showToast === 'function') win.showToast(`Dashboard notifications ${label} for this version.`, 'info', 2000);
+    }
+
+    const mod = {
+        initWorkspace: initWorkspace,
+        openRevisionSheet: openRevisionSheet,
+        closeRevisionSheet: closeRevisionSheet,
+        switchTab: switchTab,
+        selectOption: selectOption,
+        handleFileSelect: handleFileSelect,
+        clearFileSelect: clearFileSelect,
+        confirmCreateRevision: confirmCreateRevision,
+        switchVersion: switchVersion,
+        deleteRevision: deleteRevision,
+        toggleNotification: toggleNotification
+    };
+
+    window.RevisionAuditModule = mod;
+    const targetWin = getTargetWindow();
+    if (targetWin !== window) targetWin.RevisionAuditModule = mod;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        injectStyles();
+        injectModal();
+        const win = getTargetWindow();
+        const doc = getTargetDocument();
+        if (win.currentSessionKey || (doc.getElementById('screen-workspace') && doc.getElementById('screen-workspace').classList.contains('active'))) {
+            initWorkspace(win.currentSessionKey);
+        }
+    });
+
+    if (document.readyState === 'interactive' || document.readyState === 'complete') {
+        injectStyles();
+        injectModal();
+        const win = getTargetWindow();
+        const doc = getTargetDocument();
+        if (win.currentSessionKey || (doc.getElementById('screen-workspace') && doc.getElementById('screen-workspace').classList.contains('active'))) {
+            initWorkspace(win.currentSessionKey);
+        }
+    }
+})();
